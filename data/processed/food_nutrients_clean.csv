@@ -1,0 +1,384 @@
+food_name,potassium,phosphorus,protein,sodium
+"Hummus, commercial",289.0,166.0,7.35,438.0
+"Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D",159.0,103.0,3.35,39.0
+"Tomatoes, grape, raw",260.0,28.0,0.83,6.0
+"Beans, snap, green, canned, regular pack, drained solids",97.0,23.0,1.04,282.0
+"Broccoli, raw",303.0,67.0,2.57,36.0
+"Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",159.0,103.0,3.38,39.0
+"Milk, nonfat, fluid, with added vitamin A and vitamin D (fat free or skim)",167.0,107.0,3.43,41.0
+"Milk, whole, 3.25% milkfat, with added vitamin D",150.0,101.0,3.28,38.0
+"Frankfurter, beef, unheated",343.0,128.0,11.7,872.0
+"Nuts, almonds, dry roasted, with salt added",684.0,456.0,20.4,256.0
+"Cheese, ricotta, whole milk",230.0,162.0,7.81,105.0
+"Kale, raw",348.0,55.0,2.92,53.0
+"Egg, whole, raw, frozen, pasteurized",117.0,189.0,12.3,121.0
+"Egg, white, raw, frozen, pasteurized",130.0,0.0,10.1,144.0
+"Egg, white, dried",959.0,107.0,79.9,1250.0
+"Sauce, salsa, ready-to-serve",258.0,32.0,1.44,656.0
+"Sausage, breakfast sausage, beef, pre-cooked, unprepared",263.0,124.0,13.3,866.0
+"Onion rings, breaded, par fried, frozen, prepared, heated in oven",135.0,75.0,4.52,374.0
+"Pickles, cucumber, dill or kosher dill",112.0,16.0,0.48,808.0
+"Peanut butter, smooth style, with salt",564.0,339.0,22.5,429.0
+"Cheese, parmesan, grated",184.0,634.0,29.6,1750.0
+"Cheese, pasteurized process, American, vitamin D fortified",149.0,540.0,18.0,1660.0
+"Grapefruit juice, white, canned or bottled, unsweetened",141.0,17.0,0.55,1.0
+"Peaches, yellow, raw",122.0,22.0,0.91,13.0
+"Seeds, sunflower seed kernels, dry roasted, with salt added",689.0,750.0,21.0,532.0
+"Sausage, Italian, pork, mild, cooked, pan-fried",310.0,145.0,18.2,766.0
+"Bread, white, commercially prepared",117.0,113.0,9.43,477.0
+"Sausage, turkey, breakfast links, mild, raw",310.0,178.0,16.7,599.0
+"Cheese, swiss",71.0,574.0,27.0,185.0
+"Kale, frozen, cooked, boiled, drained, without salt",144.0,42.0,2.94,16.0
+"Carrots, frozen, unprepared (Includes foods for USDA's Food Distribution Program)",210.0,31.0,0.81,66.0
+"Mustard, prepared, yellow",150.0,108.0,4.25,1100.0
+"Figs, dried, uncooked",680.0,67.0,3.3,10.0
+"Kiwifruit, green, raw",198.0,34.0,1.06,5.0
+"Melons, cantaloupe, raw",157.0,17.0,0.82,30.0
+"Nectarines, raw",131.0,26.0,1.06,13.0
+"Oranges, raw, navels (Includes foods for USDA's Food Distribution Program)",166.0,23.0,0.91,9.0
+"Strawberries, raw",89.0,20.0,0.64,10.0
+"Cheese, cheddar",77.0,458.0,23.3,654.0
+"Cheese, cottage, lowfat, 2% milkfat",120.0,148.0,11.0,321.0
+"Cheese, mozzarella, low moisture, part-skim",116.0,533.0,23.7,699.0
+"Egg, whole, dried",468.0,770.0,48.1,485.0
+"Egg, yolk, raw, frozen, pasteurized",102.0,443.0,15.6,66.0
+"Egg, yolk, dried",231.0,982.0,34.2,149.0
+"Cheese, dry white, queso seco",116.0,475.0,24.5,1810.0
+"Yogurt, Greek, plain, nonfat",141.0,136.0,10.3,36.0
+"Yogurt, Greek, strawberry, nonfat",133.0,113.0,8.06,32.0
+"Oil, coconut",0.0,0.0,0.0,0.0
+"Turkey, ground, 93% lean, 7% fat, pan-broiled crumbles",304.0,259.0,27.1,90.0
+"Chicken, broilers or fryers, drumstick, meat only, cooked, braised",239.0,184.0,23.9,117.0
+"Chicken, broiler or fryers, breast, skinless, boneless, meat only, cooked, braised",343.0,241.0,32.1,47.0
+"Sauce, pasta, spaghetti/marinara, ready-to-serve",319.0,34.0,1.41,419.0
+"Ham, sliced, pre-packaged, deli meat (96%fat free, water added)",425.0,261.0,16.7,1040.0
+"Pears, raw, bartlett (Includes foods for USDA's Food Distribution Program)",87.0,10.0,0.38,7.0
+"Olives, green, Manzanilla, stuffed with pimiento",43.0,7.0,1.15,1620.0
+"Sausage, pork, chorizo, link or ground, cooked, pan-fried",435.0,207.0,19.3,983.0
+"Cookies, oatmeal, soft, with raisins",245.0,111.0,5.79,314.0
+"Tomatoes, canned, red, ripe, diced",198.0,18.0,0.84,125.0
+"Fish, haddock, raw",286.0,227.0,16.3,213.0
+"Fish, pollock, raw",160.0,284.0,12.3,333.0
+"Fish, tuna, light, canned in water, drained solids",176.0,137.0,19.0,219.0
+"Sugars, granulated",2.0,0.0,0.0,1.0
+"Restaurant, Chinese, sweet and sour pork",152.0,133.0,8.88,304.0
+"Restaurant, Chinese, fried rice, without meat",69.0,44.0,3.84,361.0
+"Restaurant, Latino, tamale, pork",152.0,120.0,7.38,473.0
+"Restaurant, Latino, pupusas con frijoles (pupusas, bean)",305.0,144.0,5.59,305.0
+"Beef, loin, top loin steak, boneless, lip-on, separable lean only, trimmed to 1/8"" fat, choice, raw",282.0,206.0,22.8,45.0
+"Beef, loin, tenderloin roast, separable lean only, boneless, trimmed to 0"" fat, select, cooked, roasted",352.0,259.0,27.7,54.0
+"Beef, round, eye of round roast, boneless, separable lean only, trimmed to 0"" fat, select, raw",312.0,222.0,23.4,50.0
+"Beef, round, top round roast, boneless, separable lean only, trimmed to 0"" fat, select, raw",316.0,220.0,23.7,55.0
+"Beef, short loin, t-bone steak, bone-in, separable lean only, trimmed to 1/8"" fat, choice, cooked, grilled",283.0,211.0,27.3,67.0
+"Beef, short loin, porterhouse steak, separable lean only, trimmed to 1/8"" fat, select, raw",266.0,200.0,22.7,43.0
+"Bread, whole-wheat, commercially prepared",250.0,212.0,12.3,450.0
+"Beef, loin, tenderloin roast, separable lean only, boneless, trimmed to 0"" fat, select, cooked, roasted",352.0,259.0,27.7,54.0
+"Beef, loin, top loin steak, boneless, lip-on, separable lean only, trimmed to 1/8"" fat, choice, raw",282.0,206.0,22.8,45.0
+"Beef, round, eye of round roast, boneless, separable lean only, trimmed to 0"" fat, select, raw",312.0,222.0,23.4,50.0
+"Beef, round, top round roast, boneless, separable lean only, trimmed to 0"" fat, select, raw",316.0,220.0,23.7,55.0
+"Beef, short loin, porterhouse steak, separable lean only, trimmed to 1/8"" fat, select, raw",266.0,200.0,22.7,43.0
+"Beef, short loin, t-bone steak, bone-in, separable lean only, trimmed to 1/8"" fat, choice, cooked, grilled",283.0,211.0,27.3,67.0
+"Carrots, frozen, unprepared",210.0,31.0,0.81,66.0
+"Cheese, dry white, queso seco",116.0,475.0,24.5,1810.0
+"Cheese, ricotta, whole milk",230.0,162.0,7.81,105.0
+"Cheese, swiss",71.0,574.0,27.0,185.0
+"Figs, dried, uncooked",680.0,67.0,3.3,10.0
+"Melons, cantaloupe, raw",157.0,17.0,0.82,30.0
+"Oranges, raw, navels",166.0,23.0,0.91,9.0
+"Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",159.0,103.0,3.38,39.0
+"Pears, raw, bartlett",87.0,10.0,0.38,7.0
+"Restaurant, Chinese, sweet and sour pork",152.0,133.0,8.88,304.0
+"Milk, nonfat, fluid, with added vitamin A and vitamin D (fat free or skim)",167.0,107.0,3.43,41.0
+"Sauce, salsa, ready-to-serve",258.0,32.0,1.44,656.0
+"Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D",159.0,103.0,3.36,39.0
+"Sausage, breakfast sausage, beef, pre-cooked, unprepared",263.0,124.0,13.3,866.0
+"Sausage, Italian, pork, mild, cooked, pan-fried",310.0,145.0,18.2,766.0
+"Sausage, pork, chorizo, link or ground, cooked, pan-fried",435.0,207.0,19.3,983.0
+"Milk, whole, 3.25% milkfat, with added vitamin D",150.0,101.0,3.27,38.0
+"Sausage, turkey, breakfast links, mild, raw",310.0,178.0,16.7,599.0
+"Sugars, granulated",2.0,0.0,0.0,1.0
+"Turkey, ground, 93% lean, 7% fat, pan-broiled crumbles",304.0,259.0,27.1,90.0
+"Ham, sliced, restaurant",484.0,246.0,19.6,1030.0
+"Cheese, American, restaurant",173.0,380.0,17.5,1600.0
+"Broccoli, raw",303.0,67.0,2.57,36.0
+"Strawberries, raw",89.0,20.0,0.64,10.0
+"Ketchup, restaurant",249.0,25.0,1.11,949.0
+"Eggs, Grade A, Large, egg whole",132.0,184.0,12.4,129.0
+"Pork, cured, bacon, cooked, restaurant",557.0,415.0,40.9,1830.0
+"Flour, wheat, all-purpose, enriched, bleached",136.0,108.0,10.9,2.0
+"Flour, wheat, all-purpose, enriched, unbleached",135.0,115.0,13.1,4.0
+"Flour, wheat, all-purpose, unenriched, unbleached",150.0,134.0,12.0,2.0
+"Flour, whole wheat, unenriched",376.0,352.0,15.1,3.0
+"Flour, bread, white, enriched, unbleached",127.0,124.0,14.3,3.0
+"Flour, rice, white, unenriched",75.0,94.0,6.94,5.0
+"Flour, corn, yellow, fine meal, enriched",144.0,92.0,6.2,0.0
+"Onions, red, raw",197.0,41.0,0.94,1.0
+"Onions, yellow, raw",182.0,34.0,0.83,1.0
+"Bananas, ripe and slightly ripe, raw",326.0,22.0,0.74,0.0
+"Flour, soy, defatted",2480.0,726.0,51.1,2.0
+"Flour, soy, full-fat",1860.0,607.0,38.6,2.0
+"Flour, rice, brown",265.0,319.0,7.19,1.0
+"Flour, rice, glutinous",80.0,63.0,6.69,6.0
+"Flour, pastry, unenriched, unbleached",142.0,102.0,8.75,1.0
+"Onions, white, raw",141.0,29.0,0.89,2.0
+"Bananas, ripe and slightly ripe, raw",326.0,22.0,0.74,0.0
+"Apples, red delicious, with skin, raw",95.0,9.0,0.19,0.0
+"Apples, honeycrisp, with skin, raw",98.0,8.0,0.1,0.0
+"Apples, granny smith, with skin, raw",116.0,10.0,0.27,0.0
+"Apples, gala, with skin, raw",106.0,8.0,0.13,0.0
+"Apples, fuji, with skin, raw",104.0,10.0,0.15,1.0
+"Soy milk, unsweetened, plain, shelf stable",158.2,68.65,3.546875,34.28
+"Almond milk, unsweetened, plain, shelf stable",30.79,29.85,0.5546875,59.58
+"Apples, red delicious, with skin, raw",95.31,9.183,0.1875,0.0
+"Apples, fuji, with skin, raw",103.8,9.78,0.1484375,1.013
+"Apples, gala, with skin, raw",105.9,8.435,0.1328125,0.2788
+"Apples, granny smith, with skin, raw",115.9,9.859,0.265625,0.0
+"Apples, honeycrisp, with skin, raw",98.04,7.852,0.1015625,0.1375
+"Mushroom, lion's mane",443.3,93.95,2.5,0.3363
+"Mushroom, oyster",281.6,86.24,2.89875,1.128
+"Mushrooms, shiitake",243.0,75.82,2.414375,0.9363
+"Mushrooms, white button",373.0,93.05,2.890625,6.443
+"Spinach, baby",581.8,39.05,2.851875,111.4
+"Spinach, mature",459.7,40.56,2.90625,106.6
+"Tomato, roma",192.8,19.09,0.695625,0.0
+"Mushroom, lion's mane",443.3,93.95,2.5,0.3363
+"Mushroom, oyster",281.6,86.24,2.89875,1.128
+"Mushrooms, shiitake",243.0,75.82,2.414375,0.9363
+"Mushrooms, white button",373.0,93.05,2.890625,6.443
+"Soy milk, unsweetened, plain, shelf stable",158.2,68.65,3.546875,34.28
+"Almond milk, unsweetened, plain, shelf stable",30.79,29.85,0.5546875,59.58
+"Spinach, baby",581.8,39.05,2.851875,111.4
+"Spinach, mature",459.7,40.56,2.90625,106.6
+"Tomato, roma",192.8,19.09,0.695625,0.0
+"Flour, 00",135.5,106.2,11.4,0.0
+"Flour, spelt, whole grain",349.8,361.7,14.475,0.0
+"Flour, semolina, coarse and semi-coarse",173.8,129.8,11.73125,0.0
+"Flour, semolina, fine",207.8,163.1,13.33125,0.4263
+"Apple juice, with added vitamin C, from concentrate, shelf stable",95.87,5.987,0.0859375,4.872
+"Orange juice, no pulp, not fortified, from concentrate, refrigerated",179.5,18.15,0.734375,5.231
+"Grape juice, purple, with added vitamin C, from concentrate, shelf stable",49.78,11.95,0.2578125,4.019
+"Grape juice, white, with added vitamin C, from concentrate, shelf stable",49.01,12.57,0.09375,7.188
+"Cranberry juice, not fortified, from concentrate, shelf stable",70.58,3.299,0.0,6.341
+"Grapefruit juice, red, not fortified, not from concentrate, refrigerated",128.3,14.58,0.5703125,1.031
+"Tomato juice, with added ingredients, from concentrate, shelf stable",197.6,18.54,0.859375,235.6
+"Orange juice, no pulp, not fortified, not from concentrate, refrigerated",182.8,18.96,0.8125,0.075
+"Mushroom, portabella",349.3,87.48,2.75,5.312
+"Mushroom, king oyster",294.5,89.86,2.40625,0.7713
+"Mushroom, enoki",402.3,84.1,2.416875,0.4167
+"Mushroom, crimini",380.3,100.5,3.09375,4.572
+"Mushroom, maitake",260.0,72.38,2.203125,0.345
+"Mushroom, beech",375.9,85.9,2.18,0.8913
+"Mushroom, pioppini",392.4,120.6,3.5,0.0
+"Soy milk, sweetened, plain, refrigerated",117.9,45.96,2.776875,39.44
+"Almond milk, unsweetened, plain, refrigerated",49.27,19.08,0.65625,59.22
+"Oat milk, unsweetened, plain, refrigerated",148.4,89.18,0.796875,41.98
+"Carrots, mature, raw",279.6,39.81,0.94125,86.65
+"Carrots, baby, raw",237.3,29.58,0.805,62.66
+"Peppers, bell, green, raw",163.1,16.75,0.715,0.0
+"Peppers, bell, yellow, raw",197.3,24.76,0.819375,0.0
+"Peppers, bell, red, raw",212.7,26.59,0.895625,0.0
+"Peppers, bell, orange, raw",200.8,26.59,0.881875,0.0
+"Buttermilk, low fat",158.0,92.19,3.464978,92.49
+"Yogurt, plain, whole milk",164.1,101.2,3.824172,41.78
+"Yogurt, Greek, plain, whole milk",146.9,125.9,8.77888,33.76
+"Cheese, parmesan, grated, refrigerated",73.95,625.3,30.13912,1046.0
+"Cheese, feta, whole milk, crumbled",105.3,327.6,19.70782,1034.0
+"Flour, almond",666.8,512.1,26.24375,0.8944
+"Flour, oat, whole grain",373.1,371.8,13.16875,3.619
+"Flour, potato",1269.0,197.3,8.1125,47.66
+"Peanut butter, creamy",654.0,393.2,23.99124,220.7
+"Sesame butter, creamy",407.7,719.3,19.7054,63.63
+"Almond butter, creamy",745.4,506.9,20.78734,0.9963
+"Flaxseed, ground",793.4,556.4,18.0359,36.74
+"Strawberries, raw",160.7,22.98,0.640625,0.0
+"Raspberries, raw",155.8,27.47,1.008125,0.0
+"Blueberries, raw",85.64,12.96,0.703125,0.0
+"Grapes, red, seedless, raw",229.4,24.86,0.914375,6.999
+"Grapes, green, seedless, raw",218.1,21.98,0.89875,3.171
+"Applesauce, unsweetened, with added vitamin C",107.7,9.119,0.2734375,0.5038
+"Cottage cheese, full fat, large or small curd",123.6,154.0,11.62436,349.8
+"Cream cheese, full fat, block",124.8,107.7,5.78985,367.8
+"Cream, heavy",96.94,57.03,2.017994,20.61
+"Cream, sour, full fat",153.8,102.0,3.070694,50.04
+"Lettuce, iceberg, raw",139.3,19.18,0.7425,16.11
+"Lettuce, romaine, green, raw",260.4,23.41,0.976875,23.0
+"Lettuce, leaf, red, raw",321.4,24.4,0.883125,24.89
+"Lettuce, leaf, green, raw",277.1,26.55,1.09375,28.88
+"Nuts, pine nuts, raw",654.8,540.0,15.7039,0.0
+"Nuts, almonds, whole, raw",732.8,502.9,21.45038,0.0
+"Nuts, walnuts, English, halves, raw",423.5,365.1,14.5644,0.0
+"Nuts, pecans, halves, raw",360.3,252.7,9.9587,0.0
+"Oats, whole grain, rolled, old fashioned",350.1,387.3,13.49645,0.6675
+"Oats, whole grain, steel cut",375.9,417.3,12.51118,0.3113
+"Pineapple, raw",137.1,5.42,0.4609375,0.0
+"Cherries, sweet, dark red, raw",229.6,23.25,1.039375,0.0
+"Beans, snap, green, raw",290.4,41.15,1.96875,0.0
+"Potatoes, russet, without skin, raw",450.1,55.19,2.27375,2.743
+"Potatoes, red, without skin, raw",472.0,55.65,2.0625,2.856
+"Potatoes, gold, without skin, raw",445.8,56.95,1.8125,2.238
+"Sweet potatoes, orange flesh, without skin, raw",486.4,36.73,1.578125,0.0
+"Celery, raw",265.2,21.6,0.4921875,97.21
+"Cucumber, with peel, raw",169.6,23.23,0.625,1.515
+"Cabbage, green, raw",207.1,26.93,0.96125,16.1
+"Cabbage, red, raw",269.1,35.84,1.2425,11.72
+"Strawberries, raw",160.7,22.98,0.640625,0.0
+"Raspberries, raw",155.8,27.47,1.008125,0.0
+"Blueberries, raw",85.64,12.96,0.703125,0.0
+"Grapes, red, seedless, raw",229.4,24.86,0.914375,6.999
+"Grapes, green, seedless, raw",218.1,21.98,0.89875,3.171
+"Applesauce, unsweetened, with added vitamin C",107.7,9.119,0.2734375,0.5038
+"Flour, amaranth",395.8,424.9,13.2093,0.0
+"Flour, quinoa",550.9,369.3,11.92235,6.321
+"Flour, sorghum",335.1,261.9,8.27277,0.0
+"Flour, buckwheat",378.1,281.9,8.88492,0.0
+"Flour, rye",434.0,280.3,8.3952,0.0
+"Flour, barley",366.6,234.4,8.72168,20.33
+"Flour, cassava",197.6,39.24,0.918225,13.08
+"Buckwheat, whole grain",414.5,373.7,11.06534,0.0
+"Millet, whole grain",214.1,257.9,10.02177,0.0
+"Rice, brown, long grain, unenriched, raw",250.1,302.8,7.25305,0.0
+"Rice, white, long grain, unenriched, raw",82.26,108.2,7.03885,0.4625
+"Beef, ground, 90% lean meat / 10% fat, raw",281.4,148.0,18.15625,61.64
+"Beef, ground, 80% lean meat / 20% fat, raw",273.3,144.4,17.53125,54.94
+"Pork, ground, raw",317.7,173.3,17.80625,53.63
+"Chicken, ground, with additives, raw",301.7,165.5,17.9125,62.95
+"Turkey, ground, 93% lean/ 7% fat, raw",246.3,162.0,17.34375,80.18
+"Nuts, brazilnuts, raw",592.5,706.9,15.03684,0.0
+"Nuts, cashew nuts, raw",638.3,532.2,17.4423,4.759
+"Nuts, hazelnuts or filberts, raw",635.9,321.1,13.4938,0.0
+"Peanuts, raw",635.6,380.4,23.205,1.493
+"Flour, chestnut",1032.0,134.2,5.28675,0.0
+"Nuts, macadamia nuts, raw",372.6,208.4,7.7857,0.0
+"Nuts, pistachio nuts, raw",947.0,499.6,20.5057,0.0
+"Seeds, pumpkin seeds (pepitas), raw",691.2,1150.0,29.9079,0.0
+"Seeds, sunflower seed, kernel, raw",656.8,732.0,18.8733,0.0
+"Flour, coconut",2088.0,507.2,16.1385,46.94
+"Beans, cannellini, dry",1424.0,412.3,21.5625,0.0
+"Chickpeas, (garbanzo beans, bengal gram), dry",1074.0,353.1,21.275,8.779
+"Lentils, dry",948.9,373.6,23.56875,0.0
+"Blackeye pea, dry",1243.0,427.6,21.225,3.458
+"Beans, black, canned, sodium added, drained and rinsed",253.1,90.95,6.9125,217.9
+"Beans, navy, canned, sodium added, drained and rinsed",183.7,86.71,6.56875,190.1
+"Beans, cannellini, canned, sodium added, drained and rinsed",202.6,94.74,7.4125,164.0
+"Chickpeas (garbanzo beans, bengal gram), canned, sodium added, drained and rinsed",136.8,86.48,7.01875,201.7
+"Beans, kidney, dark red, canned, sodium added, sugar added, drained and rinsed",226.9,104.1,7.8,172.3
+"Beans, kidney, light red, canned, sodium added, sugar added, drained and rinsed",209.4,93.56,7.30625,158.5
+"Peas, green, sweet, canned, sodium added, sugar added, drained and rinsed",109.2,77.74,4.734375,207.4
+"Beans, pinto, canned, sodium added, drained and rinsed",209.6,83.11,6.69375,201.6
+"Blackeye pea, canned, sodium added, drained and rinsed",138.1,83.03,6.925,226.7
+"Beans, great northern, canned, sodium added, drained and rinsed",213.1,88.61,7.03125,223.1
+"Pork, loin, boneless, raw",361.2,196.8,21.11875,40.2
+"Pork, loin, tenderloin, boneless, raw",397.4,217.4,21.58125,41.39
+"Chicken, breast, boneless, skinless, raw",330.1,214.9,22.525,65.75
+"Chicken, thigh, boneless, skinless, raw",271.8,178.3,18.6125,62.33
+"Beef, ribeye, steak, boneless, choice, raw",288.0,149.7,18.74375,42.54
+"Beef, round, top round, boneless, choice, raw",351.5,192.3,21.475,45.54
+"Beef, chuck, roast, boneless, choice, raw",281.1,151.0,18.4,48.44
+"Beef, flank, steak, boneless, choice, raw",331.8,167.3,20.13125,51.3
+"Yogurt, plain, nonfat",210.5,127.0,4.22675,51.48
+"Cheese, monterey jack, solid",82.94,470.9,22.6171,662.2
+"Cheese, pasteurized process cheese food or product, American, singles",211.8,880.0,15.5672,1420.0
+"Cheese, provolone, sliced",94.84,494.1,23.45288,600.9
+"Cheese, oaxaca, solid",80.73,380.4,22.14498,734.2
+"Cheese, queso fresco, solid",126.4,389.8,18.8848,626.5
+"Cheese, cotija, solid",116.7,485.5,23.83568,1625.0
+"Fish, salmon, sockeye, wild caught, raw",329.7,226.3,22.3,53.3
+"Fish, salmon, Atlantic, farm raised, raw",378.2,230.3,20.31875,49.49
+"Fish, tilapia, farm raised, raw",342.4,159.4,19.0,93.66
+"Crustaceans, shrimp, farm raised, raw",145.9,190.6,15.56875,474.9
+"Fish, cod, Atlantic, wild caught, raw",245.1,224.1,16.06875,298.8
+"Fish, catfish, farm raised, raw",292.3,166.2,16.46875,60.51
+"Crustaceans, crab, blue swimming, lump, pasteurized, refrigerated",234.8,278.5,18.65,331.3
+"Squash, summer, green, zucchini, includes skin, raw",225.8,32.9,0.984375,0.0
+"Squash, summer, yellow, includes skin, raw",220.5,30.74,0.890625,0.0
+"Squash, winter, butternut, raw",329.1,26.53,1.14875,0.0
+"Squash, winter, acorn, raw",332.1,42.04,1.25,0.0
+"Cabbage, bok choy, raw",227.8,30.51,1.02375,14.27
+"Cauliflower, raw",274.4,39.69,1.640625,20.0
+"Collards, raw",409.8,45.01,2.96875,18.41
+"Brussels sprouts, raw",476.8,78.54,3.984375,25.74
+"Beets, raw",341.5,33.65,1.6875,111.6
+"Eggplant, raw",222.1,22.75,0.851875,0.4425
+"Tomatoes, whole, canned, solids and liquids, with salt added",202.9,17.31,0.8675,111.5
+"Tomato, sauce, canned, with salt added",355.5,29.2,1.351875,416.9
+"Tomato, paste, canned, without salt added",971.6,91.16,4.234375,61.15
+"Tomatoes, crushed, canned",345.6,32.91,1.4375,139.8
+"Tomato, puree, canned",416.4,34.14,1.578125,29.36
+"Apricot, with skin, raw",231.4,22.51,0.96125,0.0
+"Melons, honeydew, raw",208.9,11.74,0.53125,21.15
+"Plantains, ripe, raw",395.6,30.12,1.15625,0.0
+"Plantains, underripe, raw",406.3,27.9,1.229375,0.0
+"Chia seeds, dry, raw",642.1,691.3,17.013,0.0
+"Bulgur, dry, raw",358.3,312.1,11.75625,2.18
+"Wild rice, dry, raw",298.8,354.9,12.7875,1.014
+"Arugula, baby, raw",406.8,51.19,1.64875,86.93
+"Asparagus, green, raw",277.5,53.9,1.4375,2.46
+"Avocado, Hass, peeled, raw",576.4,42.38,1.8125,0.0
+"Rice, black, unenriched, raw",255.6,306.7,7.56875,0.0
+"Corn, sweet, yellow and white kernels,  fresh, raw",237.0,75.46,2.789375,0.0
+"Einkorn, grain, dry, raw",431.8,435.8,15.11719,0.0
+"Farro, pearled, dry, raw",385.4,367.5,12.63944,0.845
+"Fonio, grain, dry, raw",43.79,93.24,7.16875,2.967
+"Khorasan, grain, dry, raw",450.5,370.8,14.75573,3.936
+"Kiwifruit (kiwi), green, peeled, raw",301.5,27.61,1.008125,2.275
+"Mandarin, seedless, peeled, raw",167.2,19.71,1.039375,0.0
+"Mango, Tommy Atkins, peeled, raw",165.0,16.45,0.5625,0.0
+"Mango, Ataulfo, peeled, raw",204.4,17.74,0.6875,0.0
+"Corn flour, masa harina, white or yellow, dry, raw",276.6,241.1,7.5625,2.733
+"Pear, Anjou, green, with skin, raw",122.5,12.3,0.3125,0.3975
+"Plum, black, with skin, raw",186.3,18.63,0.578125,0.0
+"Rice, red, unenriched, dry, raw",245.1,313.9,8.5625,0.4375
+"Sorghum bran, white, unenriched, dry, raw",851.5,517.1,11.16875,2.915
+"Sorghum flour, white, pearled, unenriched, dry, raw",273.9,245.8,10.2125,0.0
+"Sorghum grain, white, pearled, unenriched, dry, raw",273.9,243.4,10.25,0.0
+"Sorghum, whole grain, white, dry, raw",367.1,294.1,10.08125,0.3288
+"Plantains, overripe, raw",408.2,28.92,1.166875,0.0
+"Chicken, drumstick, meat and skin, raw",244.1,152.5,18.35625,90.98
+"Chicken, thigh, meat and skin, raw",246.0,153.6,17.10625,63.55
+"Chicken, wing, meat and skin, raw",194.0,132.8,18.40625,84.14
+"Chicken, breast, meat and skin, raw",332.5,203.6,21.40625,48.07
+"Lamb, ground, raw",272.1,155.8,17.4625,53.45
+"Bison, ground, raw",301.1,165.6,19.88125,55.7
+"Beef, short loin (NY strip steak), raw",323.0,171.4,21.325,43.09
+"Beef, tenderloin steak, raw",344.7,189.7,21.09375,44.85
+"Beef, top sirloin steak, raw",349.4,193.1,21.975,42.85
+"Pork, chop, center cut, raw",366.5,202.3,22.8125,39.3
+"Pork, belly, with skin, raw",207.9,113.9,15.2,49.7
+"Pawpaw, peeled, seeded, raw",220.9,23.4,1.151875,0.3514
+"Squash, pie pumpkin, peeled, seeded, raw",472.1,22.3,0.854375,0.3125
+"Squash, spaghetti, peeled, seeded, raw",266.9,16.97,0.791875,0.3125
+"Rutabaga, peeled, raw",266.6,38.91,0.8875,4.591
+"Blackberries, raw",167.4,20.16,1.52625,1.548
+"Tomatillos, dehusked, raw",239.1,24.19,1.064375,0.3113
+"Cabbage, napa, leaf, destemmed, raw",234.6,34.38,1.06375,12.65
+"Leeks, bulb and greens, root removed, raw",319.0,34.56,1.4675,17.66
+"Green onion, (scallion), bulb and greens, root removed, raw",232.0,27.86,0.66875,9.948
+"Shallots, bulb, peeled, root removed, raw",251.5,54.63,1.3775,3.636
+"Juice, prune, shelf-stable",215.6,19.05,0.422625,10.29
+"Juice, pomegranate, from concentrate, shelf-stable",165.6,8.944,0.0,4.038
+"Juice, tart cherry, from concentrate, shelf-stable",169.8,16.1,0.1465625,1.363
+"Anchovies, canned in olive oil, with salt, drained",297.8,225.7,26.9375,5403.0
+"Beet greens, raw",368.7,26.75,1.609375,280.5
+"Cod, Pacific or Alaskan, frozen, wild caught",192.3,278.8,14.2,353.9
+"Fennel, bulb, raw",332.4,33.38,0.921875,49.03
+"Halibut, frozen, wild caught",430.2,216.8,19.0625,108.3
+"Lobster, tail only, frozen, wild caught",212.6,174.7,12.99375,508.8
+"Mahi mahi, frozen, wild caught",407.9,223.8,19.79375,51.93
+"Parsnips, raw",492.6,62.54,1.265625,0.4913
+"Peppers, banana or Hungarian wax, seeded, raw",177.4,21.83,0.723125,0.0
+"Peppers, jalapeno, seeded, raw",166.9,19.07,0.621125,0.0
+"Peppers, poblano, seeded, raw",191.6,22.41,1.425625,0.0
+"Peppers, serrano, seeded, raw",224.5,24.25,0.855625,0.0
+"Radicchio, raw",334.6,35.47,1.30875,8.076
+"Radishes, red, raw",197.8,17.91,0.65625,51.16
+"Scallops, bay, Patagonian, frozen, wild caught",292.0,229.1,16.3875,252.4
+"Scallops, sea, frozen, wild caught",244.9,214.0,13.5125,313.0
+"Sea bass, Chilean, frozen, wild caught",236.4,151.7,14.925,109.4
+"Snapper, frozen, wild caught",348.8,199.0,20.6625,93.06
+"Snow crab, legs only, frozen  ",192.9,162.0,15.5375,728.5
+"Squid (calamari), frozen, tubes only",9.483,63.76,8.80625,271.9
+"Swordfish, frozen, wild caught",414.1,234.9,19.2375,56.87
+"Tuna, ahi or yellowfin, frozen, wild caught",420.2,270.8,24.7,94.37
+"Turnips, raw",262.1,31.3,0.953125,12.8
+"Watermelon, seedless, flesh only, raw",117.3,17.08,0.87125,0.0
+"Watermelon, seedless, rind only, raw",272.5,20.73,0.53125,3.763

@@ -1,0 +1,51 @@
+food_id,english,french,kinyarwanda,category,meal_type,protein_g,potassium_mg,phosphorus_mg,sodium_mg,energy_kcal,preparation_method,source,ckd_stage_safe,notes
+1,sweet potatoes,Patate douce,Ibijumba,Starch,Any,1.1,101,25,4,101,boiled,Kenya FCT 2018,1-3,"High potassium 311mg — restrict stages 4,5"
+2,cassava,Manioc,Imyumbati,Starch,Lunch/Dinner,0.6,171,17,2,148,boiled,Kenya FCT 2018,1-4,Moderate potassium 250mg — limit at stage 5
+3,Irish potatoes,Pomme de terre,Ibirayi,Starch,Any,2,544,44,7,77,boiled/fried,USDA FDC,1-2,"Very high potassium 544mg — restrict stages 3,4,5"
+4,banana,Banane,Umuneke,Starch,Any,0.73,358,22,1,89,raw,USDA FDC,1-3,"High potassium 358mg — restrict stages 4,5"
+5,maize,Maïs,Ibigori,Grain,Breakfast/Any,2.9,226,73,2,146,boiled,Kenya FCT 2018,1-4,Moderate potassium 226mg — limit at stage 5
+6,rice,Riz,Umuceri,Grain,Lunch/Dinner,2.3,20,48,0,119,boiled,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+7,sorghum,Sorgho,Amasaka,Grain,Breakfast/Any,3.4,129,117,2,140,boiled,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+8,wheat,Blé,Ingano,Grain,Any,12.2,358,346,2,328,ground,Kenya FCT 2018,1-3,"High potassium 358mg — restrict stages 4,5"
+9,milk,Lait,Amata,Dairy,Any,3.2,136,96,46,70,raw,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+10,beef meat,Bœuf,Inyama y'inka,Meat,Lunch/Dinner,28.7,230,194,67,197,boiled,Kenya FCT 2018,1-4,Moderate potassium 241mg — limit at stage 5
+11,fish,Poisson,Ifi,Fish,Lunch/Dinner,20.5,366,211,56,92,boiled,Kenya FCT 2018,1-3,"High potassium 366mg — restrict stages 4,5"
+12,ghee,Beurre clarifié,Amavuta y'inka,Fat/Oil,Cooking,0.3,5,3,2,900,refined,USDA FDC,1-5,Safe all stages — low nutrient content
+13,eggs,Oeufs,Amagi,Egg,Any,12.5,120,171,147,134,boiled,Kenya FCT 2018,1-4,Moderate potassium 147mg — limit at stage 5
+14,chicken meat,Poulet,inkoko,Meat,Lunch/Dinner,25.5,221,189,68,226,boiled,Kenya FCT 2018,1-4,Moderate potassium 221mg — limit at stage 5
+15,goat meat,Viande de chèvre,Inyama y'ihene,Meat,Lunch/Dinner,28.4,335,211,73,174,boiled,Kenya FCT 2018,1-3,"High potassium 335mg — restrict stages 4,5"
+16,cassava leaves,Feuilles de manioc,Isombe,Vegetable,Lunch/Dinner,5.8,321,66,7,36,boiled,USDA FDC,1-3,"High potassium 321mg — restrict stages 4,5"
+17,beans,Haricots secs,Ibishyimbo,Legume,Lunch/Dinner,7.9,319,138,3,117,boiled,Kenya FCT 2018,1-3,"High potassium 319mg — restrict stages 4,5"
+18,peas,Pois secs,Amashaza,Legume,Lunch/Dinner,7.9,249,108,4,93,boiled,Kenya FCT 2018,1-4,Moderate potassium 249mg — limit at stage 5
+19,yams,Ignames,Amateke,Starch,Lunch/Dinner,1.5,248,60,6,118,boiled,Kenya FCT 2018,1-3,"High potassium 308mg — restrict stages 4,5"
+20,groundnuts,Arachides,Ubunyobwa,Legume,Any,26.2,680,370,6,593,roasted,Kenya FCT 2018,1-2,"Very high potassium 680mg — restrict stages 3,4,5"
+21,sugar cane,Canne à sucre,Igisheke,Starch,Any,0.1,12,4,1,37,raw,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+22,soybeans,Soja,soya,Legume,Lunch/Dinner,34,1730,384,22,386,boiled,USDA FDC,1,Extremely high potassium 1730mg — avoid all CKD stages
+23,sunflower oil,Huile de tournesol,Amavuta y'igihwagari,Fat/Oil,Cooking,0,0,0,0,884,refined,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+24,palm oil,Huile de palme,amamesa,Fat/Oil,Cooking,0,0,0,0,891,refined,USDA FDC,1-5,Safe all stages — low nutrient content
+25,tomatoes,Tomates,Inyanya,Vegetable,Any,1.1,221,28,4,22,raw,Kenya FCT 2018,1-4,Moderate potassium 221mg — limit at stage 5
+26,onions,Oignons,Ibitunguru,Vegetable,Any,1.2,149,32,4,42,raw,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+27,spinach,Épinard,Epinari,Vegetable,Lunch/Dinner,2.4,300,27,18,27,boiled,Kenya FCT 2018,1-3,"High potassium 370mg — restrict stages 4,5"
+28,cabbage,Chou,Ishu,Vegetable,Any,1.1,148,21,6,18,boiled,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+29,pumpkin,Citrouille,ibihaza,Vegetable,Lunch/Dinner,0.7,178,31,2,32,boiled,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+30,plantains,Banane plantain,Imizuzu,Starch,Lunch/Dinner,0.8,260,24,4,97,boiled,Kenya FCT 2018,1-4,Moderate potassium 260mg — limit at stage 5
+31,mangoes,Mangues,umwembe,Fruit,Any,0.5,150,12,2,64,raw,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+32,avocados,Avocats,Avoka,Fruit,Any,1.6,400,37,5,185,raw,Kenya FCT 2018,1-3,"High potassium 400mg — restrict stages 4,5"
+33,pineapples,Ananas,Inanasi,Fruit,Any,0.5,114,9,1,41,raw,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+34,passion fruit,Fruit de la passion,amatunda,Fruit,Any,0.9,165,13,5,42,raw,USDA FDC,1-5,Safe all stages — low nutrient content
+35,oranges,Oranges,amaronji,Fruit,Any,0.7,148,16,3,42,raw,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+36,papaya,Papaye,ipapayi,Fruit,Any,0.5,210,11,3,36,raw,Kenya FCT 2018,1-4,Moderate potassium 210mg — limit at stage 5
+37,coffee,Café,Ikawa,Beverage,Breakfast/Any,0.1,37,3,2,2,brewed,USDA FDC,1-5,Safe all stages — low nutrient content
+38,tea,Thé,Icyayi,Beverage,Breakfast/Any,0,37,1,1,1,brewed,USDA FDC,1-5,Safe all stages — low nutrient content
+39,green beans,haricots verts,imiteja,Vegetable,Lunch/Dinner,1.8,209,38,6,31,boiled,USDA FDC,1-4,Moderate potassium 209mg — limit at stage 5
+40,millet,Mil,uburo,Grain,Breakfast/Any,11,195,285,5,378,ground/boiled,USDA FDC,1-5,Safe all stages — low nutrient content
+41,honey,Miel,Ubuki,Other,Any,0.4,52,4,4,304,raw,USDA FDC,1-5,Safe all stages — low nutrient content
+42,sour milk,Lait fermenté,Ikivuguto,Dairy,Any,3.3,140,87,40,61,fermented,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+43,eggplant,Aubergine,ikibiringanya,Vegetable,Lunch/Dinner,0.8,211,21,2,27,boiled,Kenya FCT 2018,1-4,Moderate potassium 211mg — limit at stage 5
+44,carrot,Carotte,Karoti,Vegetable,Any,0.7,231,30,31,30,boiled,Kenya FCT 2018,1-4,Moderate potassium 231mg — limit at stage 5
+45,pork,Porc,Inyama y'ingurube,Meat,Lunch/Dinner,28.3,321,220,62,374,boiled,Kenya FCT 2018,1-3,"High potassium 321mg — restrict stages 4,5"
+46,amaranth leave,Feuilles d'amarante,dodo,Vegetable,Lunch/Dinner,3.1,251,40,10,38,boiled,Kenya FCT 2018,1-4,Moderate potassium 251mg — limit at stage 5
+47,watermelon,Pastèque,Watermelon,Fruit,Any,0.61,112,11,1,30,raw,USDA FDC,1-5,Safe all stages — low nutrient content
+48,olive oil,Huile d'olive,amavuta ya elayo,Fat/Oil,Cooking,0,0,0,0,884,refined,USDA FDC,1-5,Safe all stages — low nutrient content
+49,lemons,Citrons,Indimu,Fruit,Any,1.1,138,16,2,29,raw,USDA FDC,1-5,Safe all stages — low nutrient content
+50,apples,Pomme,Amapome,Fruit,Any,0.3,107,11,1,52,raw,USDA FDC,1-5,Safe all stages — low nutrient content
