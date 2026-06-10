@@ -11,6 +11,7 @@ scikit-learn
 pandas
 numpy
 scipy
+scikit-posthocs
 pyreadstat
 joblib
 thefuzz

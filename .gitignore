@@ -1,34 +1,52 @@
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-.env
-venv/
-.venv/
+# Node modules
+node_modules/
+frontend/node_modules/
 
-# Data files — do not commit
-data/raw/nhanes/*.xpt
-data/raw/nhanes/*.XPT
-data/raw/nhanes/*.csv
-backend/data/nhanes/*.xpt
-backend/data/nhanes/*.XPT
-
-# Model files — do not commit large binaries
-models/*.pkl
+# Keras model files
+models/*.keras
 models/*.h5
-models/*.npz
 
-# Archive folder
-archive/
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
 
-# Jupyter checkpoints
-.ipynb_checkpoints/
+# Environment
+.env
+.venv/
+venv/
 
 # OS files
 .DS_Store
 Thumbs.db
 
-# IDE files
+# IDE
 .vscode/
 .idea/
-*.swp
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Large data files
+data/raw/nhanes/*.xpt
+data/raw/nhanes/*.XPT
+backend/data/nhanes/*.xpt
+backend/data/nhanes/*.XPT
+
+# Model binaries
+models/*.pkl
+models/*.h5
+models/*.keras
+models/*.npz
+
+# Archive
+archive/
+
+# Keep outputs
+!outputs/
+!outputs/figures/
+!outputs/figures/*.png
+!outputs/stats/
+!outputs/stats/*.csv
+!outputs/screenshots/
+!outputs/screenshots/*.png

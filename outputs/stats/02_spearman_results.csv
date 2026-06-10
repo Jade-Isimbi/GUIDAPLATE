@@ -1,0 +1,5 @@
+Nutrient,Spearman rho,p-value,Significant (α=0.05),Direction
+potassium,0.1393,0.0,YES,Positive
+phosphorus,0.1426,0.0,YES,Positive
+protein_per_kg,0.1407,0.0,YES,Positive
+sodium,0.1296,1e-06,YES,Positive

@@ -1,0 +1,5 @@
+Nutrient,H statistic,p-value,Significant (α=0.05)
+potassium,28.5894,3e-06,YES
+phosphorus,24.8253,1.7e-05,YES
+protein_per_kg,20.8011,0.000116,YES
+sodium,24.7979,1.7e-05,YES
