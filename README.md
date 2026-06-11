@@ -206,9 +206,7 @@ cohort analysis:
 
 ## Author
 ISIMBI TUZINDE Jade Keslie
-BSc Software Engineering
-African Leadership University
-Supervisor: Emmanuel Adjei
+
 
 ## Clinical Disclaimer
 
