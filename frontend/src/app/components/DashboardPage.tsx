@@ -166,7 +166,7 @@ export function DashboardPage({ isDark, theme, onNavigate }: DashboardPageProps)
                 className="flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl text-white transition-all duration-200 hover:opacity-90"
                 style={{ background: 'linear-gradient(135deg, #2E86AB 0%, #1A5F7A 100%)', fontSize: '0.875rem', fontWeight: 600 }}
               >
-                Start Risk Assessment
+                Start Meal Assessment
                 <ArrowRight size={15} />
               </button>
               <button

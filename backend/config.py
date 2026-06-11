@@ -28,10 +28,11 @@ FOOD_DATABASE_CSV: Path = BACKEND_DIR / "data" / "food_database.csv"
 # Models
 # ---------------------------------------------------------------------------
 MODELS_DIR: Path = ROOT / "models"
-LSTM_MODEL_PATH: Path = MODELS_DIR / "lstm_model.h5"
+LSTM_MODEL_PATH: Path = MODELS_DIR / "lstm_final.keras"
+XGBOOST_MODEL_PATH: Path = MODELS_DIR / "xgboost_v1.pkl"
 SCALER_PATH: Path = MODELS_DIR / "scaler.pkl"
 RANDOM_FOREST_PATH: Path = MODELS_DIR / "random_forest.pkl"
-XGBOOST_MODEL_PATH: Path = MODELS_DIR / "xgboost.pkl"
+
 
 # Saved by `03_lstm_training.ipynb` so `04_evaluation.ipynb` uses the same test split
 EVAL_TEST_NPZ: Path = PROCESSED_DIR / "guidaplate_test_split.npz"

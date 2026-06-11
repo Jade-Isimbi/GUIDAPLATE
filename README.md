@@ -48,6 +48,11 @@ npm install
 npm run dev
 Open http://localhost:5173
 
+### 5. Run the FastAPI backend (after running notebooks 01→06)
+cd backend
+uvicorn main:app --reload --port 8000
+API docs available at http://localhost:8000/docs
+
 Note: FastAPI backend is under
 development (stubs only).
 Full backend integration planned
@@ -95,6 +100,35 @@ exceed phosphorus limits regardless
 of stage. Phosphorus is the primary
 dietary risk driver in the cohort.
 
+## Reproducing ML Results
+
+Model artifacts (xgboost_v1.pkl, lstm_final.keras) are gitignored due to file size.
+To regenerate them, run the notebooks in this exact order:
+
+### Step 1 — Build NHANES CKD cohort
+jupyter notebook notebooks/01_data_exploration.ipynb
+Output: data/processed/ckd_cohort_final.csv (1,862 patients)
+
+### Step 2 — Run statistical analysis
+jupyter notebook notebooks/03_statistical_analysis.ipynb
+Output: outputs/stats/01-05 CSV files, outputs/figures/08-09 PNG files
+
+### Step 3 — Train XGBoost classifier
+jupyter notebook notebooks/04_xgboost_training.ipynb
+Output: models/xgboost_v1.pkl, outputs/stats/06_xgboost_metrics.csv
+
+### Step 4 — Train LSTM model
+jupyter notebook notebooks/05_lstm_training.ipynb
+Output: models/lstm_final.keras, models/lstm_scaler.pkl, outputs/stats/07_lstm_metrics.csv
+
+### Step 5 — SHAP + McNemar evaluation
+jupyter notebook notebooks/06_evaluation.ipynb
+Output: outputs/figures/16-18 SHAP PNGs, outputs/stats/08-10 CSV files
+
+### Python version note
+Python 3.11 is required. TensorFlow crashes on Python 3.9.
+Use: conda create -n guidaplate python=3.11 && conda activate guidaplate
+
 ## Deployment Plan
 
 ### Current State
@@ -141,48 +175,22 @@ at http://localhost:5173
 Built with React TypeScript, Shadcn UI,
 Tailwind CSS, and Recharts.
 
-### Dashboard
-![Dashboard](outputs/screenshots/01_dashboard.png)
+> Screenshots will be provided in the video demo submission (see Video Demo link below).
 
-The dashboard shows the ML architecture
-components (XGBoost, LSTM, SHAP,
-Recommender) and key system metrics:
-50 Rwandan foods, 4 CKD stages,
-1,862 NHANES training patients.
+### Dashboard
+**Dashboard:** The dashboard shows the ML architecture overview, 50-food database stats, and 1,862 NHANES training patients.
 
 ### Food Explorer
-![Food Explorer](outputs/screenshots/02_food_explorer.png)
-
-Browse and search 50 verified Rwandan
-foods in English, French, and Kinyarwanda.
-Color-coded potassium safety ratings
-based on KDOQI 2020 thresholds.
+**Food Explorer:** Trilingual search across 50 Rwandan foods with potassium color coding and radar charts.
 
 ### Risk Assessment
-![Risk Assessment](outputs/screenshots/03_risk_assessment.png)
-
-Log foods eaten by gram weight.
-The system calculates total nutrient
-intake and classifies dietary risk
-as HIGH, MODERATE, or LOW based on
-the patient's CKD stage and KDOQI limits.
+**Risk Assessment:** Stage-aware meal builder with rule-based HIGH/MODERATE/LOW risk classification.
 
 ### Risk Result with Recommendations
-![Risk Result](outputs/screenshots/04_risk_result.png)
-
-After assessment the system shows
-which nutrients are at risk and
-recommends safer Rwandan food
-alternatives within the same
-food category.
+**Risk Result:** Per-nutrient breakdown with KDOQI limit reference lines and smart food substitutions.
 
 ### Daily Meal Tracking
-![Daily Tracking](outputs/screenshots/05_daily_tracking.png)
-
-Track multiple meals across the day.
-Running daily totals show cumulative
-nutrient intake against safe limits
-with color-coded progress indicators.
+**Daily Tracking:** Running cumulative daily totals with color-coded progress against stage limits.
 
 ### Data Visualizations
 Key findings from the NHANES CKD
@@ -192,6 +200,9 @@ cohort analysis:
 ![Nutrient Intake by Stage](outputs/figures/03_nutrient_intake_by_stage.png)
 ![Spearman Correlation](outputs/figures/08_spearman_correlation.png)
 ![Exceedance Rates](outputs/figures/09_exceedance_rates.png)
+
+## Video Demo
+[Link to be added before submission]
 
 ## Author
 ISIMBI TUZINDE Jade Keslie

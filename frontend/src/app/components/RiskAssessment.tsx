@@ -15,8 +15,6 @@ interface RiskAssessmentProps {
   theme: Record<string, string>;
 }
 
-const DEFAULT_BODY_WEIGHT_KG = 65;
-
 const STAGE_META: Record<CKDStage, { label: string; gfr: string }> = {
   G2: { label: 'Mildly decreased', gfr: '60–89' },
   G3a: { label: 'Mild to moderate decrease', gfr: '45–59' },
@@ -24,12 +22,12 @@ const STAGE_META: Record<CKDStage, { label: string; gfr: string }> = {
   G4: { label: 'Severe decrease', gfr: '15–29' },
 };
 
-function getStageLimits(stage: CKDStage) {
+function getStageLimits(stage: CKDStage, bodyWeightKg: number) {
   const t = STAGE_THRESHOLDS[stage];
   return {
     potassium: t.potassium,
     phosphorus: t.phosphorus,
-    protein: t.protein * DEFAULT_BODY_WEIGHT_KG,
+    protein: t.protein * bodyWeightKg,
     sodium: t.sodium,
     label: STAGE_META[stage].label,
     gfr: STAGE_META[stage].gfr,
@@ -173,6 +171,7 @@ const MEAL_TYPES: MealEntry['mealType'][] = ['Breakfast', 'Lunch', 'Dinner', 'Sn
 
 export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
   const [stage,           setStage]           = useState<CKDStage>('G3a');
+  const [bodyWeightKg,    setBodyWeightKg]    = useState<number>(65);
   const [entries,         setEntries]         = useState<MealFoodItem[]>([]);
   const [result,          setResult]          = useState<ResultState | null>(null);
   const [error,           setError]           = useState('');
@@ -240,7 +239,7 @@ export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
     { potassium: 0, phosphorus: 0, protein: 0, sodium: 0 }
   );
 
-  const thresholds = getStageLimits(stage);
+  const thresholds = getStageLimits(stage, bodyWeightKg);
 
   const computeRisk = () => {
     if (entries.length === 0) { setError('Add at least one food item to assess this meal.'); return; }
@@ -346,9 +345,44 @@ export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
                 </button>
               ))}
             </div>
-            <div className="mt-3 p-3 rounded-xl" style={{ background: isDark ? 'rgba(46,134,171,0.08)' : 'rgba(46,134,171,0.07)', border: '1px solid rgba(46,134,171,0.18)' }}>
+            <div className="mt-3 p-3 rounded-xl" style={{ background: isDark ? 'rgba(46,134,171,0.08)' : 'rgba(46,134,171,0.07)', border: '1px solid rgba(46,134,171,0.18)', marginBottom: 24 }}>
               <p style={{ color: '#2E86AB', fontWeight: 600, fontSize: '0.78rem' }}>Stage {stage} — eGFR {thresholds.gfr} mL/min/1.73m²</p>
               <p style={{ color: theme.textSecondary, fontSize: '0.72rem', marginTop: 2 }}>{thresholds.label}</p>
+            </div>
+
+            <div style={{ marginBottom: 16, marginTop: 24 }}>
+              <div style={{ color: theme.text, fontWeight: 600, marginBottom: 14 }}>
+                Body Weight (kg)
+              </div>
+              <div className="mt-3 p-3 rounded-xl" style={{
+                background: isDark ? 'rgba(46,134,171,0.08)' : 'rgba(46,134,171,0.07)',
+                border: '1px solid rgba(46,134,171,0.18)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <input
+                    type="number"
+                    min={30}
+                    max={200}
+                    step={0.5}
+                    value={bodyWeightKg}
+                    onChange={(e) => setBodyWeightKg(parseFloat(e.target.value) || 65)}
+                    style={{
+                      width: 80,
+                      padding: '4px 10px',
+                      borderRadius: 8,
+                      border: '1px solid rgba(46,134,171,0.35)',
+                      background: isDark ? 'rgba(46,134,171,0.10)' : 'rgba(46,134,171,0.06)',
+                      color: '#2E86AB',
+                      fontWeight: 600,
+                      fontSize: '0.78rem',
+                      outline: 'none',
+                    }}
+                  />
+                  <p style={{ color: theme.textSecondary, fontSize: '0.72rem', margin: 0 }}>
+                    Used to calculate your protein limit
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
