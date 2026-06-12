@@ -93,7 +93,7 @@ CKD patients at α = 0.05:
 | Spearman Correlation | Inference | All 4 nutrients significant |
 | Exceedance Rate Analysis | Descriptive | G4: 28% exceed K limit |
 | Kruskal-Wallis | Inference | All 4 nutrients p < 0.001 |
-| McNemar Test | Inference | Infrastructure ready |
+| McNemar Test | Inference |  |
 
 Key finding: 66-75% of CKD patients
 exceed phosphorus limits regardless
