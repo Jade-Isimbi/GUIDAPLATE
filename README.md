@@ -222,8 +222,6 @@ Key findings from the NHANES 2017-2018 CKD cohort analysis:
 ![Nutrient Intake by Stage](outputs/figures/03_nutrient_intake_by_stage.png)
 ![SHAP Feature Importance](outputs/figures/17_shap_bar.png)
 ![Exceedance Rates](outputs/figures/09_exceedance_rates.png)
-![HMM Transition Matrix](outputs/figures/19_hmm_transition_matrix.png)
-![HMM State Distribution](outputs/figures/22_hmm_state_by_stage.png)
 
 ## Video Demo
 [Link to be added before submission]
