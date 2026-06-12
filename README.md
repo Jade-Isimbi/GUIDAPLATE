@@ -169,35 +169,61 @@ July 15: Final submission
 ## Designs
 
 ### Live React Frontend
-The GuidaPlate React frontend runs
-at http://localhost:5173
+The GuidaPlate React frontend runs at http://localhost:5173
 
-Built with React TypeScript, Shadcn UI,
-Tailwind CSS, and Recharts.
+Built with React TypeScript, Shadcn UI, Tailwind CSS, 
+and Recharts.
 
 ### Dashboard
-**Dashboard:** The dashboard shows the ML architecture overview, 50-food database stats, and 1,862 NHANES training patients.
+![Dashboard](outputs/screenshots/01_dashboard.png)
+
+The dashboard shows the ML architecture components 
+(XGBoost, LSTM, SHAP, Food Recommender), key system 
+metrics (50 Rwandan foods, 4 CKD stages, 1,862 NHANES 
+training patients), and the three-step user journey 
+(Explore Foods → Assess Risk → Get Recommendations).
 
 ### Food Explorer
-**Food Explorer:** Trilingual search across 50 Rwandan foods with potassium color coding and radar charts.
+![Food Explorer](outputs/screenshots/02_food_explorer.png)
+
+Browse and search 50 verified Rwandan foods in English, 
+French, and Kinyarwanda. Color-coded potassium safety 
+ratings based on KDOQI 2020 thresholds. Detailed food 
+panel with nutrient bars and radar chart.
 
 ### Meal Assessment
-**Meal Assessment:** Stage-aware meal builder with rule-based HIGH/MODERATE/LOW risk classification.
+![Meal Assessment](outputs/screenshots/03_risk_assessment.png)
+
+Log foods eaten by gram weight. Select CKD stage and 
+enter body weight. The system calculates total nutrient 
+intake and classifies dietary risk as HIGH, MODERATE, 
+or LOW based on the patient's CKD stage and KDOQI limits.
 
 ### Risk Result with Recommendations
-**Risk Result:** Per-nutrient breakdown with KDOQI limit reference lines and smart food substitutions.
+![Risk Result](outputs/screenshots/04_risk_result.png)
+
+After assessment the system shows which nutrients are 
+at risk, SHAP-identified top contributing nutrient, 
+clinical alert if HIGH RISK confidence exceeds threshold, 
+and safer Rwandan food alternatives within the same 
+food category.
 
 ### Daily Meal Tracking
-**Daily Tracking:** Running cumulative daily totals with color-coded progress against stage limits.
+![Daily Tracking](outputs/screenshots/05_daily_tracking.png)
+
+Track multiple meals across the day. Running daily totals 
+show cumulative nutrient intake against safe limits with 
+color-coded progress indicators.
 
 ### Data Visualizations
-Key findings from the NHANES CKD
-cohort analysis:
+Key findings from the NHANES 2017-2018 CKD cohort analysis:
 
 ![CKD Stage Distribution](outputs/figures/01_ckd_stage_distribution.png)
 ![Nutrient Intake by Stage](outputs/figures/03_nutrient_intake_by_stage.png)
-![Spearman Correlation](outputs/figures/08_spearman_correlation.png)
+![SHAP Feature Importance](outputs/figures/17_shap_bar.png)
 ![Exceedance Rates](outputs/figures/09_exceedance_rates.png)
+![HMM Transition Matrix](outputs/figures/19_hmm_transition_matrix.png)
+![HMM State Distribution](outputs/figures/22_hmm_state_by_stage.png)
 
 ## Video Demo
 [Link to be added before submission]
