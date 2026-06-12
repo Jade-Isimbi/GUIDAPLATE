@@ -223,9 +223,6 @@ Key findings from the NHANES 2017-2018 CKD cohort analysis:
 ![SHAP Feature Importance](outputs/figures/17_shap_bar.png)
 ![Exceedance Rates](outputs/figures/09_exceedance_rates.png)
 
-## Video Demo
-[Link to be added before submission]
-
 ## Author
 ISIMBI TUZINDE Jade Keslie
 
