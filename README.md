@@ -175,16 +175,14 @@ at http://localhost:5173
 Built with React TypeScript, Shadcn UI,
 Tailwind CSS, and Recharts.
 
-> Screenshots will be provided in the video demo submission (see Video Demo link below).
-
 ### Dashboard
 **Dashboard:** The dashboard shows the ML architecture overview, 50-food database stats, and 1,862 NHANES training patients.
 
 ### Food Explorer
 **Food Explorer:** Trilingual search across 50 Rwandan foods with potassium color coding and radar charts.
 
-### Risk Assessment
-**Risk Assessment:** Stage-aware meal builder with rule-based HIGH/MODERATE/LOW risk classification.
+### Meal Assessment
+**Meal Assessment:** Stage-aware meal builder with rule-based HIGH/MODERATE/LOW risk classification.
 
 ### Risk Result with Recommendations
 **Risk Result:** Per-nutrient breakdown with KDOQI limit reference lines and smart food substitutions.
