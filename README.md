@@ -1,6 +1,6 @@
 # GuidaPlate
 
-An AI-powered dietary decision-support system
+GuidaPlate is a BSc Software Engineering capstone project developed at African Leadership University. It combines a curated database of 50 commonly consumed Rwandan foods — sourced primarily from the Kenya Food Composition Tables 2018 with USDA FoodData Central as a secondary source  statistical analysis of 1,862 NHANES CKD patients, and three machine learning models — XGBoost for daily dietary risk classification, LSTM for meal sequence pattern analysis, and SHAP for clinical explainability  to provide stage-specific dietary guidance grounded in KDOQI 2020 and KDIGO 2024 clinical guidelines. The system targets CKD patients at stages G2 through G4 in Rwanda, where access to specialist renal dietary support remains limited, and delivers risk assessments and food substitution recommendations in English, French, and Kinyarwanda.
 for CKD patients in Rwanda.
 
 ## GitHub Repository
@@ -297,6 +297,10 @@ Key findings from the NHANES 2017-2018 CKD cohort analysis:
 ## Author
 
 ISIMBI TUZINDE Jade Keslie
+
+## GitHub Repo
+
+https://github.com/Jade-Isimbi/GUIDAPLATE
 
 ## Clinical Disclaimer
 
