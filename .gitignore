@@ -50,3 +50,4 @@ archive/
 !outputs/stats/*.csv
 !outputs/screenshots/
 !outputs/screenshots/*.png
+venv311/

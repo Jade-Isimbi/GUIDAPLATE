@@ -7,7 +7,7 @@ interface DashboardPageProps {
 }
 
 const metrics = [
-  { label: 'Rwandan Foods', value: '50', sub: 'in our database', color: '#2E86AB', icon: Database },
+  { label: 'Rwandan Foods', value: '386', sub: 'in our database', color: '#2E86AB', icon: Database },
   { label: 'Nutrients Tracked', value: '4', sub: 'key biomarkers', color: '#27AE60', icon: FlaskConical },
   { label: 'CKD Stages', value: '4 (G2-G4)', sub: 'clinical stages', color: '#F39C12', icon: Shield },
   { label: 'Risk Assessments', value: '1,862 NHANES patients', sub: 'training cohort', color: '#E74C3C', icon: Activity },

@@ -1,51 +1,387 @@
 food_id,english,french,kinyarwanda,category,meal_type,protein_g,potassium_mg,phosphorus_mg,sodium_mg,energy_kcal,preparation_method,source,ckd_stage_safe,notes
-1,sweet potatoes,Patate douce,Ibijumba,Starch,Any,1.1,101,25,4,101,boiled,Kenya FCT 2018,1-3,"High potassium 311mg — restrict stages 4,5"
-2,cassava,Manioc,Imyumbati,Starch,Lunch/Dinner,0.6,171,17,2,148,boiled,Kenya FCT 2018,1-4,Moderate potassium 250mg — limit at stage 5
-3,Irish potatoes,Pomme de terre,Ibirayi,Starch,Any,2,544,44,7,77,boiled/fried,USDA FDC,1-2,"Very high potassium 544mg — restrict stages 3,4,5"
-4,banana,Banane,Umuneke,Starch,Any,0.73,358,22,1,89,raw,USDA FDC,1-3,"High potassium 358mg — restrict stages 4,5"
-5,maize,Maïs,Ibigori,Grain,Breakfast/Any,2.9,226,73,2,146,boiled,Kenya FCT 2018,1-4,Moderate potassium 226mg — limit at stage 5
-6,rice,Riz,Umuceri,Grain,Lunch/Dinner,2.3,20,48,0,119,boiled,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
-7,sorghum,Sorgho,Amasaka,Grain,Breakfast/Any,3.4,129,117,2,140,boiled,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
-8,wheat,Blé,Ingano,Grain,Any,12.2,358,346,2,328,ground,Kenya FCT 2018,1-3,"High potassium 358mg — restrict stages 4,5"
-9,milk,Lait,Amata,Dairy,Any,3.2,136,96,46,70,raw,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
-10,beef meat,Bœuf,Inyama y'inka,Meat,Lunch/Dinner,28.7,230,194,67,197,boiled,Kenya FCT 2018,1-4,Moderate potassium 241mg — limit at stage 5
-11,fish,Poisson,Ifi,Fish,Lunch/Dinner,20.5,366,211,56,92,boiled,Kenya FCT 2018,1-3,"High potassium 366mg — restrict stages 4,5"
-12,ghee,Beurre clarifié,Amavuta y'inka,Fat/Oil,Cooking,0.3,5,3,2,900,refined,USDA FDC,1-5,Safe all stages — low nutrient content
-13,eggs,Oeufs,Amagi,Egg,Any,12.5,120,171,147,134,boiled,Kenya FCT 2018,1-4,Moderate potassium 147mg — limit at stage 5
-14,chicken meat,Poulet,inkoko,Meat,Lunch/Dinner,25.5,221,189,68,226,boiled,Kenya FCT 2018,1-4,Moderate potassium 221mg — limit at stage 5
-15,goat meat,Viande de chèvre,Inyama y'ihene,Meat,Lunch/Dinner,28.4,335,211,73,174,boiled,Kenya FCT 2018,1-3,"High potassium 335mg — restrict stages 4,5"
-16,cassava leaves,Feuilles de manioc,Isombe,Vegetable,Lunch/Dinner,5.8,321,66,7,36,boiled,USDA FDC,1-3,"High potassium 321mg — restrict stages 4,5"
-17,beans,Haricots secs,Ibishyimbo,Legume,Lunch/Dinner,7.9,319,138,3,117,boiled,Kenya FCT 2018,1-3,"High potassium 319mg — restrict stages 4,5"
-18,peas,Pois secs,Amashaza,Legume,Lunch/Dinner,7.9,249,108,4,93,boiled,Kenya FCT 2018,1-4,Moderate potassium 249mg — limit at stage 5
-19,yams,Ignames,Amateke,Starch,Lunch/Dinner,1.5,248,60,6,118,boiled,Kenya FCT 2018,1-3,"High potassium 308mg — restrict stages 4,5"
-20,groundnuts,Arachides,Ubunyobwa,Legume,Any,26.2,680,370,6,593,roasted,Kenya FCT 2018,1-2,"Very high potassium 680mg — restrict stages 3,4,5"
-21,sugar cane,Canne à sucre,Igisheke,Starch,Any,0.1,12,4,1,37,raw,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
-22,soybeans,Soja,soya,Legume,Lunch/Dinner,34,1730,384,22,386,boiled,USDA FDC,1,Extremely high potassium 1730mg — avoid all CKD stages
-23,sunflower oil,Huile de tournesol,Amavuta y'igihwagari,Fat/Oil,Cooking,0,0,0,0,884,refined,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
-24,palm oil,Huile de palme,amamesa,Fat/Oil,Cooking,0,0,0,0,891,refined,USDA FDC,1-5,Safe all stages — low nutrient content
-25,tomatoes,Tomates,Inyanya,Vegetable,Any,1.1,221,28,4,22,raw,Kenya FCT 2018,1-4,Moderate potassium 221mg — limit at stage 5
-26,onions,Oignons,Ibitunguru,Vegetable,Any,1.2,149,32,4,42,raw,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
-27,spinach,Épinard,Epinari,Vegetable,Lunch/Dinner,2.4,300,27,18,27,boiled,Kenya FCT 2018,1-3,"High potassium 370mg — restrict stages 4,5"
-28,cabbage,Chou,Ishu,Vegetable,Any,1.1,148,21,6,18,boiled,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
-29,pumpkin,Citrouille,ibihaza,Vegetable,Lunch/Dinner,0.7,178,31,2,32,boiled,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
-30,plantains,Banane plantain,Imizuzu,Starch,Lunch/Dinner,0.8,260,24,4,97,boiled,Kenya FCT 2018,1-4,Moderate potassium 260mg — limit at stage 5
-31,mangoes,Mangues,umwembe,Fruit,Any,0.5,150,12,2,64,raw,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
-32,avocados,Avocats,Avoka,Fruit,Any,1.6,400,37,5,185,raw,Kenya FCT 2018,1-3,"High potassium 400mg — restrict stages 4,5"
-33,pineapples,Ananas,Inanasi,Fruit,Any,0.5,114,9,1,41,raw,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
-34,passion fruit,Fruit de la passion,amatunda,Fruit,Any,0.9,165,13,5,42,raw,USDA FDC,1-5,Safe all stages — low nutrient content
-35,oranges,Oranges,amaronji,Fruit,Any,0.7,148,16,3,42,raw,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
-36,papaya,Papaye,ipapayi,Fruit,Any,0.5,210,11,3,36,raw,Kenya FCT 2018,1-4,Moderate potassium 210mg — limit at stage 5
-37,coffee,Café,Ikawa,Beverage,Breakfast/Any,0.1,37,3,2,2,brewed,USDA FDC,1-5,Safe all stages — low nutrient content
-38,tea,Thé,Icyayi,Beverage,Breakfast/Any,0,37,1,1,1,brewed,USDA FDC,1-5,Safe all stages — low nutrient content
-39,green beans,haricots verts,imiteja,Vegetable,Lunch/Dinner,1.8,209,38,6,31,boiled,USDA FDC,1-4,Moderate potassium 209mg — limit at stage 5
-40,millet,Mil,uburo,Grain,Breakfast/Any,11,195,285,5,378,ground/boiled,USDA FDC,1-5,Safe all stages — low nutrient content
-41,honey,Miel,Ubuki,Other,Any,0.4,52,4,4,304,raw,USDA FDC,1-5,Safe all stages — low nutrient content
-42,sour milk,Lait fermenté,Ikivuguto,Dairy,Any,3.3,140,87,40,61,fermented,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
-43,eggplant,Aubergine,ikibiringanya,Vegetable,Lunch/Dinner,0.8,211,21,2,27,boiled,Kenya FCT 2018,1-4,Moderate potassium 211mg — limit at stage 5
-44,carrot,Carotte,Karoti,Vegetable,Any,0.7,231,30,31,30,boiled,Kenya FCT 2018,1-4,Moderate potassium 231mg — limit at stage 5
-45,pork,Porc,Inyama y'ingurube,Meat,Lunch/Dinner,28.3,321,220,62,374,boiled,Kenya FCT 2018,1-3,"High potassium 321mg — restrict stages 4,5"
-46,amaranth leave,Feuilles d'amarante,dodo,Vegetable,Lunch/Dinner,3.1,251,40,10,38,boiled,Kenya FCT 2018,1-4,Moderate potassium 251mg — limit at stage 5
-47,watermelon,Pastèque,Watermelon,Fruit,Any,0.61,112,11,1,30,raw,USDA FDC,1-5,Safe all stages — low nutrient content
-48,olive oil,Huile d'olive,amavuta ya elayo,Fat/Oil,Cooking,0,0,0,0,884,refined,USDA FDC,1-5,Safe all stages — low nutrient content
-49,lemons,Citrons,Indimu,Fruit,Any,1.1,138,16,2,29,raw,USDA FDC,1-5,Safe all stages — low nutrient content
-50,apples,Pomme,Amapome,Fruit,Any,0.3,107,11,1,52,raw,USDA FDC,1-5,Safe all stages — low nutrient content
+1,sweet potatoes,Patate douce,Ibijumba,Starch,Any,1.1,101.0,25.0,4.0,101.0,boiled,Kenya FCT 2018,1-3,"High potassium 311mg — restrict stages 4,5"
+2,cassava,Manioc,Imyumbati,Starch,Lunch/Dinner,0.6,171.0,17.0,2.0,148.0,boiled,Kenya FCT 2018,1-4,Moderate potassium 250mg — limit at stage 5
+3,Irish potatoes,Pomme de terre,Ibirayi,Starch,Any,2.0,544.0,44.0,7.0,77.0,boiled/fried,USDA FDC,1-2,"Very high potassium 544mg — restrict stages 3,4,5"
+4,banana,Banane,Umuneke,Starch,Any,0.73,358.0,22.0,1.0,89.0,raw,USDA FDC,1-3,"High potassium 358mg — restrict stages 4,5"
+5,maize,Maïs,Ibigori,Grain,Breakfast/Any,2.9,226.0,73.0,2.0,146.0,boiled,Kenya FCT 2018,1-4,Moderate potassium 226mg — limit at stage 5
+6,rice,Riz,Umuceri,Grain,Lunch/Dinner,2.3,20.0,48.0,0.0,119.0,boiled,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+7,sorghum,Sorgho,Amasaka,Grain,Breakfast/Any,3.4,129.0,117.0,2.0,140.0,boiled,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+8,wheat,Blé,Ingano,Grain,Any,12.2,358.0,346.0,2.0,328.0,ground,Kenya FCT 2018,1-3,"High potassium 358mg — restrict stages 4,5"
+9,milk,Lait,Amata,Dairy,Any,3.2,136.0,96.0,46.0,70.0,raw,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+10,beef meat,Bœuf,Inyama y'inka,Meat,Lunch/Dinner,28.7,230.0,194.0,67.0,197.0,boiled,Kenya FCT 2018,1-4,Moderate potassium 241mg — limit at stage 5
+11,fish,Poisson,Ifi,Fish,Lunch/Dinner,20.5,366.0,211.0,56.0,92.0,boiled,Kenya FCT 2018,1-3,"High potassium 366mg — restrict stages 4,5"
+12,ghee,Beurre clarifié,Amavuta y'inka,Fat/Oil,Cooking,0.3,5.0,3.0,2.0,900.0,refined,USDA FDC,1-5,Safe all stages — low nutrient content
+13,eggs,Oeufs,Amagi,Egg,Any,12.5,120.0,171.0,147.0,134.0,boiled,Kenya FCT 2018,1-4,Moderate potassium 147mg — limit at stage 5
+14,chicken meat,Poulet,inkoko,Meat,Lunch/Dinner,25.5,221.0,189.0,68.0,226.0,boiled,Kenya FCT 2018,1-4,Moderate potassium 221mg — limit at stage 5
+15,goat meat,Viande de chèvre,Inyama y'ihene,Meat,Lunch/Dinner,28.4,335.0,211.0,73.0,174.0,boiled,Kenya FCT 2018,1-3,"High potassium 335mg — restrict stages 4,5"
+16,cassava leaves,Feuilles de manioc,Isombe,Vegetable,Lunch/Dinner,5.8,321.0,66.0,7.0,36.0,boiled,USDA FDC,1-3,"High potassium 321mg — restrict stages 4,5"
+17,beans,Haricots secs,Ibishyimbo,Legume,Lunch/Dinner,7.9,319.0,138.0,3.0,117.0,boiled,Kenya FCT 2018,1-3,"High potassium 319mg — restrict stages 4,5"
+18,peas,Pois secs,Amashaza,Legume,Lunch/Dinner,7.9,249.0,108.0,4.0,93.0,boiled,Kenya FCT 2018,1-4,Moderate potassium 249mg — limit at stage 5
+19,yams,Ignames,Amateke,Starch,Lunch/Dinner,1.5,248.0,60.0,6.0,118.0,boiled,Kenya FCT 2018,1-3,"High potassium 308mg — restrict stages 4,5"
+20,groundnuts,Arachides,Ubunyobwa,Legume,Any,26.2,680.0,370.0,6.0,593.0,roasted,Kenya FCT 2018,1-2,"Very high potassium 680mg — restrict stages 3,4,5"
+21,sugar cane,Canne à sucre,Igisheke,Starch,Any,0.1,12.0,4.0,1.0,37.0,raw,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+22,soybeans,Soja,soya,Legume,Lunch/Dinner,34.0,1730.0,384.0,22.0,386.0,boiled,USDA FDC,1,Extremely high potassium 1730mg — avoid all CKD stages
+23,sunflower oil,Huile de tournesol,Amavuta y'igihwagari,Fat/Oil,Cooking,0.0,0.0,0.0,0.0,884.0,refined,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+24,palm oil,Huile de palme,amamesa,Fat/Oil,Cooking,0.0,0.0,0.0,0.0,891.0,refined,USDA FDC,1-5,Safe all stages — low nutrient content
+25,tomatoes,Tomates,Inyanya,Vegetable,Any,1.1,221.0,28.0,4.0,22.0,raw,Kenya FCT 2018,1-4,Moderate potassium 221mg — limit at stage 5
+26,onions,Oignons,Ibitunguru,Vegetable,Any,1.2,149.0,32.0,4.0,42.0,raw,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+27,spinach,Épinard,Epinari,Vegetable,Lunch/Dinner,2.4,300.0,27.0,18.0,27.0,boiled,Kenya FCT 2018,1-3,"High potassium 370mg — restrict stages 4,5"
+28,cabbage,Chou,Ishu,Vegetable,Any,1.1,148.0,21.0,6.0,18.0,boiled,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+29,pumpkin,Citrouille,ibihaza,Vegetable,Lunch/Dinner,0.7,178.0,31.0,2.0,32.0,boiled,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+30,plantains,Banane plantain,Imizuzu,Starch,Lunch/Dinner,0.8,260.0,24.0,4.0,97.0,boiled,Kenya FCT 2018,1-4,Moderate potassium 260mg — limit at stage 5
+31,mangoes,Mangues,umwembe,Fruit,Any,0.5,150.0,12.0,2.0,64.0,raw,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+32,avocados,Avocats,Avoka,Fruit,Any,1.6,400.0,37.0,5.0,185.0,raw,Kenya FCT 2018,1-3,"High potassium 400mg — restrict stages 4,5"
+33,pineapples,Ananas,Inanasi,Fruit,Any,0.5,114.0,9.0,1.0,41.0,raw,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+34,passion fruit,Fruit de la passion,amatunda,Fruit,Any,0.9,165.0,13.0,5.0,42.0,raw,USDA FDC,1-5,Safe all stages — low nutrient content
+35,oranges,Oranges,amaronji,Fruit,Any,0.7,148.0,16.0,3.0,42.0,raw,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+36,papaya,Papaye,ipapayi,Fruit,Any,0.5,210.0,11.0,3.0,36.0,raw,Kenya FCT 2018,1-4,Moderate potassium 210mg — limit at stage 5
+37,coffee,Café,Ikawa,Beverage,Breakfast/Any,0.1,37.0,3.0,2.0,2.0,brewed,USDA FDC,1-5,Safe all stages — low nutrient content
+38,tea,Thé,Icyayi,Beverage,Breakfast/Any,0.0,37.0,1.0,1.0,1.0,brewed,USDA FDC,1-5,Safe all stages — low nutrient content
+39,green beans,haricots verts,imiteja,Vegetable,Lunch/Dinner,1.8,209.0,38.0,6.0,31.0,boiled,USDA FDC,1-4,Moderate potassium 209mg — limit at stage 5
+40,millet,Mil,uburo,Grain,Breakfast/Any,11.0,195.0,285.0,5.0,378.0,ground/boiled,USDA FDC,1-5,Safe all stages — low nutrient content
+41,honey,Miel,Ubuki,Other,Any,0.4,52.0,4.0,4.0,304.0,raw,USDA FDC,1-5,Safe all stages — low nutrient content
+42,sour milk,Lait fermenté,Ikivuguto,Dairy,Any,3.3,140.0,87.0,40.0,61.0,fermented,Kenya FCT 2018,1-5,Safe all stages — low nutrient content
+43,eggplant,Aubergine,ikibiringanya,Vegetable,Lunch/Dinner,0.8,211.0,21.0,2.0,27.0,boiled,Kenya FCT 2018,1-4,Moderate potassium 211mg — limit at stage 5
+44,carrot,Carotte,Karoti,Vegetable,Any,0.7,231.0,30.0,31.0,30.0,boiled,Kenya FCT 2018,1-4,Moderate potassium 231mg — limit at stage 5
+45,pork,Porc,Inyama y'ingurube,Meat,Lunch/Dinner,28.3,321.0,220.0,62.0,374.0,boiled,Kenya FCT 2018,1-3,"High potassium 321mg — restrict stages 4,5"
+46,amaranth leave,Feuilles d'amarante,dodo,Vegetable,Lunch/Dinner,3.1,251.0,40.0,10.0,38.0,boiled,Kenya FCT 2018,1-4,Moderate potassium 251mg — limit at stage 5
+47,watermelon,Pastèque,Watermelon,Fruit,Any,0.61,112.0,11.0,1.0,30.0,raw,USDA FDC,1-5,Safe all stages — low nutrient content
+48,olive oil,Huile d'olive,amavuta ya elayo,Fat/Oil,Cooking,0.0,0.0,0.0,0.0,884.0,refined,USDA FDC,1-5,Safe all stages — low nutrient content
+49,lemons,Citrons,Indimu,Fruit,Any,1.1,138.0,16.0,2.0,29.0,raw,USDA FDC,1-5,Safe all stages — low nutrient content
+50,apples,Pomme,Amapome,Fruit,Any,0.3,107.0,11.0,1.0,52.0,raw,USDA FDC,1-5,Safe all stages — low nutrient content
+51,"Almond butter, creamy",,,Other,Any,20.79,745.4,506.9,1.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 745mg - restrict stages 2,3,4,5"
+52,"Almond milk, unsweetened, plain, refrigerated",,,Other,Any,0.66,49.3,19.1,59.2,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+53,"Almond milk, unsweetened, plain, shelf stable",,,Other,Any,0.55,30.8,29.9,59.6,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+54,"Anchovies, canned in olive oil, with salt, drained",,,Other,Any,26.94,297.8,225.7,5403.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 298mg - restrict stages 4,5"
+55,"Apple juice, with added vitamin C, from concentrate, shelf stable",,,Other,Any,0.09,95.9,6.0,4.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+56,"Apples, fuji, with skin, raw",,,Other,Any,0.15,104.0,10.0,1.0,65.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+57,"Apples, gala, with skin, raw",,,Other,Any,0.13,106.0,8.0,0.0,61.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+58,"Apples, granny smith, with skin, raw",,,Other,Any,0.27,116.0,10.0,0.0,59.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+59,"Apples, honeycrisp, with skin, raw",,,Other,Any,0.1,98.0,8.0,0.0,60.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+60,"Apples, red delicious, with skin, raw",,,Other,Any,0.19,95.0,9.0,0.0,62.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+61,"Applesauce, unsweetened, with added vitamin C",,,Other,Any,0.27,107.7,9.1,0.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+62,"Apricot, with skin, raw",,,Other,Any,0.96,231.4,22.5,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 231mg - limit at stage 5
+63,"Arugula, baby, raw",,,Other,Any,1.65,406.8,51.2,86.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 407mg - restrict stages 3,4,5"
+64,"Asparagus, green, raw",,,Other,Any,1.44,277.5,53.9,2.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 278mg - restrict stages 4,5"
+65,"Avocado, Hass, peeled, raw",,,Other,Any,1.81,576.4,42.4,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 576mg - restrict stages 2,3,4,5"
+66,"Bananas, ripe and slightly ripe, raw",,,Other,Any,0.74,326.0,22.0,0.0,97.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 326mg - restrict stages 4,5"
+67,"Beans, black, canned, sodium added, drained and rinsed",,,Other,Any,6.91,253.1,91.0,217.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 253mg - restrict stages 4,5"
+68,"Beans, cannellini, canned, sodium added, drained and rinsed",,,Other,Any,7.41,202.6,94.7,164.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 203mg - limit at stage 5
+69,"Beans, cannellini, dry",,,Other,Any,21.56,1424.0,412.3,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 1424mg - restrict stages 2,3,4,5"
+70,"Beans, great northern, canned, sodium added, drained and rinsed",,,Other,Any,7.03,213.1,88.6,223.1,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 213mg - limit at stage 5
+71,"Beans, kidney, dark red, canned, sodium added, sugar added, drained and rinsed",,,Other,Any,7.8,226.9,104.1,172.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 227mg - limit at stage 5
+72,"Beans, kidney, light red, canned, sodium added, sugar added, drained and rinsed",,,Other,Any,7.31,209.4,93.6,158.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 209mg - limit at stage 5
+73,"Beans, navy, canned, sodium added, drained and rinsed",,,Other,Any,6.57,183.7,86.7,190.1,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 184mg - limit at stage 5
+74,"Beans, pinto, canned, sodium added, drained and rinsed",,,Other,Any,6.69,209.6,83.1,201.6,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 210mg - limit at stage 5
+75,"Beans, snap, green, canned, regular pack, drained solids",,,Other,Any,1.04,97.0,23.0,282.0,21.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+76,"Beans, snap, green, raw",,,Other,Any,1.97,290.4,41.1,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 290mg - restrict stages 4,5"
+77,"Beef, chuck, roast, boneless, choice, raw",,,Other,Any,18.4,281.1,151.0,48.4,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 281mg - restrict stages 4,5"
+78,"Beef, flank, steak, boneless, choice, raw",,,Other,Any,20.13,331.8,167.3,51.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 332mg - restrict stages 4,5"
+79,"Beef, ground, 80% lean meat / 20% fat, raw",,,Other,Any,17.53,273.3,144.4,54.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 273mg - restrict stages 4,5"
+80,"Beef, ground, 90% lean meat / 10% fat, raw",,,Other,Any,18.16,281.4,148.0,61.6,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 281mg - restrict stages 4,5"
+81,"Beef, loin, tenderloin roast, separable lean only, boneless, trimmed to 0"" fat, select, cooked, roasted",,,Other,Any,27.7,352.0,259.0,54.0,176.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 352mg - restrict stages 3,4,5"
+82,"Beef, loin, top loin steak, boneless, lip-on, separable lean only, trimmed to 1/8"" fat, choice, raw",,,Other,Any,22.8,282.0,206.0,45.0,155.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 282mg - restrict stages 4,5"
+83,"Beef, ribeye, steak, boneless, choice, raw",,,Other,Any,18.74,288.0,149.7,42.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 288mg - restrict stages 4,5"
+84,"Beef, round, eye of round roast, boneless, separable lean only, trimmed to 0"" fat, select, raw",,,Other,Any,23.4,312.0,222.0,50.0,122.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 312mg - restrict stages 4,5"
+85,"Beef, round, top round roast, boneless, separable lean only, trimmed to 0"" fat, select, raw",,,Other,Any,23.7,316.0,220.0,55.0,123.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 316mg - restrict stages 4,5"
+86,"Beef, round, top round, boneless, choice, raw",,,Other,Any,21.48,351.5,192.3,45.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 352mg - restrict stages 3,4,5"
+87,"Beef, short loin (NY strip steak), raw",,,Other,Any,21.32,323.0,171.4,43.1,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 323mg - restrict stages 4,5"
+88,"Beef, short loin, porterhouse steak, separable lean only, trimmed to 1/8"" fat, select, raw",,,Other,Any,22.7,266.0,200.0,43.0,145.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 266mg - restrict stages 4,5"
+89,"Beef, short loin, t-bone steak, bone-in, separable lean only, trimmed to 1/8"" fat, choice, cooked, grilled",,,Other,Any,27.3,283.0,211.0,67.0,219.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 283mg - restrict stages 4,5"
+90,"Beef, top sirloin steak, raw",,,Other,Any,21.98,349.4,193.1,42.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 349mg - restrict stages 4,5"
+91,"Beef, tenderloin steak, raw",,,Other,Any,21.09,344.7,189.7,44.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 345mg - restrict stages 4,5"
+92,"Beet greens, raw",,,Other,Any,1.61,368.7,26.8,280.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 369mg - restrict stages 3,4,5"
+93,"Beets, raw",,,Other,Any,1.69,341.5,33.6,111.6,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 342mg - restrict stages 4,5"
+94,"Bison, ground, raw",,,Other,Any,19.88,301.1,165.6,55.7,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 301mg - restrict stages 4,5"
+95,"Blackberries, raw",,,Other,Any,1.53,167.4,20.2,1.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 167mg - limit at stage 5
+96,"Blackeye pea, canned, sodium added, drained and rinsed",,,Other,Any,6.92,138.1,83.0,226.7,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+97,"Blackeye pea, dry",,,Other,Any,21.23,1243.0,427.6,3.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 1243mg - restrict stages 2,3,4,5"
+98,"Blueberries, raw",,,Other,Any,0.7,85.6,13.0,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+99,"Bread, white, commercially prepared",,,Other,Any,9.43,117.0,113.0,477.0,270.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 117mg - limit at stage 5
+100,"Bread, whole-wheat, commercially prepared",,,Other,Any,12.3,250.0,212.0,450.0,254.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 250mg - restrict stages 4,5"
+101,"Broccoli, raw",,,Other,Any,2.57,303.0,67.0,36.0,32.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 303mg - restrict stages 4,5"
+102,"Brussels sprouts, raw",,,Other,Any,3.98,476.8,78.5,25.7,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 477mg - restrict stages 3,4,5"
+103,"Buckwheat, whole grain",,,Other,Any,11.07,414.5,373.7,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 414mg - restrict stages 3,4,5"
+104,"Bulgur, dry, raw",,,Other,Any,11.76,358.3,312.1,2.2,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 358mg - restrict stages 3,4,5"
+105,"Buttermilk, low fat",,,Other,Any,3.46,158.0,92.2,92.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 158mg - limit at stage 5
+106,"Cabbage, bok choy, raw",,,Other,Any,1.02,227.8,30.5,14.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 228mg - limit at stage 5
+107,"Cabbage, green, raw",,,Other,Any,0.96,207.1,26.9,16.1,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 207mg - limit at stage 5
+108,"Cabbage, napa, leaf, destemmed, raw",,,Other,Any,1.06,234.6,34.4,12.7,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 235mg - limit at stage 5
+109,"Cabbage, red, raw",,,Other,Any,1.24,269.1,35.8,11.7,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 269mg - restrict stages 4,5"
+110,"Carrots, baby, raw",,,Other,Any,0.81,237.3,29.6,62.7,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 237mg - limit at stage 5
+111,"Carrots, frozen, unprepared",,,Other,Any,0.81,210.0,31.0,66.0,37.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 210mg - limit at stage 5
+112,"Carrots, frozen, unprepared (Includes foods for USDA's Food Distribution Program)",,,Other,Any,0.81,210.0,31.0,66.0,37.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 210mg - limit at stage 5
+113,"Carrots, mature, raw",,,Other,Any,0.94,279.6,39.8,86.7,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 280mg - restrict stages 4,5"
+114,"Cauliflower, raw",,,Other,Any,1.64,274.4,39.7,20.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 274mg - restrict stages 4,5"
+115,"Celery, raw",,,Other,Any,0.49,265.2,21.6,97.2,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 265mg - restrict stages 4,5"
+116,"Cheese, American, restaurant",,,Other,Any,17.5,173.0,380.0,1600.0,375.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 173mg - restrict stages 3,4,5"
+117,"Cheese, cheddar",,,Other,Any,23.3,77.0,458.0,654.0,408.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 77mg - restrict stages 3,4,5"
+118,"Cheese, cotija, solid",,,Other,Any,23.84,116.7,485.5,1625.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 117mg - restrict stages 3,4,5"
+119,"Cheese, cottage, lowfat, 2% milkfat",,,Other,Any,11.0,120.0,148.0,321.0,84.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 120mg - limit at stage 5
+120,"Cheese, dry white, queso seco",,,Other,Any,24.5,116.0,475.0,1810.0,326.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 116mg - restrict stages 3,4,5"
+121,"Cheese, feta, whole milk, crumbled",,,Other,Any,19.71,105.3,327.6,1034.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 105mg - restrict stages 3,4,5"
+122,"Cheese, monterey jack, solid",,,Other,Any,22.62,82.9,470.9,662.2,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 83mg - restrict stages 3,4,5"
+123,"Cheese, mozzarella, low moisture, part-skim",,,Other,Any,23.7,116.0,533.0,699.0,298.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 116mg - restrict stages 3,4,5"
+124,"Cheese, oaxaca, solid",,,Other,Any,22.14,80.7,380.4,734.2,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 81mg - restrict stages 3,4,5"
+125,"Cheese, parmesan, grated",,,Other,Any,29.6,184.0,634.0,1750.0,421.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 184mg - restrict stages 3,4,5"
+126,"Cheese, parmesan, grated, refrigerated",,,Other,Any,30.14,74.0,625.3,1046.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 74mg - restrict stages 3,4,5"
+127,"Cheese, pasteurized process cheese food or product, American, singles",,,Other,Any,15.57,211.8,880.0,1420.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 212mg - restrict stages 3,4,5"
+128,"Cheese, pasteurized process, American, vitamin D fortified",,,Other,Any,18.0,149.0,540.0,1660.0,366.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 149mg - restrict stages 3,4,5"
+129,"Cheese, provolone, sliced",,,Other,Any,23.45,94.8,494.1,600.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 95mg - restrict stages 3,4,5"
+130,"Cheese, queso fresco, solid",,,Other,Any,18.88,126.4,389.8,626.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 126mg - restrict stages 3,4,5"
+131,"Cheese, ricotta, whole milk",,,Other,Any,7.81,230.0,162.0,105.0,157.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 230mg - restrict stages 4,5"
+132,"Cheese, swiss",,,Other,Any,27.0,71.0,574.0,185.0,393.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 71mg - restrict stages 3,4,5"
+133,"Cherries, sweet, dark red, raw",,,Other,Any,1.04,229.6,23.2,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 230mg - limit at stage 5
+134,"Chia seeds, dry, raw",,,Other,Any,17.01,642.1,691.3,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 642mg - restrict stages 2,3,4,5"
+135,"Chicken, breast, boneless, skinless, raw",,,Other,Any,22.52,330.1,214.9,65.8,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 330mg - restrict stages 4,5"
+136,"Chicken, breast, meat and skin, raw",,,Other,Any,21.41,332.5,203.6,48.1,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 332mg - restrict stages 4,5"
+137,"Chicken, broiler or fryers, breast, skinless, boneless, meat only, cooked, braised",,,Other,Any,32.1,343.0,241.0,47.0,166.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 343mg - restrict stages 4,5"
+138,"Chicken, broilers or fryers, drumstick, meat only, cooked, braised",,,Other,Any,23.9,239.0,184.0,117.0,156.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 239mg - restrict stages 4,5"
+139,"Chicken, drumstick, meat and skin, raw",,,Other,Any,18.36,244.1,152.5,91.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 244mg - restrict stages 4,5"
+140,"Chicken, ground, with additives, raw",,,Other,Any,17.91,301.7,165.5,63.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 302mg - restrict stages 4,5"
+141,"Chicken, thigh, boneless, skinless, raw",,,Other,Any,18.61,271.8,178.3,62.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 272mg - restrict stages 4,5"
+142,"Chicken, thigh, meat and skin, raw",,,Other,Any,17.11,246.0,153.6,63.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 246mg - restrict stages 4,5"
+143,"Chicken, wing, meat and skin, raw",,,Other,Any,18.41,194.0,132.8,84.1,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 194mg - limit at stage 5
+144,"Chickpeas (garbanzo beans, bengal gram), canned, sodium added, drained and rinsed",,,Other,Any,7.02,136.8,86.5,201.7,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+145,"Chickpeas, (garbanzo beans, bengal gram), dry",,,Other,Any,21.27,1074.0,353.1,8.8,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 1074mg - restrict stages 2,3,4,5"
+146,"Cod, Pacific or Alaskan, frozen, wild caught",,,Other,Any,14.2,192.3,278.8,353.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 192mg - restrict stages 3,4,5"
+147,"Collards, raw",,,Other,Any,2.97,409.8,45.0,18.4,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 410mg - restrict stages 3,4,5"
+148,"Cookies, oatmeal, soft, with raisins",,,Other,Any,5.79,245.0,111.0,314.0,430.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 245mg - limit at stage 5
+149,"Corn flour, masa harina, white or yellow, dry, raw",,,Other,Any,7.56,276.6,241.1,2.7,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 277mg - restrict stages 4,5"
+150,"Corn, sweet, yellow and white kernels,  fresh, raw",,,Other,Any,2.79,237.0,75.5,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 237mg - limit at stage 5
+151,"Cottage cheese, full fat, large or small curd",,,Other,Any,11.62,123.6,154.0,349.8,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 124mg - restrict stages 4,5"
+152,"Cranberry juice, not fortified, from concentrate, shelf stable",,,Other,Any,0.0,70.6,3.3,6.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+153,"Cream cheese, full fat, block",,,Other,Any,5.79,124.8,107.7,367.8,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 125mg - limit at stage 5
+154,"Cream, heavy",,,Other,Any,2.02,96.9,57.0,20.6,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+155,"Cream, sour, full fat",,,Other,Any,3.07,153.8,102.0,50.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 154mg - limit at stage 5
+156,"Crustaceans, crab, blue swimming, lump, pasteurized, refrigerated",,,Other,Any,18.65,234.8,278.5,331.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 235mg - restrict stages 3,4,5"
+157,"Crustaceans, shrimp, farm raised, raw",,,Other,Any,15.57,145.9,190.6,474.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 146mg - restrict stages 4,5"
+158,"Cucumber, with peel, raw",,,Other,Any,0.62,169.6,23.2,1.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 170mg - limit at stage 5
+159,"Egg, white, dried",,,Other,Any,79.9,959.0,107.0,1250.0,376.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 959mg - restrict stages 2,3,4,5"
+160,"Egg, white, raw, frozen, pasteurized",,,Other,Any,10.1,130.0,0.0,144.0,48.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+161,"Egg, whole, dried",,,Other,Any,48.1,468.0,770.0,485.0,575.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 468mg - restrict stages 3,4,5"
+162,"Egg, whole, raw, frozen, pasteurized",,,Other,Any,12.3,117.0,189.0,121.0,150.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 117mg - restrict stages 4,5"
+163,"Egg, yolk, dried",,,Other,Any,34.2,231.0,982.0,149.0,654.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 231mg - restrict stages 3,4,5"
+164,"Egg, yolk, raw, frozen, pasteurized",,,Other,Any,15.6,102.0,443.0,66.0,296.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 102mg - restrict stages 3,4,5"
+165,"Eggplant, raw",,,Other,Any,0.85,222.1,22.8,0.4,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 222mg - limit at stage 5
+166,"Eggs, Grade A, Large, egg whole",,,Other,Any,12.4,132.0,184.0,129.0,148.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 132mg - restrict stages 4,5"
+167,"Einkorn, grain, dry, raw",,,Other,Any,15.12,431.8,435.8,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 432mg - restrict stages 3,4,5"
+168,"Farro, pearled, dry, raw",,,Other,Any,12.64,385.4,367.5,0.8,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 385mg - restrict stages 3,4,5"
+169,"Fennel, bulb, raw",,,Other,Any,0.92,332.4,33.4,49.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 332mg - restrict stages 4,5"
+170,"Figs, dried, uncooked",,,Other,Any,3.3,680.0,67.0,10.0,249.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 680mg - restrict stages 2,3,4,5"
+171,"Fish, catfish, farm raised, raw",,,Other,Any,16.47,292.3,166.2,60.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 292mg - restrict stages 4,5"
+172,"Fish, cod, Atlantic, wild caught, raw",,,Other,Any,16.07,245.1,224.1,298.8,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 245mg - restrict stages 4,5"
+173,"Fish, haddock, raw",,,Other,Any,16.3,286.0,227.0,213.0,74.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 286mg - restrict stages 4,5"
+174,"Fish, pollock, raw",,,Other,Any,12.3,160.0,284.0,333.0,56.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 160mg - restrict stages 3,4,5"
+175,"Fish, salmon, Atlantic, farm raised, raw",,,Other,Any,20.32,378.2,230.3,49.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 378mg - restrict stages 3,4,5"
+176,"Fish, salmon, sockeye, wild caught, raw",,,Other,Any,22.3,329.7,226.3,53.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 330mg - restrict stages 4,5"
+177,"Fish, tilapia, farm raised, raw",,,Other,Any,19.0,342.4,159.4,93.7,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 342mg - restrict stages 4,5"
+178,"Fish, tuna, light, canned in water, drained solids",,,Other,Any,19.0,176.0,137.0,219.0,90.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 176mg - limit at stage 5
+179,"Flaxseed, ground",,,Other,Any,18.04,793.4,556.4,36.7,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 793mg - restrict stages 2,3,4,5"
+180,"Flour, 00",,,Other,Any,11.4,135.5,106.2,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 136mg - limit at stage 5
+181,"Flour, almond",,,Other,Any,26.24,666.8,512.1,0.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 667mg - restrict stages 2,3,4,5"
+182,"Flour, amaranth",,,Other,Any,13.21,395.8,424.9,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 396mg - restrict stages 3,4,5"
+183,"Flour, barley",,,Other,Any,8.72,366.6,234.4,20.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 367mg - restrict stages 3,4,5"
+184,"Flour, bread, white, enriched, unbleached",,,Other,Any,14.3,127.0,124.0,3.0,363.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 127mg - limit at stage 5
+185,"Flour, buckwheat",,,Other,Any,8.88,378.1,281.9,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 378mg - restrict stages 3,4,5"
+186,"Flour, cassava",,,Other,Any,0.92,197.6,39.2,13.1,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 198mg - limit at stage 5
+187,"Flour, chestnut",,,Other,Any,5.29,1032.0,134.2,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 1032mg - restrict stages 2,3,4,5"
+188,"Flour, coconut",,,Other,Any,16.14,2088.0,507.2,46.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 2088mg - restrict stages 2,3,4,5"
+189,"Flour, corn, yellow, fine meal, enriched",,,Other,Any,6.2,144.0,92.0,0.0,364.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+190,"Flour, oat, whole grain",,,Other,Any,13.17,373.1,371.8,3.6,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 373mg - restrict stages 3,4,5"
+191,"Flour, pastry, unenriched, unbleached",,,Other,Any,8.75,142.0,102.0,1.0,358.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 142mg - limit at stage 5
+192,"Flour, potato",,,Other,Any,8.11,1269.0,197.3,47.7,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 1269mg - restrict stages 2,3,4,5"
+193,"Flour, quinoa",,,Other,Any,11.92,550.9,369.3,6.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 551mg - restrict stages 2,3,4,5"
+194,"Flour, rice, brown",,,Other,Any,7.19,265.0,319.0,1.0,365.2,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 265mg - restrict stages 3,4,5"
+195,"Flour, rice, glutinous",,,Other,Any,6.69,80.0,63.0,6.0,358.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+196,"Flour, rice, white, unenriched",,,Other,Any,6.94,75.0,94.0,5.0,359.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+197,"Flour, rye",,,Other,Any,8.4,434.0,280.3,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 434mg - restrict stages 3,4,5"
+198,"Flour, semolina, coarse and semi-coarse",,,Other,Any,11.73,173.8,129.8,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 174mg - limit at stage 5
+199,"Flour, semolina, fine",,,Other,Any,13.33,207.8,163.1,0.4,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 208mg - restrict stages 4,5"
+200,"Flour, sorghum",,,Other,Any,8.27,335.1,261.9,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 335mg - restrict stages 3,4,5"
+201,"Flour, soy, defatted",,,Other,Any,51.1,2480.0,726.0,2.0,366.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 2480mg - restrict stages 2,3,4,5"
+202,"Flour, soy, full-fat",,,Other,Any,38.6,1860.0,607.0,2.0,452.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 1860mg - restrict stages 2,3,4,5"
+203,"Flour, spelt, whole grain",,,Other,Any,14.47,349.8,361.7,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 350mg - restrict stages 3,4,5"
+204,"Flour, wheat, all-purpose, enriched, bleached",,,Other,Any,10.9,136.0,108.0,2.0,366.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 136mg - limit at stage 5
+205,"Flour, wheat, all-purpose, enriched, unbleached",,,Other,Any,13.1,135.0,115.0,4.0,358.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 135mg - limit at stage 5
+206,"Flour, wheat, all-purpose, unenriched, unbleached",,,Other,Any,12.0,150.0,134.0,2.0,362.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 150mg - limit at stage 5
+207,"Flour, whole wheat, unenriched",,,Other,Any,15.1,376.0,352.0,3.0,370.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 376mg - restrict stages 3,4,5"
+208,"Fonio, grain, dry, raw",,,Other,Any,7.17,43.8,93.2,3.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+209,"Frankfurter, beef, unheated",,,Other,Any,11.7,343.0,128.0,872.0,314.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 343mg - restrict stages 4,5"
+210,"Grape juice, purple, with added vitamin C, from concentrate, shelf stable",,,Other,Any,0.26,49.8,11.9,4.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+211,"Grape juice, white, with added vitamin C, from concentrate, shelf stable",,,Other,Any,0.09,49.0,12.6,7.2,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+212,"Grapefruit juice, red, not fortified, not from concentrate, refrigerated",,,Other,Any,0.57,128.3,14.6,1.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+213,"Grapefruit juice, white, canned or bottled, unsweetened",,,Other,Any,0.55,141.0,17.0,1.0,37.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+214,"Grapes, green, seedless, raw",,,Other,Any,0.9,218.1,22.0,3.2,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 218mg - limit at stage 5
+215,"Grapes, red, seedless, raw",,,Other,Any,0.91,229.4,24.9,7.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 229mg - limit at stage 5
+216,"Green onion, (scallion), bulb and greens, root removed, raw",,,Other,Any,0.67,232.0,27.9,9.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 232mg - limit at stage 5
+217,"Halibut, frozen, wild caught",,,Other,Any,19.06,430.2,216.8,108.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 430mg - restrict stages 3,4,5"
+218,"Ham, sliced, pre-packaged, deli meat (96%fat free, water added)",,,Other,Any,16.7,425.0,261.0,1040.0,106.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 425mg - restrict stages 3,4,5"
+219,"Ham, sliced, restaurant",,,Other,Any,19.6,484.0,246.0,1030.0,121.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 484mg - restrict stages 3,4,5"
+220,"Hummus, commercial",,,Other,Any,7.35,289.0,166.0,438.0,229.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 289mg - restrict stages 4,5"
+221,"Juice, pomegranate, from concentrate, shelf-stable",,,Other,Any,0.0,165.6,8.9,4.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 166mg - limit at stage 5
+222,"Juice, prune, shelf-stable",,,Other,Any,0.42,215.6,19.1,10.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 216mg - limit at stage 5
+223,"Juice, tart cherry, from concentrate, shelf-stable",,,Other,Any,0.15,169.8,16.1,1.4,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 170mg - limit at stage 5
+224,"Kale, frozen, cooked, boiled, drained, without salt",,,Other,Any,2.94,144.0,42.0,16.0,36.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+225,"Kale, raw",,,Other,Any,2.92,348.0,55.0,53.0,35.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 348mg - restrict stages 4,5"
+226,"Ketchup, restaurant",,,Other,Any,1.11,249.0,25.0,949.0,117.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 249mg - limit at stage 5
+227,"Khorasan, grain, dry, raw",,,Other,Any,14.76,450.5,370.8,3.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 450mg - restrict stages 3,4,5"
+228,"Kiwifruit (kiwi), green, peeled, raw",,,Other,Any,1.01,301.5,27.6,2.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 302mg - restrict stages 4,5"
+229,"Kiwifruit, green, raw",,,Other,Any,1.06,198.0,34.0,5.0,58.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 198mg - limit at stage 5
+230,"Lamb, ground, raw",,,Other,Any,17.46,272.1,155.8,53.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 272mg - restrict stages 4,5"
+231,"Leeks, bulb and greens, root removed, raw",,,Other,Any,1.47,319.0,34.6,17.7,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 319mg - restrict stages 4,5"
+232,"Lentils, dry",,,Other,Any,23.57,948.9,373.6,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 949mg - restrict stages 2,3,4,5"
+233,"Lettuce, iceberg, raw",,,Other,Any,0.74,139.3,19.2,16.1,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+234,"Lettuce, leaf, green, raw",,,Other,Any,1.09,277.1,26.6,28.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 277mg - restrict stages 4,5"
+235,"Lettuce, leaf, red, raw",,,Other,Any,0.88,321.4,24.4,24.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 321mg - restrict stages 4,5"
+236,"Lettuce, romaine, green, raw",,,Other,Any,0.98,260.4,23.4,23.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 260mg - restrict stages 4,5"
+237,"Lobster, tail only, frozen, wild caught",,,Other,Any,12.99,212.6,174.7,508.8,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 213mg - restrict stages 4,5"
+238,"Mahi mahi, frozen, wild caught",,,Other,Any,19.79,407.9,223.8,51.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 408mg - restrict stages 3,4,5"
+239,"Mandarin, seedless, peeled, raw",,,Other,Any,1.04,167.2,19.7,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 167mg - limit at stage 5
+240,"Mango, Ataulfo, peeled, raw",,,Other,Any,0.69,204.4,17.7,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 204mg - limit at stage 5
+241,"Mango, Tommy Atkins, peeled, raw",,,Other,Any,0.56,165.0,16.4,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 165mg - limit at stage 5
+242,"Melons, cantaloupe, raw",,,Other,Any,0.82,157.0,17.0,30.0,34.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 157mg - limit at stage 5
+243,"Melons, honeydew, raw",,,Other,Any,0.53,208.9,11.7,21.1,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 209mg - limit at stage 5
+244,"Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",,,Other,Any,3.38,159.0,103.0,39.0,43.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 159mg - limit at stage 5
+245,"Milk, nonfat, fluid, with added vitamin A and vitamin D (fat free or skim)",,,Other,Any,3.43,167.0,107.0,41.0,34.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 167mg - limit at stage 5
+246,"Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D",,,Other,Any,3.35,159.0,103.0,39.0,50.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 159mg - limit at stage 5
+247,"Milk, whole, 3.25% milkfat, with added vitamin D",,,Other,Any,3.28,150.0,101.0,38.0,60.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 150mg - limit at stage 5
+248,"Millet, whole grain",,,Other,Any,10.02,214.1,257.9,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 214mg - restrict stages 3,4,5"
+249,"Mushroom, beech",,,Other,Any,2.18,375.9,85.9,0.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 376mg - restrict stages 3,4,5"
+250,"Mushroom, crimini",,,Other,Any,3.09,380.3,100.5,4.6,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 380mg - restrict stages 3,4,5"
+251,"Mushroom, enoki",,,Other,Any,2.42,402.3,84.1,0.4,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 402mg - restrict stages 3,4,5"
+252,"Mushroom, king oyster",,,Other,Any,2.41,294.5,89.9,0.8,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 294mg - restrict stages 4,5"
+253,"Mushroom, lion's mane",,,Other,Any,2.5,443.3,94.0,0.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 443mg - restrict stages 3,4,5"
+254,"Mushroom, maitake",,,Other,Any,2.2,260.0,72.4,0.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 260mg - restrict stages 4,5"
+255,"Mushroom, oyster",,,Other,Any,2.9,281.6,86.2,1.1,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 282mg - restrict stages 4,5"
+256,"Mushroom, pioppini",,,Other,Any,3.5,392.4,120.6,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 392mg - restrict stages 3,4,5"
+257,"Mushroom, portabella",,,Other,Any,2.75,349.3,87.5,5.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 349mg - restrict stages 4,5"
+258,"Mushrooms, shiitake",,,Other,Any,2.41,243.0,75.8,0.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 243mg - limit at stage 5
+259,"Mushrooms, white button",,,Other,Any,2.89,373.0,93.0,6.4,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 373mg - restrict stages 3,4,5"
+260,"Mustard, prepared, yellow",,,Other,Any,4.25,150.0,108.0,1100.0,61.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 150mg - limit at stage 5
+261,"Nectarines, raw",,,Other,Any,1.06,131.0,26.0,13.0,39.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+262,"Nuts, almonds, dry roasted, with salt added",,,Other,Any,20.4,684.0,456.0,256.0,620.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 684mg - restrict stages 2,3,4,5"
+263,"Nuts, almonds, whole, raw",,,Other,Any,21.45,732.8,502.9,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 733mg - restrict stages 2,3,4,5"
+264,"Nuts, brazilnuts, raw",,,Other,Any,15.04,592.5,706.9,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 592mg - restrict stages 2,3,4,5"
+265,"Nuts, cashew nuts, raw",,,Other,Any,17.44,638.3,532.2,4.8,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 638mg - restrict stages 2,3,4,5"
+266,"Nuts, hazelnuts or filberts, raw",,,Other,Any,13.49,635.9,321.1,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 636mg - restrict stages 2,3,4,5"
+267,"Nuts, macadamia nuts, raw",,,Other,Any,7.79,372.6,208.4,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 373mg - restrict stages 3,4,5"
+268,"Nuts, pecans, halves, raw",,,Other,Any,9.96,360.3,252.7,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 360mg - restrict stages 3,4,5"
+269,"Nuts, pine nuts, raw",,,Other,Any,15.7,654.8,540.0,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 655mg - restrict stages 2,3,4,5"
+270,"Nuts, pistachio nuts, raw",,,Other,Any,20.51,947.0,499.6,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 947mg - restrict stages 2,3,4,5"
+271,"Nuts, walnuts, English, halves, raw",,,Other,Any,14.56,423.5,365.1,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 424mg - restrict stages 3,4,5"
+272,"Oat milk, unsweetened, plain, refrigerated",,,Other,Any,0.8,148.4,89.2,42.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+273,"Oats, whole grain, rolled, old fashioned",,,Other,Any,13.5,350.1,387.3,0.7,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 350mg - restrict stages 3,4,5"
+274,"Oats, whole grain, steel cut",,,Other,Any,12.51,375.9,417.3,0.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 376mg - restrict stages 3,4,5"
+275,"Oil, coconut",,,Other,Any,0.0,0.0,0.0,0.0,833.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+276,"Olives, green, Manzanilla, stuffed with pimiento",,,Other,Any,1.15,43.0,7.0,1620.0,130.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+277,"Onion rings, breaded, par fried, frozen, prepared, heated in oven",,,Other,Any,4.52,135.0,75.0,374.0,288.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+278,"Onions, red, raw",,,Other,Any,0.94,197.0,41.0,1.0,44.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 197mg - limit at stage 5
+279,"Onions, white, raw",,,Other,Any,0.89,141.0,29.0,2.0,35.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+280,"Onions, yellow, raw",,,Other,Any,0.83,182.0,34.0,1.0,38.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 182mg - limit at stage 5
+281,"Orange juice, no pulp, not fortified, from concentrate, refrigerated",,,Other,Any,0.73,179.5,18.1,5.2,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 180mg - limit at stage 5
+282,"Orange juice, no pulp, not fortified, not from concentrate, refrigerated",,,Other,Any,0.81,182.8,19.0,0.1,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 183mg - limit at stage 5
+283,"Oranges, raw, navels",,,Other,Any,0.91,166.0,23.0,9.0,47.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 166mg - limit at stage 5
+284,"Oranges, raw, navels (Includes foods for USDA's Food Distribution Program)",,,Other,Any,0.91,166.0,23.0,9.0,47.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 166mg - limit at stage 5
+285,"Parsnips, raw",,,Other,Any,1.27,492.6,62.5,0.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 493mg - restrict stages 3,4,5"
+286,"Pawpaw, peeled, seeded, raw",,,Other,Any,1.15,220.9,23.4,0.4,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 221mg - limit at stage 5
+287,"Peaches, yellow, raw",,,Other,Any,0.91,122.0,22.0,13.0,42.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+288,"Peanut butter, creamy",,,Other,Any,23.99,654.0,393.2,220.7,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 654mg - restrict stages 2,3,4,5"
+289,"Peanut butter, smooth style, with salt",,,Other,Any,22.5,564.0,339.0,429.0,597.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 564mg - restrict stages 2,3,4,5"
+290,"Peanuts, raw",,,Other,Any,23.2,635.6,380.4,1.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 636mg - restrict stages 2,3,4,5"
+291,"Pear, Anjou, green, with skin, raw",,,Other,Any,0.31,122.5,12.3,0.4,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+292,"Pears, raw, bartlett",,,Other,Any,0.38,87.0,10.0,7.0,57.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+293,"Pears, raw, bartlett (Includes foods for USDA's Food Distribution Program)",,,Other,Any,0.38,87.0,10.0,7.0,57.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+294,"Peas, green, sweet, canned, sodium added, sugar added, drained and rinsed",,,Other,Any,4.73,109.2,77.7,207.4,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+295,"Peppers, banana or Hungarian wax, seeded, raw",,,Other,Any,0.72,177.4,21.8,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 177mg - limit at stage 5
+296,"Peppers, bell, green, raw",,,Other,Any,0.71,163.1,16.8,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 163mg - limit at stage 5
+297,"Peppers, bell, orange, raw",,,Other,Any,0.88,200.8,26.6,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 201mg - limit at stage 5
+298,"Peppers, bell, red, raw",,,Other,Any,0.9,212.7,26.6,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 213mg - limit at stage 5
+299,"Peppers, bell, yellow, raw",,,Other,Any,0.82,197.3,24.8,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 197mg - limit at stage 5
+300,"Peppers, jalapeno, seeded, raw",,,Other,Any,0.62,166.9,19.1,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 167mg - limit at stage 5
+301,"Peppers, poblano, seeded, raw",,,Other,Any,1.43,191.6,22.4,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 192mg - limit at stage 5
+302,"Peppers, serrano, seeded, raw",,,Other,Any,0.86,224.5,24.2,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 224mg - limit at stage 5
+303,"Pickles, cucumber, dill or kosher dill",,,Other,Any,0.48,112.0,16.0,808.0,12.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+304,"Pineapple, raw",,,Other,Any,0.46,137.1,5.4,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+305,"Plantains, overripe, raw",,,Other,Any,1.17,408.2,28.9,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 408mg - restrict stages 3,4,5"
+306,"Plantains, ripe, raw",,,Other,Any,1.16,395.6,30.1,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 396mg - restrict stages 3,4,5"
+307,"Plantains, underripe, raw",,,Other,Any,1.23,406.3,27.9,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 406mg - restrict stages 3,4,5"
+308,"Plum, black, with skin, raw",,,Other,Any,0.58,186.3,18.6,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 186mg - limit at stage 5
+309,"Pork, belly, with skin, raw",,,Other,Any,15.2,207.9,113.9,49.7,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 208mg - limit at stage 5
+310,"Pork, chop, center cut, raw",,,Other,Any,22.81,366.5,202.3,39.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 366mg - restrict stages 3,4,5"
+311,"Pork, cured, bacon, cooked, restaurant",,,Other,Any,40.9,557.0,415.0,1830.0,500.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 557mg - restrict stages 2,3,4,5"
+312,"Pork, ground, raw",,,Other,Any,17.81,317.7,173.3,53.6,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 318mg - restrict stages 4,5"
+313,"Pork, loin, boneless, raw",,,Other,Any,21.12,361.2,196.8,40.2,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 361mg - restrict stages 3,4,5"
+314,"Pork, loin, tenderloin, boneless, raw",,,Other,Any,21.58,397.4,217.4,41.4,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 397mg - restrict stages 3,4,5"
+315,"Potatoes, gold, without skin, raw",,,Other,Any,1.81,445.8,57.0,2.2,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 446mg - restrict stages 3,4,5"
+316,"Potatoes, red, without skin, raw",,,Other,Any,2.06,472.0,55.6,2.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 472mg - restrict stages 3,4,5"
+317,"Potatoes, russet, without skin, raw",,,Other,Any,2.27,450.1,55.2,2.7,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 450mg - restrict stages 3,4,5"
+318,"Radicchio, raw",,,Other,Any,1.31,334.6,35.5,8.1,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 335mg - restrict stages 4,5"
+319,"Radishes, red, raw",,,Other,Any,0.66,197.8,17.9,51.2,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 198mg - limit at stage 5
+320,"Raspberries, raw",,,Other,Any,1.01,155.8,27.5,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 156mg - limit at stage 5
+321,"Restaurant, Chinese, fried rice, without meat",,,Other,Any,3.84,69.0,44.0,361.0,174.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+322,"Restaurant, Chinese, sweet and sour pork",,,Other,Any,8.88,152.0,133.0,304.0,260.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 152mg - limit at stage 5
+323,"Restaurant, Latino, pupusas con frijoles (pupusas, bean)",,,Other,Any,5.59,305.0,144.0,305.0,229.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 305mg - restrict stages 4,5"
+324,"Restaurant, Latino, tamale, pork",,,Other,Any,7.38,152.0,120.0,473.0,174.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 152mg - limit at stage 5
+325,"Rice, black, unenriched, raw",,,Other,Any,7.57,255.6,306.7,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 256mg - restrict stages 3,4,5"
+326,"Rice, brown, long grain, unenriched, raw",,,Other,Any,7.25,250.1,302.8,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 250mg - restrict stages 3,4,5"
+327,"Rice, red, unenriched, dry, raw",,,Other,Any,8.56,245.1,313.9,0.4,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 245mg - restrict stages 3,4,5"
+328,"Rice, white, long grain, unenriched, raw",,,Other,Any,7.04,82.3,108.2,0.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 82mg - limit at stage 5
+329,"Rutabaga, peeled, raw",,,Other,Any,0.89,266.6,38.9,4.6,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 267mg - restrict stages 4,5"
+330,"Sauce, pasta, spaghetti/marinara, ready-to-serve",,,Other,Any,1.41,319.0,34.0,419.0,45.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 319mg - restrict stages 4,5"
+331,"Sauce, salsa, ready-to-serve",,,Other,Any,1.44,258.0,32.0,656.0,29.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 258mg - restrict stages 4,5"
+332,"Sausage, Italian, pork, mild, cooked, pan-fried",,,Other,Any,18.2,310.0,145.0,766.0,322.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 310mg - restrict stages 4,5"
+333,"Sausage, breakfast sausage, beef, pre-cooked, unprepared",,,Other,Any,13.3,263.0,124.0,866.0,328.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 263mg - restrict stages 4,5"
+334,"Sausage, pork, chorizo, link or ground, cooked, pan-fried",,,Other,Any,19.3,435.0,207.0,983.0,346.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 435mg - restrict stages 3,4,5"
+335,"Sausage, turkey, breakfast links, mild, raw",,,Other,Any,16.7,310.0,178.0,599.0,169.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 310mg - restrict stages 4,5"
+336,"Scallops, bay, Patagonian, frozen, wild caught",,,Other,Any,16.39,292.0,229.1,252.4,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 292mg - restrict stages 4,5"
+337,"Scallops, sea, frozen, wild caught",,,Other,Any,13.51,244.9,214.0,313.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 245mg - restrict stages 4,5"
+338,"Sea bass, Chilean, frozen, wild caught",,,Other,Any,14.93,236.4,151.7,109.4,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 236mg - restrict stages 4,5"
+339,"Seeds, pumpkin seeds (pepitas), raw",,,Other,Any,29.91,691.2,1150.0,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 691mg - restrict stages 2,3,4,5"
+340,"Seeds, sunflower seed kernels, dry roasted, with salt added",,,Other,Any,21.0,689.0,750.0,532.0,612.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 689mg - restrict stages 2,3,4,5"
+341,"Seeds, sunflower seed, kernel, raw",,,Other,Any,18.87,656.8,732.0,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 657mg - restrict stages 2,3,4,5"
+342,"Sesame butter, creamy",,,Other,Any,19.71,407.7,719.3,63.6,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 408mg - restrict stages 3,4,5"
+343,"Shallots, bulb, peeled, root removed, raw",,,Other,Any,1.38,251.5,54.6,3.6,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 252mg - restrict stages 4,5"
+344,"Snapper, frozen, wild caught",,,Other,Any,20.66,348.8,199.0,93.1,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 349mg - restrict stages 4,5"
+345,"Snow crab, legs only, frozen  ",,,Other,Any,15.54,192.9,162.0,728.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 193mg - restrict stages 4,5"
+346,"Sorghum bran, white, unenriched, dry, raw",,,Other,Any,11.17,851.5,517.1,2.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 852mg - restrict stages 2,3,4,5"
+347,"Sorghum flour, white, pearled, unenriched, dry, raw",,,Other,Any,10.21,273.9,245.8,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 274mg - restrict stages 4,5"
+348,"Sorghum grain, white, pearled, unenriched, dry, raw",,,Other,Any,10.25,273.9,243.4,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 274mg - restrict stages 4,5"
+349,"Sorghum, whole grain, white, dry, raw",,,Other,Any,10.08,367.1,294.1,0.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 367mg - restrict stages 3,4,5"
+350,"Soy milk, sweetened, plain, refrigerated",,,Other,Any,2.78,117.9,46.0,39.4,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+351,"Soy milk, unsweetened, plain, shelf stable",,,Other,Any,3.55,158.2,68.7,34.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 158mg - limit at stage 5
+352,"Spinach, baby",,,Other,Any,2.85,581.8,39.0,111.4,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 582mg - restrict stages 2,3,4,5"
+353,"Spinach, mature",,,Other,Any,2.91,459.7,40.6,106.6,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 460mg - restrict stages 3,4,5"
+354,"Squash, pie pumpkin, peeled, seeded, raw",,,Other,Any,0.85,472.1,22.3,0.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 472mg - restrict stages 3,4,5"
+355,"Squash, spaghetti, peeled, seeded, raw",,,Other,Any,0.79,266.9,17.0,0.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 267mg - restrict stages 4,5"
+356,"Squash, summer, green, zucchini, includes skin, raw",,,Other,Any,0.98,225.8,32.9,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 226mg - limit at stage 5
+357,"Squash, summer, yellow, includes skin, raw",,,Other,Any,0.89,220.5,30.7,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 220mg - limit at stage 5
+358,"Squash, winter, acorn, raw",,,Other,Any,1.25,332.1,42.0,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 332mg - restrict stages 4,5"
+359,"Squash, winter, butternut, raw",,,Other,Any,1.15,329.1,26.5,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 329mg - restrict stages 4,5"
+360,"Squid (calamari), frozen, tubes only",,,Other,Any,8.81,9.5,63.8,271.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+361,"Strawberries, raw",,,Other,Any,0.64,89.0,20.0,10.0,31.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+362,"Sugars, granulated",,,Other,Any,0.0,2.0,0.0,1.0,385.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+363,"Sweet potatoes, orange flesh, without skin, raw",,,Other,Any,1.58,486.4,36.7,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 486mg - restrict stages 3,4,5"
+364,"Swordfish, frozen, wild caught",,,Other,Any,19.24,414.1,234.9,56.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 414mg - restrict stages 3,4,5"
+365,"Tomatillos, dehusked, raw",,,Other,Any,1.06,239.1,24.2,0.3,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 239mg - limit at stage 5
+366,"Tomato juice, with added ingredients, from concentrate, shelf stable",,,Other,Any,0.86,197.6,18.5,235.6,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 198mg - limit at stage 5
+367,"Tomato, paste, canned, without salt added",,,Other,Any,4.23,971.6,91.2,61.1,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1,"Very high potassium 972mg - restrict stages 2,3,4,5"
+368,"Tomato, puree, canned",,,Other,Any,1.58,416.4,34.1,29.4,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 416mg - restrict stages 3,4,5"
+369,"Tomato, roma",,,Other,Any,0.7,192.8,19.1,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 193mg - limit at stage 5
+370,"Tomato, sauce, canned, with salt added",,,Other,Any,1.35,355.5,29.2,416.9,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 356mg - restrict stages 3,4,5"
+371,"Tomatoes, canned, red, ripe, diced",,,Other,Any,0.84,198.0,18.0,125.0,18.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 198mg - limit at stage 5
+372,"Tomatoes, crushed, canned",,,Other,Any,1.44,345.6,32.9,139.8,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 346mg - restrict stages 4,5"
+373,"Tomatoes, grape, raw",,,Other,Any,0.83,260.0,28.0,6.0,27.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 260mg - restrict stages 4,5"
+374,"Tomatoes, whole, canned, solids and liquids, with salt added",,,Other,Any,0.87,202.9,17.3,111.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 203mg - limit at stage 5
+375,"Tuna, ahi or yellowfin, frozen, wild caught",,,Other,Any,24.7,420.2,270.8,94.4,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 420mg - restrict stages 3,4,5"
+376,"Turkey, ground, 93% lean, 7% fat, pan-broiled crumbles",,,Other,Any,27.1,304.0,259.0,90.0,220.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 304mg - restrict stages 3,4,5"
+377,"Turkey, ground, 93% lean/ 7% fat, raw",,,Other,Any,17.34,246.3,162.0,80.2,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 246mg - restrict stages 4,5"
+378,"Turnips, raw",,,Other,Any,0.95,262.1,31.3,12.8,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 262mg - restrict stages 4,5"
+379,"Watermelon, seedless, flesh only, raw",,,Other,Any,0.87,117.3,17.1,0.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-5,Safe all stages - low nutrient content
+380,"Watermelon, seedless, rind only, raw",,,Other,Any,0.53,272.5,20.7,3.8,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-3,"High potassium 272mg - restrict stages 4,5"
+381,"Wild rice, dry, raw",,,Other,Any,12.79,298.8,354.9,1.0,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-2,"High potassium 299mg - restrict stages 3,4,5"
+382,"Yogurt, Greek, plain, nonfat",,,Other,Any,10.3,141.0,136.0,36.0,61.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 141mg - limit at stage 5
+383,"Yogurt, Greek, plain, whole milk",,,Other,Any,8.78,146.9,125.9,33.8,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 147mg - limit at stage 5
+384,"Yogurt, Greek, strawberry, nonfat",,,Other,Any,8.06,133.0,113.0,32.0,83.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 133mg - limit at stage 5
+385,"Yogurt, plain, nonfat",,,Other,Any,4.23,210.5,127.0,51.5,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 210mg - limit at stage 5
+386,"Yogurt, plain, whole milk",,,Other,Any,3.82,164.1,101.2,41.8,0.0,Raw/as analyzed (USDA Foundation Foods),USDA FoodData Central (Foundation Foods),1-4,Moderate potassium 164mg - limit at stage 5

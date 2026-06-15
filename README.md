@@ -11,8 +11,8 @@ https://github.com/Jade-Isimbi/GUIDAPLATE
 
 Currently in active development.
 ML models trained and evaluated.
-React MVP running with 50-food
-Rwanda database connected.
+React MVP running with 386-food database connected
+(50 Rwanda-validated + 336 USDA Foundation Foods).
 
 ## What This System Does
 
@@ -85,6 +85,19 @@ See folder structure in documentation.
 - Kenya Food Composition Tables 2018
 - USDA FoodData Central
 - Rwanda National Food Balance Sheet
+
+### Food Database Composition
+- **50 core foods** — Rwanda National Food Balance Sheet selection, 
+  trilingual (English/French/Kinyarwanda), nutrient values from 
+  Kenya FCT 2018, manually validated CKD stage safety ratings
+- **336 additional foods** — USDA FoodData Central Foundation Foods 
+  (whole/raw foods only), English names only, CKD stage safety 
+  computed automatically from KDOQI 2020 potassium/phosphorus 
+  thresholds
+- **Total: 386 foods**
+
+The original 50-food database is preserved at 
+backend/data/food_database_50_original.csv for reference.
 
 ## ML Model Results
 
@@ -197,7 +210,7 @@ FastAPI inference endpoints
 
 ```text
 GET  /api/foods
-     Returns all 50 Rwandan foods
+     Returns all 386 foods (50 Rwanda-validated trilingual foods + 336 USDA Foundation Foods)
 
 POST /api/predict/risk
      XGBoost dietary risk prediction
@@ -242,7 +255,7 @@ and Recharts.
 
 The dashboard shows the ML architecture components
 (XGBoost, LSTM, SHAP, Food Recommender), key system
-metrics (50 Rwandan foods, 4 CKD stages, 1,862 NHANES
+metrics (386 foods (50 Rwanda-validated trilingual foods + 336 USDA Foundation Foods), 4 CKD stages, 1,862 NHANES
 training patients), and the three-step user journey
 (Explore Foods → Assess Risk → Get Recommendations).
 
@@ -250,7 +263,7 @@ training patients), and the three-step user journey
 
 ![Food Explorer](outputs/screenshots/02_food_explorer.png)
 
-Browse and search 50 verified Rwandan foods in English,
+Browse and search 386 foods (50 Rwanda-validated trilingual foods + 336 USDA Foundation Foods) in English,
 French, and Kinyarwanda. Color-coded potassium safety
 ratings based on KDOQI 2020 thresholds. Detailed food
 panel with nutrient bars and radar chart.

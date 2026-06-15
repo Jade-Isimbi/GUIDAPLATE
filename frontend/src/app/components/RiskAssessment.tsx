@@ -10,6 +10,11 @@ import {
   potassiumColor,
 } from '../../data/foodDatabase';
 
+const API_BASE_URL = 'http://localhost:8000/api';
+
+const NO_SUBSTITUTES_MSG =
+  'No category-matched lower-potassium substitutes found for this meal.';
+
 interface RiskAssessmentProps {
   isDark: boolean;
   theme: Record<string, string>;
@@ -102,6 +107,14 @@ function getSmartSubstitutions(
   return riskyFoods
     .map((riskyFood) => {
       const allowedCats = substituteCategories(riskyFood.category);
+
+      // "Other" category foods (336 USDA Foundation Foods imports)
+      // have no clinically meaningful cross-category substitution -
+      // skip substitution entirely, matching backend recommender.py
+      if (riskyFood.category === 'Other') {
+        return { riskyFood, substitutes: [] };
+      }
+
       const substitutes = FOODS
         .filter((f) => f.id !== riskyFood.id)
         .filter((f) => !mealIds.has(f.id))
@@ -128,6 +141,52 @@ function sumMealNutrients(foods: MealFoodItem[]) {
     },
     { potassium: 0, phosphorus: 0, protein: 0, sodium: 0 },
   );
+}
+
+function lookupFoodByEnglish(name: string): Food | undefined {
+  const key = name.trim().toLowerCase();
+  return FOODS.find((f) => f.english.toLowerCase() === key);
+}
+
+function buildBreakdown(
+  mealTotals: ReturnType<typeof sumMealNutrients>,
+  limits: ReturnType<typeof getStageLimits>,
+  exceeded?: string[],
+  nearLimit?: string[],
+): Record<string, BreakdownEntry> {
+  const nutrientKey: Record<string, string> = {
+    potassium: 'Potassium',
+    phosphorus: 'Phosphorus',
+    protein: 'Protein',
+    sodium: 'Sodium',
+  };
+
+  const breakdown: Record<string, BreakdownEntry> = {
+    Potassium:  { value: Math.round(mealTotals.potassium),  limit: limits.potassium,  pct: 0, status: 'Safe' },
+    Phosphorus: { value: Math.round(mealTotals.phosphorus), limit: limits.phosphorus, pct: 0, status: 'Safe' },
+    Protein:    { value: +mealTotals.protein.toFixed(1),    limit: limits.protein,    pct: 0, status: 'Safe' },
+    Sodium:     { value: Math.round(mealTotals.sodium),     limit: limits.sodium,     pct: 0, status: 'Safe' },
+  };
+
+  for (const key of Object.keys(breakdown)) {
+    const b = breakdown[key];
+    b.pct = Math.min(150, (b.value / b.limit) * 100);
+    b.status = b.pct > 100 ? 'Exceeded' : b.pct > 80 ? 'Near limit' : 'Safe';
+  }
+
+  if (exceeded || nearLimit) {
+    for (const [apiName, displayName] of Object.entries(nutrientKey)) {
+      if (exceeded?.includes(apiName)) breakdown[displayName].status = 'Exceeded';
+      else if (nearLimit?.includes(apiName)) breakdown[displayName].status = 'Near limit';
+    }
+  }
+
+  return breakdown;
+}
+
+function scoreFromBreakdown(breakdown: Record<string, BreakdownEntry>): number {
+  const avgPct = Object.values(breakdown).reduce((a, b) => a + b.pct, 0) / 4;
+  return Math.min(100, Math.round(avgPct));
 }
 
 function dailyTotalColor(value: number, limit: number): string {
@@ -180,7 +239,16 @@ export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
   const [dailyMeals,      setDailyMeals]      = useState<MealEntry[]>([]);
   const [currentMealType, setCurrentMealType] = useState<MealEntry['mealType']>('Breakfast');
   const [dayResetMsg,     setDayResetMsg]     = useState('');
+  const [apiStatus,       setApiStatus]       = useState<'unknown' | 'connected' | 'unavailable'>('unknown');
+  const [usingLiveModel,  setUsingLiveModel]  = useState<boolean>(false);
+  const [modelConfidence, setModelConfidence] = useState<number | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/health`, { signal: AbortSignal.timeout(2000) })
+      .then((res) => setApiStatus(res.ok ? 'connected' : 'unavailable'))
+      .catch(() => setApiStatus('unavailable'));
+  }, []);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -241,9 +309,84 @@ export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
 
   const thresholds = getStageLimits(stage, bodyWeightKg);
 
-  const computeRisk = () => {
+  const computeRisk = async () => {
     if (entries.length === 0) { setError('Add at least one food item to assess this meal.'); return; }
     setError('');
+
+    const assessedFoods = [...entries];
+    const mealTotals = sumMealNutrients(assessedFoods);
+    const limits = getStageLimits(stage, bodyWeightKg);
+    const primaryEntry = [...assessedFoods].sort(
+      (a, b) => getFoodRiskScore(b, limits) - getFoodRiskScore(a, limits),
+    )[0];
+    const primaryFoodName = primaryEntry.food.english;
+
+    if (apiStatus === 'connected') {
+      try {
+        const response = await fetch(`${API_BASE_URL}/predict/risk`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            potassium: mealTotals.potassium,
+            phosphorus: mealTotals.phosphorus,
+            protein_per_kg: mealTotals.protein / bodyWeightKg,
+            sodium: mealTotals.sodium,
+            ckd_stage: stage,
+            food_name: primaryFoodName,
+          }),
+          signal: AbortSignal.timeout(5000),
+        });
+
+        if (!response.ok) throw new Error('API error');
+
+        const apiResult = await response.json();
+        setUsingLiveModel(true);
+        setModelConfidence(typeof apiResult.confidence === 'number' ? apiResult.confidence : null);
+
+        const breakdown = buildBreakdown(
+          mealTotals,
+          limits,
+          apiResult.exceeded_nutrients,
+          apiResult.near_limit_nutrients,
+        );
+
+        const apiSubs: Food[] = (apiResult.substitutes ?? [])
+          .map((s: { english: string }) => lookupFoodByEnglish(s.english))
+          .filter((f: Food | undefined): f is Food => f !== undefined);
+
+        const substitutions: FoodSubstitution[] =
+          apiSubs.length > 0
+            ? [{ riskyFood: primaryEntry.food, substitutes: apiSubs }]
+            : [];
+
+        const level = apiResult.risk_label as 'LOW' | 'MODERATE' | 'HIGH';
+
+        setResult({
+          level,
+          score: scoreFromBreakdown(breakdown),
+          breakdown,
+          assessedFoods,
+          substitutions,
+        });
+
+        setDailyMeals((prev) => [...prev, {
+          mealType: currentMealType,
+          foods: assessedFoods,
+          assessedAt: new Date().toLocaleTimeString(),
+          riskLevel: level,
+        }]);
+        setEntries([]);
+        setDayResetMsg('');
+        return;
+      } catch {
+        setUsingLiveModel(false);
+        setModelConfidence(null);
+      }
+    } else {
+      setUsingLiveModel(false);
+      setModelConfidence(null);
+    }
+
     const breakdown: Record<string, BreakdownEntry> = {
       Potassium:  { value: Math.round(totals.potassium),  limit: thresholds.potassium,  pct: 0, status: 'Safe' },
       Phosphorus: { value: Math.round(totals.phosphorus), limit: thresholds.phosphorus, pct: 0, status: 'Safe' },
@@ -255,17 +398,15 @@ export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
       b.pct    = Math.min(150, (b.value / b.limit) * 100);
       b.status = b.pct > 100 ? 'Exceeded' : b.pct > 80 ? 'Near limit' : 'Safe';
     }
-    const avgPct        = Object.values(breakdown).reduce((a, b) => a + b.pct, 0) / 4;
     const maxPct        = Math.max(...Object.values(breakdown).map((b) => b.pct));
     const exceededCount = Object.values(breakdown).filter((b) => b.pct > 100).length;
     let level: 'LOW' | 'MODERATE' | 'HIGH' = 'LOW';
     if (exceededCount >= 2 || maxPct > 130) level = 'HIGH';
     else if (exceededCount >= 1 || maxPct > 80) level = 'MODERATE';
 
-    const assessedFoods = [...entries];
     setResult({
       level,
-      score: Math.min(100, Math.round(avgPct)),
+      score: scoreFromBreakdown(breakdown),
       breakdown,
       assessedFoods,
       substitutions: getSmartSubstitutions(assessedFoods, stage, thresholds),
@@ -281,7 +422,14 @@ export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
     setDayResetMsg('');
   };
 
-  const reset = () => { setEntries([]); setResult(null); setError(''); setSearch(''); };
+  const reset = () => {
+    setEntries([]);
+    setResult(null);
+    setError('');
+    setSearch('');
+    setUsingLiveModel(false);
+    setModelConfidence(null);
+  };
 
   const resetDay = () => {
     setDailyMeals([]);
@@ -630,7 +778,17 @@ export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
                           <span className="px-2.5 py-1 rounded-full" style={{ background: `${cfg.color}20`, color: cfg.color, fontSize: '0.72rem', fontWeight: 600 }}>
                             Avg {result.score}% of limits
                           </span>
+                          {usingLiveModel && (
+                            <span className="px-2.5 py-1 rounded-full" style={{ background: 'rgba(46,134,171,0.12)', color: '#2E86AB', fontSize: '0.68rem', fontWeight: 600 }}>
+                              Powered by trained XGBoost model
+                            </span>
+                          )}
                         </div>
+                        {usingLiveModel && modelConfidence !== null && (
+                          <p style={{ color: theme.textTertiary, fontSize: '0.72rem', marginTop: 4 }}>
+                            Model confidence: {Math.round(modelConfidence * 100)}%
+                          </p>
+                        )}
                         <p style={{ color: theme.textSecondary, fontSize: '0.85rem' }}>{cfg.desc}</p>
                         <p style={{ color: theme.textTertiary, fontSize: '0.75rem', marginTop: 3 }}>
                           {result.assessedFoods.length} food{result.assessedFoods.length !== 1 ? 's' : ''} · {result.assessedFoods.reduce((a, e) => a + e.grams, 0)} g total
@@ -727,9 +885,10 @@ export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
                 </div>
                 <div className="p-4 sm:p-5 rounded-2xl" style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}>
                   <div style={{ color: theme.text, fontWeight: 600, fontSize: '0.9rem', marginBottom: 12 }}>Safer food choices</div>
-                  {result.substitutions.length === 0 ? (
-                    <p style={{ color: theme.textSecondary, fontSize: '0.825rem' }}>No category-matched lower-potassium substitutes found for this meal.</p>
-                  ) : (
+                  {result.substitutions.length === 0 &&
+                  (!usingLiveModel || result.level !== 'LOW') ? (
+                    <p style={{ color: theme.textSecondary, fontSize: '0.825rem' }}>{NO_SUBSTITUTES_MSG}</p>
+                  ) : result.substitutions.length === 0 ? null : (
                     <ul className="space-y-4">
                       {result.substitutions.map(({ riskyFood, substitutes }) => (
                         <li key={riskyFood.id}>

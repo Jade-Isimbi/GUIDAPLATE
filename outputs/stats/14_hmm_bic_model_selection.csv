@@ -1,0 +1,4 @@
+n_states,log_likelihood,bic_score,optimal
+2,-5335.68,10817.3,False
+3,-4977.28,10195.36,False
+4,-4878.56,10107.38,True

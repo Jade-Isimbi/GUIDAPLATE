@@ -29,6 +29,8 @@ FOOD_DATABASE_CSV: Path = BACKEND_DIR / "data" / "food_database.csv"
 # ---------------------------------------------------------------------------
 MODELS_DIR: Path = ROOT / "models"
 LSTM_MODEL_PATH: Path = MODELS_DIR / "lstm_final.keras"
+LSTM_SCALER_PATH: Path = MODELS_DIR / "lstm_scaler.pkl"
+LSTM_LABEL_ENCODER_PATH: Path = MODELS_DIR / "lstm_label_encoder.pkl"
 XGBOOST_MODEL_PATH: Path = MODELS_DIR / "xgboost_v1.pkl"
 SCALER_PATH: Path = MODELS_DIR / "scaler.pkl"
 RANDOM_FOREST_PATH: Path = MODELS_DIR / "random_forest.pkl"
@@ -92,6 +94,16 @@ DIETARY_RISK_THRESHOLDS: dict[str, dict[str, float]] = {
     "G3b": {"potassium": 2500.0, "phosphorus": 900.0, "protein": 65.0, "sodium": 2000.0},
     "G4": {"potassium": 2000.0, "phosphorus": 800.0, "protein": 56.0, "sodium": 2000.0},
     "G5": {"potassium": 1500.0, "phosphorus": 800.0, "protein": 50.0, "sodium": 1800.0},
+}
+
+# Used for XGBoost protein_ratio feature — must match
+# notebook 04 THRESHOLDS exactly (g/kg/day, not g/day)
+PROTEIN_PER_KG_THRESHOLDS: dict[str, float] = {
+    "G2": 0.8,
+    "G3a": 0.6,
+    "G3b": 0.6,
+    "G4": 0.55,
+    "G5": 0.55,
 }
 
 # ---------------------------------------------------------------------------
