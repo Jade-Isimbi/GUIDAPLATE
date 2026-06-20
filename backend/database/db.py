@@ -45,7 +45,9 @@ class FoodLog(Base):
     patient_id = Column(String)
     food_name = Column(String)
     portion_grams = Column(Float)
-    meal_occasion = Column(String)
+    meal_occasion = Column(String, nullable=True)
+    category = Column(String, nullable=True)
+    stage_safe_range = Column(String, nullable=True)
     potassium_mg = Column(Float)
     phosphorus_mg = Column(Float)
     protein_g = Column(Float)
@@ -64,6 +66,22 @@ class RiskAssessmentLog(Base):
     nutrient_totals = Column(JSON)
     shap_values = Column(JSON, nullable=True)
     assessed_at = Column(DateTime, default=datetime.utcnow)
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    user_id = Column(String, primary_key=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    name = Column(String)
+    phone = Column(String, nullable=True)
+    ckd_stage = Column(String, nullable=True)
+    weight_kg = Column(Float, nullable=True)
+    dob = Column(String, nullable=True)
+    sex = Column(String, nullable=True)
+    language = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 def create_tables() -> None:

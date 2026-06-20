@@ -11,6 +11,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from backend.api.patient_data import router as patient_data_router
+from backend.api.auth import router as auth_router
 from backend.api.food_lookup import router as food_lookup_router
 from backend.api.pattern_analysis import router as pattern_analysis_router
 from backend.api.recommendations import router as recommendations_router
@@ -42,6 +44,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(patient_data_router, prefix="/api")
+app.include_router(auth_router, prefix="/api")
 app.include_router(food_lookup_router, prefix="/api")
 app.include_router(risk_prediction_router, prefix="/api")
 app.include_router(recommendations_router, prefix="/api")
