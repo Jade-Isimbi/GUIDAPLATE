@@ -7,7 +7,7 @@ interface DashboardPageProps {
 }
 
 const metrics = [
-  { label: 'Rwandan Foods', value: '386', sub: 'in our database', color: '#2E86AB', icon: Database },
+  { label: 'Foods in Database', value: '386', sub: 'in our database', color: '#2E86AB', icon: Database },
   { label: 'Nutrients Tracked', value: '4', sub: 'key biomarkers', color: '#27AE60', icon: FlaskConical },
   { label: 'CKD Stages', value: '4 (G2-G4)', sub: 'clinical stages', color: '#F39C12', icon: Shield },
   { label: 'Risk Assessments', value: '1,862 NHANES patients', sub: 'training cohort', color: '#E74C3C', icon: Activity },
@@ -17,7 +17,7 @@ const steps = [
   {
     n: '01',
     title: 'Explore Foods',
-    desc: 'Browse our curated database of commonly consumed Rwandan foods with complete nutrient profiles and CKD suitability ratings.',
+    desc: 'Browse our database of 386 foods - including Rwanda-validated staples and regional ingredients - with complete nutrient profiles and CKD suitability ratings.',
     icon: Utensils,
     color: '#2E86AB',
   },
@@ -61,7 +61,7 @@ const mlComponents = [
   },
   {
     title: 'Food Recommender',
-    desc: 'Suggests safer Rwandan food alternatives when a nutrient limit is exceeded. Grounded in KDOQI 2020 guidelines.',
+    desc: 'Suggests safer food alternatives when a nutrient limit is exceeded. Grounded in KDOQI 2020 guidelines.',
     icon: ListChecks,
     color: '#27AE60',
     status: 'Active' as const,
@@ -157,7 +157,7 @@ export function DashboardPage({ isDark, theme, onNavigate }: DashboardPageProps)
               }}
             >
               GuidaPlate is an AI-powered dietary guidance platform that helps CKD patients
-              understand nutrient risks in everyday Rwandan foods and make safer, informed meal choices.
+              understand nutrient risks in everyday foods and make safer, informed meal choices.
             </p>
 
             <div className="flex gap-3 flex-wrap">
@@ -344,7 +344,7 @@ export function DashboardPage({ isDark, theme, onNavigate }: DashboardPageProps)
         {/* Quick nav */}
         <div className="lg:col-span-2 flex flex-col gap-4">
           {[
-            { label: 'Food Explorer', desc: 'Search and filter 247 Rwandan foods', page: 'explorer', icon: Utensils, color: '#27AE60' },
+            { label: 'Food Explorer', desc: 'Search and filter 386 foods', page: 'explorer', icon: Utensils, color: '#27AE60' },
             { label: 'Meal Assessment', desc: 'Log a meal and get your dietary risk score', page: 'assessment', icon: Shield, color: '#E74C3C' },
           ].map((nav) => {
             const Icon = nav.icon;

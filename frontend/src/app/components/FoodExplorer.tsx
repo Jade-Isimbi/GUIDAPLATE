@@ -60,9 +60,9 @@ export function FoodExplorer({ isDark, theme }: FoodExplorerProps) {
   return (
     <div className="space-y-5 sm:space-y-6">
       <div>
-        <div style={{ color: theme.text, fontSize: '1.4rem', fontWeight: 600 }}>Rwanda CKD Food Explorer</div>
+        <div style={{ color: theme.text, fontSize: '1.4rem', fontWeight: 600 }}>CKD Food Explorer</div>
         <p style={{ color: theme.textSecondary, marginTop: 4, fontSize: '0.9rem' }}>
-          Explore commonly consumed Rwandan foods and their CKD safety ratings — {FOODS.length} foods in database
+          Explore foods and their CKD safety ratings — {FOODS.length} foods in database
         </p>
       </div>
 
