@@ -32,12 +32,6 @@ LSTM_MODEL_PATH: Path = MODELS_DIR / "lstm_final.keras"
 LSTM_SCALER_PATH: Path = MODELS_DIR / "lstm_scaler.pkl"
 LSTM_LABEL_ENCODER_PATH: Path = MODELS_DIR / "lstm_label_encoder.pkl"
 XGBOOST_MODEL_PATH: Path = MODELS_DIR / "xgboost_v1.pkl"
-SCALER_PATH: Path = MODELS_DIR / "scaler.pkl"
-RANDOM_FOREST_PATH: Path = MODELS_DIR / "random_forest.pkl"
-
-
-# Saved by `03_lstm_training.ipynb` so `04_evaluation.ipynb` uses the same test split
-EVAL_TEST_NPZ: Path = PROCESSED_DIR / "guidaplate_test_split.npz"
 
 # Reproducible splits / synthetic generation
 RANDOM_SEED: int = 42
@@ -63,13 +57,6 @@ NHANES_XPT_FILES: list[Path] = [XPT_DR1TOT, XPT_DR2TOT, XPT_BIOPRO, XPT_DEMO]
 USDA_FOOD_CSV: Path = USDA_DIR / "food.csv"
 USDA_FOOD_NUTRIENT_CSV: Path = USDA_DIR / "food_nutrient.csv"
 USDA_NUTRIENT_CSV: Path = USDA_DIR / "nutrient.csv"
-
-# ---------------------------------------------------------------------------
-# Processed outputs
-# ---------------------------------------------------------------------------
-CKD_PATIENTS_CSV: Path = PROCESSED_DIR / "ckd_patients.csv"
-CKD_PATIENTS_CLEAN_CSV: Path = PROCESSED_DIR / "ckd_patients_clean.csv"
-FOOD_NUTRIENTS_CLEAN_CSV: Path = PROCESSED_DIR / "food_nutrients_clean.csv"
 
 # ---------------------------------------------------------------------------
 # CKD stage encoding (for models)
