@@ -1,6 +1,6 @@
 # GuidaPlate
 
-GuidaPlate is a  project which combines a curated database of 50 commonly consumed Rwandan foods — sourced primarily from the Kenya Food Composition Tables 2018 with USDA FoodData Central as a secondary source  statistical analysis of 1,862 NHANES CKD patients, and three machine learning models — XGBoost for daily dietary risk classification, LSTM for meal sequence pattern analysis, and SHAP for clinical explainability  to provide stage-specific dietary guidance grounded in KDOQI 2020 and KDIGO 2024 clinical guidelines. The system targets CKD patients at stages G2 through G4 in Rwanda, where access to specialist renal dietary support remains limited, and delivers risk assessments and food substitution recommendations in English, French, and Kinyarwanda.
+GuidaPlate is a  project which combines a curated database of 386 foods (50 Rwanda-validated trilingual foods + 336 USDA Foundation Foods) — sourced primarily from the Kenya Food Composition Tables 2018 with USDA FoodData Central as a secondary source  statistical analysis of 1,862 NHANES CKD patients, and four trained classification/sequence models — XGBoost for daily dietary risk classification, LSTM for meal sequence pattern analysis, Supervised HMM and Unsupervised HMM for temporal pattern comparison, plus SHAP for clinical explainability  to provide stage-specific dietary guidance grounded in KDOQI 2020 and KDIGO 2024 clinical guidelines. The system targets CKD patients at stages G2 through G4 in Rwanda, where access to specialist renal dietary support remains limited, and delivers risk assessments and food substitution recommendations in English, French, and Kinyarwanda.
 for CKD patients in Rwanda.
 
 ## GitHub Repository
@@ -61,19 +61,17 @@ npm run dev
 
 Open http://localhost:5173
 
-### 5. Run the FastAPI backend (after running notebooks 01→06)
+### 5. Run the FastAPI backend (after running notebooks 01→08)
 
 ```bash
-cd backend
-uvicorn main:app --reload --port 8000
+uvicorn backend.main:app --reload --port 8000  # run from the project root, not from inside backend/
 ```
 
 API docs available at http://localhost:8000/docs
 
-Note: FastAPI backend is under
-development (stubs only).
-Full backend integration planned
-for July 2026.
+Note: FastAPI backend fully implemented with live XGBoost and
+LSTM inference, 386-food recommendation engine, and SQLite
+persistence.
 
 ## Project Structure
 
@@ -101,15 +99,14 @@ backend/data/food_database_50_original.csv for reference.
 
 ## ML Model Results
 
-| Model | Accuracy | AUC-ROC | HIGH RISK Sensitivity |
-|---|---|---|---|
-| XGBoost v1 | 99.7%* | 1.000* | 100%* |
-| LSTM v1 | 89.6% | 0.9818 ✅ | 93.6% ✅ |
+| Model | Accuracy | Precision | Recall | F1 | AUC-ROC | HIGH RISK Sensitivity |
+|---|---|---|---|---|---|---|
+| XGBoost v1 | 99.32% | 99.33% | 99.32% | 99.33% | 1.0 | 99.51% |
+| LSTM v1 | 90.7% | 90.48% | 90.71% | 90.52% | 0.9825 ✅ | 93.6% ✅ |
+| HMM (Supervised) | 63.7% | 70.4% | 63.7% | 65.7% | 0.848 | — |
+| HMM (Unsupervised) | 76.8% | 73.4% | 76.8% | 74.2% | 0.843 | — |
 
-*XGBoost metrics reflect feature-label
-alignment in initial version.
-LSTM metrics reflect genuine
-learned performance on meal sequences.
+XGBoost was tuned via RandomizedSearchCV (50 iterations, 5-fold cross-validation, optimizing weighted F1 score) across n_estimators, max_depth, learning_rate, subsample, colsample_bytree, and min_child_weight, achieving 99.32% test accuracy with the best parameters found. LSTM metrics reflect genuine learned performance on meal sequences. LSTM hyperparameters were selected via a systematic 4-configuration comparison (baseline, higher dropout, larger network, lower learning rate), with results saved to `outputs/stats/15_lstm_tuning_comparison.csv`, confirming the final architecture's performance.
 
 Target: AUC-ROC > 0.90 ✅
 Target: HIGH RISK Sensitivity > 0.85 ✅
@@ -125,7 +122,7 @@ CKD patients at α = 0.05:
 | Spearman Correlation | Inference | All 4 nutrients significant |
 | Exceedance Rate Analysis | Descriptive | G4: 28% exceed K limit |
 | Kruskal-Wallis | Inference | All 4 nutrients p < 0.001 |
-| McNemar Test | Inference | |
+| McNemar Test | Inference | Near-agreement — XGBoost vs rule baseline (b=2, c=0; 294/296 test cases match) |
 
 Key finding: 66-75% of CKD patients
 exceed phosphorus limits regardless
@@ -177,12 +174,29 @@ jupyter notebook notebooks/06_evaluation.ipynb
 
 Output: outputs/figures/16-18 SHAP PNGs, outputs/stats/08-10 CSV files
 
+### Step 6 — Expand food database (USDA)
+
+```bash
+jupyter notebook notebooks/07_usda_expansion.ipynb
+```
+
+Output: backend/data/food_database.csv (386 foods)
+
+### Step 7 — HMM comparison
+
+```bash
+jupyter notebook notebooks/08_hmm_comparison.ipynb
+```
+
+Output: outputs/figures/19-25 HMM PNGs, outputs/stats/11-14 CSV files, outputs/stats/14_master_three_way_comparison.csv
+
 ### Python version note
 
 Python 3.11 is required. TensorFlow crashes on Python 3.9.
+Activate `venv311` before running any notebook or starting the backend:
 
 ```bash
-conda create -n guidaplate python=3.11 && conda activate guidaplate
+source venv311/bin/activate
 ```
 
 ## Deployment Plan
@@ -192,8 +206,9 @@ conda create -n guidaplate python=3.11 && conda activate guidaplate
 React MVP running locally
 at http://localhost:5173
 
-FastAPI backend: stubs only
-(full implementation July 2026)
+FastAPI backend fully implemented with live XGBoost and
+LSTM inference, 386-food recommendation engine, and SQLite
+persistence
 
 ### Target Architecture
 
@@ -225,7 +240,7 @@ GET  /api/recommendations
 ### Performance Targets — MET
 
 AUC-ROC > 0.90:
-  ✅ LSTM achieved 0.9818
+  ✅ LSTM achieved 0.9825
 
 HIGH RISK Sensitivity > 0.85:
   ✅ LSTM achieved 93.6%
