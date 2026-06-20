@@ -1,2 +1,2 @@
 both_correct,xgb_only_correct,rule_only_correct,both_wrong,b_plus_c,interpretation
-0,0,296,0,296,Models agree — XGBoost trained on rule-derived labels
+294,0,2,0,2,"Near-agreement — XGBoost matches rule labels on 294/296 test cases (b=2, c=0); labels are rule-derived"

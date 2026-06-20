@@ -1,4 +1,4 @@
-scenario,predicted_label,confidence,clinical_basis,prob_LOW,prob_MODERATE,prob_HIGH
-A — LOW RISK (balanced intake within limits),LOW,0.91,All nutrients below 50% of G3a KDOQI daily limits across both days,0.91,0.07,0.02
-B — MODERATE RISK (sodium near limit),MODERATE,0.78,Sodium approaching 2300mg limit; potassium and phosphorus within range,0.15,0.78,0.07
-"C — HIGH RISK (multiple nutrients exceeded, escalating)",HIGH,0.95,Phosphorus and potassium exceed G3a limits at every meal; pattern escalates from Day 1 to Day 2,0.02,0.03,0.95
+scenario,predicted_label,confidence,prob_LOW,prob_MODERATE,prob_HIGH
+A — LOW RISK (balanced intake within limits),LOW,0.9361026883125305,0.9361026883125305,0.05976259708404541,0.004134686663746834
+B — MODERATE RISK (sodium near limit),LOW,0.5352216362953186,0.5352216362953186,0.3575802147388458,0.10719817131757736
+"C — HIGH RISK (multiple nutrients exceeded, escalating)",HIGH,0.9975599050521851,8.796707334113307e-06,0.0024312708992511034,0.9975599050521851

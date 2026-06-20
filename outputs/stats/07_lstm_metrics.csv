@@ -1,2 +1,2 @@
-model,accuracy,precision,recall,f1_score,auc_roc,high_risk_sensitivity,training_sequences,test_sequences,sequence_length,features_per_step,n_classes,epochs_trained,best_epoch,final_val_loss,patients_with_sequences,patients_skipped
-LSTM v1,0.8962,0.8895,0.8962,0.8918,0.9818,0.936,1464,366,6,4,3,21,11,0.194,1830,32
+model,accuracy,precision,recall,f1_score,auc_roc,high_risk_sensitivity,training_sequences,test_sequences,sequence_length,features_per_step,n_classes,epochs_trained,best_epoch,final_val_loss,patients_with_sequences,patients_skipped,tuning_best_config
+LSTM v1,0.9071,0.9048,0.9071,0.9052,0.9825,0.936,1464,366,6,4,3,34,24,0.1913,1830,32,higher dropout

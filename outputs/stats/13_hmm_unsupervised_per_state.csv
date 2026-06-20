@@ -1,0 +1,4 @@
+State,Number of Samples,Sensitivity,Specificity,Overall Accuracy
+LOW,124,0.75,0.8802,0.8361
+MODERATE,39,0.1026,0.9755,0.8825
+HIGH,203,0.9064,0.7055,0.8169

@@ -1,2 +1,2 @@
 model,accuracy,precision,recall,f1_score,auc_roc,high_risk_sensitivity,cv_mean_accuracy,cv_std,training_samples,test_samples,n_features,n_classes
-XGBoost v1,0.9966,0.9967,0.9966,0.9966,1.0,1.0,0.9892,0.0087,1180,296,9,3
+XGBoost v1,0.9932,0.9933,0.9932,0.9933,1.0,0.9951,0.9871,0.0092,1180,296,9,3
