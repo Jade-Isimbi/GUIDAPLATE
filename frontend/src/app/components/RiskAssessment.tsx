@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { AlertTriangle, CheckCircle2, XCircle, Zap, Info, ChevronRight, RotateCcw, Search, Trash2, Plus, Minus } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, XCircle, Zap, Info, ChevronRight, RotateCcw, Search, Trash2, Plus, Minus, Mic, MicOff } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer, Cell } from 'recharts';
 import {
   CKDStage,
@@ -15,9 +15,58 @@ const API_BASE_URL = 'http://localhost:8000/api';
 const NO_SUBSTITUTES_MSG =
   'No category-matched lower-potassium substitutes found for this meal.';
 
+const saveFoodLog = async (food: Food) => {
+  const token = localStorage.getItem('guidaplate_token');
+  if (!token) return;
+
+  try {
+    await fetch(`${API_BASE_URL}/patient/food-log`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        food_name: food.english,
+        category: food.category,
+        stage_safe_range: food.ckd_stage_safe,
+      }),
+    });
+  } catch (err) {
+    console.error('Failed to save food log:', err);
+  }
+};
+
+const saveRiskAssessment = async (
+  riskLevel: string,
+  riskScore: number,
+  nutrientTotals: Record<string, number>,
+) => {
+  const token = localStorage.getItem('guidaplate_token');
+  if (!token) return;
+
+  try {
+    await fetch(`${API_BASE_URL}/patient/risk-assessment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        risk_level: riskLevel,
+        risk_score: riskScore,
+        nutrients_summary: JSON.stringify(nutrientTotals),
+      }),
+    });
+  } catch (err) {
+    console.error('Failed to save risk assessment:', err);
+  }
+};
+
 interface RiskAssessmentProps {
   isDark: boolean;
   theme: Record<string, string>;
+  initialBodyWeight?: number;
 }
 
 const STAGE_META: Record<CKDStage, { label: string; gfr: string }> = {
@@ -228,14 +277,16 @@ interface ResultState {
 
 const MEAL_TYPES: MealEntry['mealType'][] = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
-export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
+export function RiskAssessment({ isDark, theme, initialBodyWeight }: RiskAssessmentProps) {
   const [stage,           setStage]           = useState<CKDStage>('G3a');
-  const [bodyWeightKg,    setBodyWeightKg]    = useState<number>(65);
+  const [bodyWeightKg,    setBodyWeightKg]    = useState<number>(initialBodyWeight ?? 65);
   const [entries,         setEntries]         = useState<MealFoodItem[]>([]);
   const [result,          setResult]          = useState<ResultState | null>(null);
   const [error,           setError]           = useState('');
   const [search,          setSearch]          = useState('');
   const [showDrop,        setShowDrop]        = useState(false);
+  const [isListening,     setIsListening]     = useState(false);
+  const [voiceSupported,  setVoiceSupported]  = useState(true);
   const [dailyMeals,      setDailyMeals]      = useState<MealEntry[]>([]);
   const [currentMealType, setCurrentMealType] = useState<MealEntry['mealType']>('Breakfast');
   const [dayResetMsg,     setDayResetMsg]     = useState('');
@@ -243,6 +294,7 @@ export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
   const [usingLiveModel,  setUsingLiveModel]  = useState<boolean>(false);
   const [modelConfidence, setModelConfidence] = useState<number | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/health`, { signal: AbortSignal.timeout(2000) })
@@ -257,6 +309,56 @@ export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  useEffect(() => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setVoiceSupported(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setSearch(transcript);
+      setShowDrop(true);
+      setIsListening(false);
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      recognition.abort();
+    };
+  }, []);
+
+  const toggleVoiceInput = () => {
+    if (!recognitionRef.current) return;
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      setSearch('');
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
+  };
 
   const q = search.trim().toLowerCase();
   const visibleFoods = (q === ''
@@ -274,6 +376,7 @@ export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
     setShowDrop(false);
     setResult(null);
     setError('');
+    void saveFoodLog(food);
   };
 
   const updateGrams = (id: number, delta: number) => {
@@ -377,6 +480,7 @@ export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
         }]);
         setEntries([]);
         setDayResetMsg('');
+        void saveRiskAssessment(level, apiResult.confidence, mealTotals);
         return;
       } catch {
         setUsingLiveModel(false);
@@ -404,9 +508,11 @@ export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
     if (exceededCount >= 2 || maxPct > 130) level = 'HIGH';
     else if (exceededCount >= 1 || maxPct > 80) level = 'MODERATE';
 
+    const fallbackScore = scoreFromBreakdown(breakdown);
+
     setResult({
       level,
-      score: scoreFromBreakdown(breakdown),
+      score: fallbackScore,
       breakdown,
       assessedFoods,
       substitutions: getSmartSubstitutions(assessedFoods, stage, thresholds),
@@ -420,6 +526,7 @@ export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
     }]);
     setEntries([]);
     setDayResetMsg('');
+    void saveRiskAssessment(level, fallbackScore / 100, mealTotals);
   };
 
   const reset = () => {
@@ -538,7 +645,7 @@ export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
           <div className="p-5 sm:p-6 rounded-2xl" style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}>
             <div style={{ color: theme.text, fontWeight: 600, marginBottom: 4 }}>What did you eat?</div>
             <p style={{ color: theme.textSecondary, fontSize: '0.78rem', marginBottom: 14 }}>
-              Search our {FOODS.length}-food Rwanda database and add each item with its weight in grams
+              Search our {FOODS.length}-food database and add each item with its weight in grams
             </p>
 
             <div className="mb-4">
@@ -573,12 +680,39 @@ export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
                 <input
                   className="flex-1 bg-transparent outline-none min-w-0"
                   style={{ color: theme.text, fontSize: '0.875rem' }}
-                  placeholder="Search foods to add…"
+                  placeholder={isListening ? "Listening..." : "Search foods to add…"}
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setShowDrop(true); }}
                   onFocus={() => setShowDrop(true)}
                 />
+                {voiceSupported && (
+                  <button
+                    type="button"
+                    onClick={toggleVoiceInput}
+                    aria-label={isListening ? "Stop voice input" : "Start voice input"}
+                    className="flex-shrink-0 transition-colors"
+                    style={{
+                      color: isListening ? '#ef4444' : theme.textSecondary,
+                      animation: isListening ? 'pulse 1.5s ease-in-out infinite' : 'none',
+                    }}
+                  >
+                    {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                  </button>
+                )}
               </div>
+
+              {voiceSupported && (
+                <p
+                  className="mt-1.5 px-1"
+                  style={{
+                    fontSize: '0.75rem',
+                    color: theme.textSecondary,
+                    opacity: 0.8,
+                  }}
+                >
+                  🎤 Tip: say one food at a time, e.g. "banana" or "sweet potato"
+                </p>
+              )}
 
               {showDrop && visibleFoods.length > 0 && (
                 <div
@@ -812,6 +946,62 @@ export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
                 );
               })()}
 
+              {/* Recommendations + safer foods */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                <div className="p-4 sm:p-5 rounded-2xl" style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}>
+                  <div style={{ color: theme.text, fontWeight: 600, fontSize: '0.9rem', marginBottom: 12 }}>Recommendations</div>
+                  <ul className="space-y-2.5">
+                    {RECOMMENDATIONS[result.level].map((r, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <ChevronRight size={12} style={{ color: '#2E86AB', marginTop: 3, flexShrink: 0 }} />
+                        <span style={{ color: theme.textSecondary, fontSize: '0.825rem', lineHeight: 1.5 }}>{r}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="p-4 sm:p-5 rounded-2xl" style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}>
+                  <div style={{ color: theme.text, fontWeight: 600, fontSize: '0.9rem', marginBottom: 12 }}>Safer food choices</div>
+                  {result.substitutions.length === 0 &&
+                  (!usingLiveModel || result.level !== 'LOW') ? (
+                    <p style={{ color: theme.textSecondary, fontSize: '0.825rem' }}>{NO_SUBSTITUTES_MSG}</p>
+                  ) : result.substitutions.length === 0 ? null : (
+                    <ul className="space-y-4">
+                      {result.substitutions.map(({ riskyFood, substitutes }) => (
+                        <li key={riskyFood.id}>
+                          <p style={{ color: theme.text, fontWeight: 600, fontSize: '0.825rem', marginBottom: 8 }}>
+                            Instead of <span className="capitalize">{riskyFood.english}</span>:
+                          </p>
+                          <ul className="space-y-3 pl-1">
+                            {substitutes.map((sub) => (
+                              <li key={sub.id} className="flex items-start gap-2">
+                                <ChevronRight size={12} style={{ color: '#27AE60', marginTop: 4, flexShrink: 0 }} />
+                                <div className="min-w-0">
+                                  <p style={{ color: theme.text, fontWeight: 500, fontSize: '0.825rem' }} className="capitalize">
+                                    {sub.english}
+                                  </p>
+                                  <p style={{ color: theme.textSecondary, fontSize: '0.75rem', marginTop: 2, fontStyle: 'italic' }}>
+                                    ({sub.kinyarwanda})
+                                  </p>
+                                  <p style={{ color: '#2E86AB', fontSize: '0.75rem', marginTop: 4, fontWeight: 600 }}>
+                                    K: {riskyFood.potassium_mg}mg → {sub.potassium_mg}mg
+                                  </p>
+                                  <span
+                                    className="inline-block mt-2 px-2 py-0.5 rounded-full"
+                                    style={{ background: 'rgba(39,174,96,0.12)', color: '#27AE60', fontSize: '0.65rem', fontWeight: 600 }}
+                                  >
+                                    {sub.ckd_stage_safe}
+                                  </span>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+
               {/* Chart */}
               <div className="p-5 sm:p-6 rounded-2xl" style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}>
                 <div style={{ color: theme.text, fontWeight: 600, marginBottom: 14 }}>Nutrient breakdown vs. daily limit</div>
@@ -868,62 +1058,6 @@ export function RiskAssessment({ isDark, theme }: RiskAssessmentProps) {
                     </div>
                   );
                 })}
-              </div>
-
-              {/* Recommendations + safer foods */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                <div className="p-4 sm:p-5 rounded-2xl" style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}>
-                  <div style={{ color: theme.text, fontWeight: 600, fontSize: '0.9rem', marginBottom: 12 }}>Recommendations</div>
-                  <ul className="space-y-2.5">
-                    {RECOMMENDATIONS[result.level].map((r, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <ChevronRight size={12} style={{ color: '#2E86AB', marginTop: 3, flexShrink: 0 }} />
-                        <span style={{ color: theme.textSecondary, fontSize: '0.825rem', lineHeight: 1.5 }}>{r}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="p-4 sm:p-5 rounded-2xl" style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}>
-                  <div style={{ color: theme.text, fontWeight: 600, fontSize: '0.9rem', marginBottom: 12 }}>Safer food choices</div>
-                  {result.substitutions.length === 0 &&
-                  (!usingLiveModel || result.level !== 'LOW') ? (
-                    <p style={{ color: theme.textSecondary, fontSize: '0.825rem' }}>{NO_SUBSTITUTES_MSG}</p>
-                  ) : result.substitutions.length === 0 ? null : (
-                    <ul className="space-y-4">
-                      {result.substitutions.map(({ riskyFood, substitutes }) => (
-                        <li key={riskyFood.id}>
-                          <p style={{ color: theme.text, fontWeight: 600, fontSize: '0.825rem', marginBottom: 8 }}>
-                            Instead of <span className="capitalize">{riskyFood.english}</span>:
-                          </p>
-                          <ul className="space-y-3 pl-1">
-                            {substitutes.map((sub) => (
-                              <li key={sub.id} className="flex items-start gap-2">
-                                <ChevronRight size={12} style={{ color: '#27AE60', marginTop: 4, flexShrink: 0 }} />
-                                <div className="min-w-0">
-                                  <p style={{ color: theme.text, fontWeight: 500, fontSize: '0.825rem' }} className="capitalize">
-                                    {sub.english}
-                                  </p>
-                                  <p style={{ color: theme.textSecondary, fontSize: '0.75rem', marginTop: 2, fontStyle: 'italic' }}>
-                                    ({sub.kinyarwanda})
-                                  </p>
-                                  <p style={{ color: '#2E86AB', fontSize: '0.75rem', marginTop: 4, fontWeight: 600 }}>
-                                    K: {riskyFood.potassium_mg}mg → {sub.potassium_mg}mg
-                                  </p>
-                                  <span
-                                    className="inline-block mt-2 px-2 py-0.5 rounded-full"
-                                    style={{ background: 'rgba(39,174,96,0.12)', color: '#27AE60', fontSize: '0.65rem', fontWeight: 600 }}
-                                  >
-                                    {sub.ckd_stage_safe}
-                                  </span>
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
               </div>
             </>
           )}
