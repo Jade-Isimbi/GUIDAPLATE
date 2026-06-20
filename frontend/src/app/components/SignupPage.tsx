@@ -4,7 +4,16 @@ import { Activity, Eye, EyeOff, ChevronDown } from 'lucide-react';
 interface SignupPageProps {
   isDark: boolean;
   theme: Record<string, string>;
-  onSignup: (data: { name: string; ckdStage: string }) => void;
+  onSignup: (data: {
+    name: string;
+    ckdStage: string;
+    weightKg: number;
+    dob: string;
+    sex: string;
+    language: string;
+    email: string;
+    phone: string;
+  }) => void;
   onGoToLogin: () => void;
 }
 
@@ -45,6 +54,8 @@ export function SignupPage({ isDark, theme, onSignup, onGoToLogin }: SignupPageP
   const [agreed,      setAgreed]      = useState(false);
   const [errors,      setErrors]      = useState<Record<string, string>>({});
   const [showCC,      setShowCC]      = useState(false);
+  const [isLoading,   setIsLoading]   = useState(false);
+  const [error,       setError]       = useState<string | null>(null);
 
   const selectedStage = CKD_STAGES.find((s) => s.value === ckdStage);
 
@@ -98,10 +109,58 @@ export function SignupPage({ isDark, theme, onSignup, onGoToLogin }: SignupPageP
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (ev: React.FormEvent) => {
+  const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!validate()) return;
-    onSignup({ name, ckdStage });
+
+    setError(null);
+    setIsLoading(true);
+
+    const fullPhone = `${countryCode} ${phone.trim()}`;
+
+    try {
+      const response = await fetch('http://localhost:8000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          phone: fullPhone,
+          ckd_stage: ckdStage,
+          weight_kg: parseFloat(weight),
+          dob,
+          sex,
+          language,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Registration failed');
+      }
+
+      const data = await response.json();
+
+      localStorage.setItem('guidaplate_token', data.access_token);
+      localStorage.setItem('guidaplate_user_id', data.user_id);
+
+      onSignup({
+        name: data.name,
+        ckdStage: data.ckd_stage,
+        weightKg: data.weight_kg,
+        dob,
+        sex,
+        language,
+        email,
+        phone: fullPhone,
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const errText = (key: string) =>
@@ -412,12 +471,18 @@ export function SignupPage({ isDark, theme, onSignup, onGoToLogin }: SignupPageP
           </div>
 
           {/* Submit */}
+          {error && (
+            <p style={{ color: '#E74C3C', fontSize: '0.8rem', background: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.25)', borderRadius: 10, padding: '0.6rem 0.9rem' }}>
+              {error}
+            </p>
+          )}
           <button
             type="submit"
+            disabled={isLoading}
             className="w-full py-3 rounded-xl text-white font-semibold transition-all duration-200 hover:opacity-90 active:scale-[0.98] mt-2"
-            style={{ background: 'linear-gradient(135deg, #2E86AB 0%, #1A5F7A 100%)', fontSize: '0.95rem' }}
+            style={{ background: 'linear-gradient(135deg, #2E86AB 0%, #1A5F7A 100%)', fontSize: '0.95rem', opacity: isLoading ? 0.7 : 1 }}
           >
-            Create Account
+            {isLoading ? 'Creating account…' : 'Create Account'}
           </button>
         </form>
 

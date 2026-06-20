@@ -4,7 +4,7 @@ import { Activity, Eye, EyeOff } from 'lucide-react';
 interface LoginPageProps {
   isDark: boolean;
   theme: Record<string, string>;
-  onLogin: () => void;
+  onLogin: (data: { name: string; ckdStage: string | null; weightKg: number | null }) => void;
   onGoToSignup: () => void;
 }
 
@@ -12,7 +12,8 @@ export function LoginPage({ isDark, theme, onLogin, onGoToSignup }: LoginPagePro
   const [email,       setEmail]       = useState('');
   const [password,    setPassword]    = useState('');
   const [showPass,    setShowPass]    = useState(false);
-  const [error,       setError]       = useState('');
+  const [error,       setError]       = useState<string | null>(null);
+  const [isLoading,   setIsLoading]   = useState(false);
 
   const inputStyle = {
     background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.04)',
@@ -34,11 +35,43 @@ export function LoginPage({ isDark, theme, onLogin, onGoToSignup }: LoginPagePro
     display: 'block' as const,
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) { setError('Please enter your email and password.'); return; }
-    setError('');
-    onLogin();
+    if (!email || !password) {
+      setError('Please enter your email and password.');
+      return;
+    }
+
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:8000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Invalid email or password');
+      }
+
+      const data = await response.json();
+
+      localStorage.setItem('guidaplate_token', data.access_token);
+      localStorage.setItem('guidaplate_user_id', data.user_id);
+
+      onLogin({
+        name: data.name,
+        ckdStage: data.ckd_stage,
+        weightKg: data.weight_kg,
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Login failed. Please check your credentials.';
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -131,10 +164,11 @@ export function LoginPage({ isDark, theme, onLogin, onGoToSignup }: LoginPagePro
           {/* Submit */}
           <button
             type="submit"
+            disabled={isLoading}
             className="w-full py-3 rounded-xl text-white font-semibold transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
-            style={{ background: 'linear-gradient(135deg, #2E86AB 0%, #1A5F7A 100%)', fontSize: '0.95rem', marginTop: 8 }}
+            style={{ background: 'linear-gradient(135deg, #2E86AB 0%, #1A5F7A 100%)', fontSize: '0.95rem', marginTop: 8, opacity: isLoading ? 0.7 : 1 }}
           >
-            Log In
+            {isLoading ? 'Logging in…' : 'Log In'}
           </button>
         </form>
 

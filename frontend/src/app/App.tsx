@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { Activity, Sun, Moon, LayoutDashboard, Utensils, Shield } from 'lucide-react';
+import { Activity, Sun, Moon, LayoutDashboard, Utensils, Shield, LogOut } from 'lucide-react';
 import { DashboardPage } from './components/DashboardPage';
 import { FoodExplorer } from './components/FoodExplorer';
 import { RiskAssessment } from './components/RiskAssessment';
+import { LoginPage } from './components/LoginPage';
+import { SignupPage } from './components/SignupPage';
 
 type Page = 'dashboard' | 'explorer' | 'assessment';
+type AuthScreen = 'login' | 'signup' | 'app';
 
 const navItems: Array<{ id: Page; label: string; icon: typeof LayoutDashboard }> = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -12,10 +15,23 @@ const navItems: Array<{ id: Page; label: string; icon: typeof LayoutDashboard }>
   { id: 'assessment', label: 'Meal Assessment', icon: Shield },
 ];
 
+const THEME_STORAGE_KEY = 'guidaplate_theme';
+
+function readThemePreference(): boolean {
+  const stored = localStorage.getItem(THEME_STORAGE_KEY);
+  if (stored === 'dark') return true;
+  if (stored === 'light') return false;
+  return false;
+}
+
 export default function App() {
   {/* MARKER-MAKE-KIT-INVOKED */}
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(readThemePreference);
   const [page, setPage] = useState<Page>('dashboard');
+  const [auth, setAuth] = useState<AuthScreen>('login');
+  const [userName, setUserName] = useState('');
+  const [userStage, setUserStage] = useState('G3a');
+  const [userWeight, setUserWeight] = useState<number>(65);
 
   const theme = {
     bg: isDark
@@ -32,6 +48,28 @@ export default function App() {
     chartAxis: isDark ? '#8a9ab0' : '#6a7a90',
     progressBg: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
   };
+
+  const handleLogin = (data: { name: string; ckdStage: string | null; weightKg: number | null }) => {
+    setUserName(data.name);
+    setUserStage(data.ckdStage || '');
+    setUserWeight(data.weightKg || 0);
+    setAuth('app');
+  };
+  const handleSignup = (data: { name: string; ckdStage: string; weightKg: number; dob: string; sex: string; language: string; email: string; phone: string }) => {
+    setUserName(data.name);
+    setUserStage(data.ckdStage);
+    setUserWeight(data.weightKg);
+    setAuth('app');
+  };
+
+  const initials = userName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+
+  if (auth === 'login') {
+    return <LoginPage isDark={isDark} theme={theme} onLogin={handleLogin} onGoToSignup={() => setAuth('signup')} />;
+  }
+  if (auth === 'signup') {
+    return <SignupPage isDark={isDark} theme={theme} onSignup={handleSignup} onGoToLogin={() => setAuth('login')} />;
+  }
 
   return (
     <div className="min-h-screen" style={{ background: theme.bg }}>
@@ -96,7 +134,13 @@ export default function App() {
           {/* Right actions */}
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <button
-              onClick={() => setIsDark(!isDark)}
+              onClick={() => {
+                setIsDark((prev) => {
+                  const next = !prev;
+                  localStorage.setItem(THEME_STORAGE_KEY, next ? 'dark' : 'light');
+                  return next;
+                });
+              }}
               className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 hover:opacity-70"
               style={{
                 background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
@@ -117,13 +161,25 @@ export default function App() {
                 className="w-7 h-7 rounded-lg flex items-center justify-center text-xs text-white shrink-0"
                 style={{ background: 'linear-gradient(135deg, #2E86AB 0%, #27AE60 100%)', fontWeight: 700 }}
               >
-                PD
+                {initials || 'GP'}
               </div>
               <div className="hidden sm:block leading-none">
-                <p className="text-sm" style={{ color: theme.text, fontWeight: 500 }}>Patient Demo</p>
-                <p className="text-xs" style={{ color: theme.textSecondary }}>Stage G3a · ID #12847</p>
+                <p className="text-sm" style={{ color: theme.text, fontWeight: 500 }}>{userName || 'GuidaPlate User'}</p>
+                <p className="text-xs" style={{ color: theme.textSecondary }}>Stage {userStage}</p>
               </div>
             </div>
+            <button
+              onClick={() => setAuth('login')}
+              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 hover:opacity-70"
+              title="Log out"
+              style={{
+                background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+                border: `1px solid ${theme.navBorder}`,
+                color: theme.textSecondary,
+              }}
+            >
+              <LogOut size={14} />
+            </button>
           </div>
         </div>
       </nav>
@@ -137,7 +193,7 @@ export default function App() {
           <FoodExplorer isDark={isDark} theme={theme} />
         )}
         {page === 'assessment' && (
-          <RiskAssessment isDark={isDark} theme={theme} />
+          <RiskAssessment isDark={isDark} theme={theme} initialBodyWeight={userWeight} />
         )}
       </main>
 
