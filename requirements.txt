@@ -4,10 +4,13 @@ sqlalchemy
 pydantic
 python-jose[cryptography]
 passlib[bcrypt]
+bcrypt==4.0.1
+email-validator
 xgboost
 tensorflow
 shap
 scikit-learn
+hmmlearn
 pandas
 numpy
 scipy
