@@ -49,6 +49,9 @@ class RiskPredictionResponse(BaseModel):
     near_limit_nutrients: list[str]
     clinical_note: str
     substitutes: list[dict] = []
+    shap_contributions: dict | None = None
+    shap_explanation: str | None = None
+    shap_dominant_nutrient: str | None = None
 
 
 def compute_exceeded_nutrients(
@@ -96,6 +99,131 @@ def compute_exceeded_nutrients(
     return exceeded, near_limit
 
 
+def generate_shap_explanation(
+    risk_label: str,
+    contributions: dict,
+    dominant_nutrient: str,
+    dominant_pct: float,
+    ckd_stage: str,
+    food_name: str | None,
+    potassium: float,
+    phosphorus: float,
+    protein_per_kg: float,
+    sodium: float,
+) -> str:
+    """Generate a rich, specific explanation string."""
+    STAGE_LIMITS = {
+        "G2": {"potassium": 3500, "phosphorus": 1000, "protein": 0.8, "sodium": 2300},
+        "G3a": {"potassium": 3000, "phosphorus": 800, "protein": 0.6, "sodium": 2300},
+        "G3b": {"potassium": 3000, "phosphorus": 800, "protein": 0.6, "sodium": 2300},
+        "G4": {"potassium": 2500, "phosphorus": 700, "protein": 0.55, "sodium": 2300},
+    }
+    limits = STAGE_LIMITS.get(ckd_stage, STAGE_LIMITS["G3b"])
+
+    NUTRIENT_META = {
+        "potassium": {
+            "label": "Potassium",
+            "unit": "mg",
+            "value": potassium,
+            "limit": limits["potassium"],
+        },
+        "phosphorus": {
+            "label": "Phosphorus",
+            "unit": "mg",
+            "value": phosphorus,
+            "limit": limits["phosphorus"],
+        },
+        "protein": {
+            "label": "Protein",
+            "unit": "g/kg",
+            "value": round(protein_per_kg, 2),
+            "limit": limits["protein"],
+        },
+        "sodium": {
+            "label": "Sodium",
+            "unit": "mg",
+            "value": sodium,
+            "limit": limits["sodium"],
+        },
+    }
+
+    dom = NUTRIENT_META[dominant_nutrient]
+    food_ref = f" from {food_name}" if food_name else ""
+
+    sorted_nutrients = sorted(
+        contributions.items(),
+        key=lambda x: x[1],
+        reverse=True,
+    )
+    second = sorted_nutrients[1] if len(sorted_nutrients) > 1 else None
+
+    if risk_label == "HIGH":
+        explanation = (
+            f"{dom['label']} is the primary driver "
+            f"of this HIGH risk assessment{food_ref} "
+            f"— it accounts for {dominant_pct}% of "
+            f"the risk signal "
+            f"({dom['value']}{dom['unit']} vs your "
+            f"Stage {ckd_stage} limit of "
+            f"{dom['limit']}{dom['unit']})."
+        )
+        if second and second[1] > 15:
+            sec = NUTRIENT_META[second[0]]
+            explanation += (
+                f" {sec['label']} contributed an "
+                f"additional {second[1]}%, pushing "
+                f"this meal above safe thresholds."
+            )
+        safe = [
+            NUTRIENT_META[n]["label"]
+            for n, pct in contributions.items()
+            if pct < 15
+        ]
+        if safe:
+            explanation += (
+                f" {' and '.join(safe)} were within "
+                f"safe ranges and had minimal impact."
+            )
+
+    elif risk_label == "MODERATE":
+        explanation = (
+            f"This meal's risk is primarily driven "
+            f"by {dom['label']} ({dominant_pct}%)"
+            f"{food_ref} — approaching your Stage "
+            f"{ckd_stage} limit of "
+            f"{dom['limit']}{dom['unit']}."
+        )
+        if second and second[1] > 15:
+            sec = NUTRIENT_META[second[0]]
+            explanation += (
+                f" {sec['label']} also contributed "
+                f"{second[1]}% to the moderate risk "
+                f"signal."
+            )
+        explanation += (
+            " Small portion adjustments can bring "
+            "this meal into the safe range."
+        )
+
+    else:
+        explanation = (
+            f"All four nutrients are well within "
+            f"your safe limits for Stage {ckd_stage}."
+        )
+        explanation += (
+            f" {dom['label']} had the highest "
+            f"relative contribution ({dominant_pct}%) "
+            f"but remained safely below your "
+            f"{dom['limit']}{dom['unit']} threshold."
+        )
+        explanation += (
+            " This is a well-balanced meal for "
+            "your CKD stage."
+        )
+
+    return explanation
+
+
 @router.post("/predict/risk", response_model=RiskPredictionResponse)
 def predict_risk(request: RiskPredictionRequest) -> RiskPredictionResponse:
     """Predict dietary risk from nutrient intake and optional food substitute lookup."""
@@ -128,6 +256,34 @@ def predict_risk(request: RiskPredictionRequest) -> RiskPredictionResponse:
             "Unable to generate clinical guidance for this risk level.",
         )
 
+        shap_contributions = None
+        shap_explanation = None
+        shap_dominant_nutrient = None
+        try:
+            shap_data = get_predictor().explain(
+                request.potassium,
+                request.phosphorus,
+                request.protein_per_kg,
+                request.sodium,
+                request.ckd_stage,
+            )
+            shap_contributions = shap_data["contributions"]
+            shap_dominant_nutrient = shap_data["dominant_nutrient"]
+            shap_explanation = generate_shap_explanation(
+                risk_label=risk_label,
+                contributions=shap_data["contributions"],
+                dominant_nutrient=shap_data["dominant_nutrient"],
+                dominant_pct=shap_data["dominant_pct"],
+                ckd_stage=request.ckd_stage,
+                food_name=request.food_name,
+                potassium=request.potassium,
+                phosphorus=request.phosphorus,
+                protein_per_kg=request.protein_per_kg,
+                sodium=request.sodium,
+            )
+        except Exception as e:
+            print(f"SHAP computation failed: {e}")
+
         substitutes: list[dict] = []
         if (
             request.food_name
@@ -151,6 +307,9 @@ def predict_risk(request: RiskPredictionRequest) -> RiskPredictionResponse:
             near_limit_nutrients=near_limit_nutrients,
             clinical_note=clinical_note,
             substitutes=substitutes,
+            shap_contributions=shap_contributions,
+            shap_explanation=shap_explanation,
+            shap_dominant_nutrient=shap_dominant_nutrient,
         )
     except HTTPException:
         raise

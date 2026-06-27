@@ -20,7 +20,17 @@ from backend.config import (
 _analyzer: LSTMPatternAnalyzer | None = None
 
 SEQUENCE_STEPS = 6
-FEATURES_PER_STEP = 4
+FEATURES_PER_STEP = 5
+
+# Slot encoding (matches notebooks/05b ablation B2)
+OCCASION_ENCODING = [
+    0.00,  # slot 0: Day1 Breakfast
+    0.33,  # slot 1: Day1 Lunch
+    0.67,  # slot 2: Day1 Dinner
+    0.00,  # slot 3: Day2 Breakfast
+    0.33,  # slot 4: Day2 Lunch
+    0.67,  # slot 5: Day2 Dinner
+]
 
 
 class LSTMPatternAnalyzer:
@@ -56,11 +66,23 @@ class LSTMPatternAnalyzer:
     def analyze(self, meal_sequence: list[list[float]]) -> dict:
         sequence_length = len(meal_sequence)
 
-        sequence = np.zeros((SEQUENCE_STEPS, FEATURES_PER_STEP), dtype=float)
+        # Build raw (6, 5) — occasion only on filled slots; empty slots stay all-zero
+        # (matches notebook 05c training padding for Masking after scaling)
+        raw = np.zeros((SEQUENCE_STEPS, FEATURES_PER_STEP), dtype=float)
         for i, step in enumerate(meal_sequence[:SEQUENCE_STEPS]):
-            sequence[i] = np.asarray(step[:FEATURES_PER_STEP], dtype=float)
+            step_arr = np.asarray(step, dtype=float)
+            raw[i, :4] = step_arr[:4]
+            if len(step_arr) >= 5:
+                raw[i, 4] = float(step_arr[4])
+            else:
+                raw[i, 4] = OCCASION_ENCODING[i]
 
-        scaled = self.scaler.transform(sequence.reshape(-1, FEATURES_PER_STEP))
+        flat = self.scaler.transform(raw.reshape(-1, FEATURES_PER_STEP))
+        scaled = flat.reshape(SEQUENCE_STEPS, FEATURES_PER_STEP)
+
+        pad_mask = (raw == 0).all(axis=-1)
+        scaled[pad_mask, :] = 0.0
+
         model_input = scaled.reshape(1, SEQUENCE_STEPS, FEATURES_PER_STEP)
 
         proba = self.model(model_input, training=False).numpy()[0]
@@ -72,9 +94,9 @@ class LSTMPatternAnalyzer:
             self.LABEL_MAP[i]: float(proba[i]) for i in range(len(proba))
         }
 
-        first_total = float(np.sum(sequence[0]))
+        first_total = float(np.sum(raw[0, :4]))
         last_idx = min(sequence_length, SEQUENCE_STEPS) - 1
-        last_total = float(np.sum(sequence[last_idx])) if sequence_length > 0 else 0.0
+        last_total = float(np.sum(raw[last_idx, :4])) if sequence_length > 0 else 0.0
         trend = "escalating" if last_total > first_total else "stable"
 
         return {

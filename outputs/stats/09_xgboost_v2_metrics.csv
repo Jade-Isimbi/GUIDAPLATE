@@ -1,0 +1,2 @@
+model,accuracy,f1_weighted,f1_macro,auc_roc,high_sensitivity,mod_sensitivity,mcnemar_b,mcnemar_c,mcnemar_p,decision,n_features,training_samples,test_samples
+XGBoost v2,1.0,1.0,1.0,1.0,1.0,1.0,0,0,1.0,✅ V2 saved — improves MODERATE,16,1180,296

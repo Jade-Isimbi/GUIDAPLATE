@@ -28,10 +28,19 @@ FOOD_DATABASE_CSV: Path = BACKEND_DIR / "data" / "food_database.csv"
 # Models
 # ---------------------------------------------------------------------------
 MODELS_DIR: Path = ROOT / "models"
-LSTM_MODEL_PATH: Path = MODELS_DIR / "lstm_final.keras"
-LSTM_SCALER_PATH: Path = MODELS_DIR / "lstm_scaler.pkl"
-LSTM_LABEL_ENCODER_PATH: Path = MODELS_DIR / "lstm_label_encoder.pkl"
-XGBOOST_MODEL_PATH: Path = MODELS_DIR / "xgboost_v1.pkl"
+# LSTM v3 — v3 clinical labels + occasion feature + proper masking + augmentation
+# Accuracy: 91.80% | F1: 0.9191 | AUC: 0.9835
+# HIGH sens: 88.44% | MOD sens: 90.82%
+# Beats B2 on all metrics — deployed: 2026-06-23
+LSTM_MODEL_PATH: Path = MODELS_DIR / "lstm_v3_final.keras"
+LSTM_SCALER_PATH: Path = MODELS_DIR / "lstm_v3_scaler.pkl"
+LSTM_LABEL_ENCODER_PATH: Path = MODELS_DIR / "lstm_v3_label_encoder.pkl"
+# XGBoost v3 — weighted clinical score labels
+# Raw features (no ratio leakage)
+# Accuracy: 98.99% | F1 macro: 0.9853
+# MOD sensitivity: 96.94% | McNemar p<0.0001
+# Leakage resolved — deployed: 2026-06-23
+XGBOOST_MODEL_PATH: Path = MODELS_DIR / "xgboost_v3.pkl"
 
 # Reproducible splits / synthetic generation
 RANDOM_SEED: int = 42

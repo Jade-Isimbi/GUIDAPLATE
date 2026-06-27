@@ -2,13 +2,14 @@
 security.py
 GuidaPlate - Password hashing and JWT token utilities
 """
+import os
 from datetime import datetime, timedelta
 
 from fastapi import Depends, Header, HTTPException
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-SECRET_KEY = "guidaplate-dev-secret-change-in-production"
+SECRET_KEY = os.getenv("JWT_SECRET", "guidaplate-dev-secret")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 

@@ -1,21 +1,46 @@
-import { useState } from 'react';
-import { Activity, Sun, Moon, LayoutDashboard, Utensils, Shield, LogOut } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Activity, Sun, Moon, LayoutDashboard, Utensils, Shield, LogOut, TrendingUp, Settings } from 'lucide-react';
 import { DashboardPage } from './components/DashboardPage';
 import { FoodExplorer } from './components/FoodExplorer';
 import { RiskAssessment } from './components/RiskAssessment';
+import { WeeklyTrendPage } from './components/WeeklyTrendPage';
+import { MealPlannerButton } from './components/MealPlannerButton';
+import { MealPlannerPage } from './components/MealPlannerPage';
 import { LoginPage } from './components/LoginPage';
+import { ResetPasswordPage } from './components/ResetPasswordPage';
+import { SettingsPage } from './components/SettingsPage';
 import { SignupPage } from './components/SignupPage';
 
-type Page = 'dashboard' | 'explorer' | 'assessment';
+type Page = 'dashboard' | 'explorer' | 'assessment' | 'weekly' | 'meal-planner';
 type AuthScreen = 'login' | 'signup' | 'app';
+
+function getPageFromPathname(pathname: string): Page {
+  if (pathname === '/weekly-trend') return 'weekly';
+  if (pathname === '/meal-planner') return 'meal-planner';
+  return 'dashboard';
+}
+
+function pathForPage(page: Page): string {
+  if (page === 'weekly') return '/weekly-trend';
+  if (page === 'meal-planner') return '/meal-planner';
+  return '/';
+}
 
 const navItems: Array<{ id: Page; label: string; icon: typeof LayoutDashboard }> = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'explorer', label: 'Food Explorer', icon: Utensils },
   { id: 'assessment', label: 'Meal Assessment', icon: Shield },
+  { id: 'weekly', label: 'Weekly Trend', icon: TrendingUp },
 ];
 
 const THEME_STORAGE_KEY = 'guidaplate_theme';
+
+function persistProfile(ckdStage: string | null | undefined, weightKg: number | null | undefined) {
+  if (ckdStage) localStorage.setItem('ckd_stage', ckdStage);
+  if (weightKg != null && weightKg > 0) {
+    localStorage.setItem('weight_kg', weightKg.toString());
+  }
+}
 
 function readThemePreference(): boolean {
   const stored = localStorage.getItem(THEME_STORAGE_KEY);
@@ -27,11 +52,23 @@ function readThemePreference(): boolean {
 export default function App() {
   {/* MARKER-MAKE-KIT-INVOKED */}
   const [isDark, setIsDark] = useState(readThemePreference);
-  const [page, setPage] = useState<Page>('dashboard');
-  const [auth, setAuth] = useState<AuthScreen>('login');
-  const [userName, setUserName] = useState('');
-  const [userStage, setUserStage] = useState('G3a');
-  const [userWeight, setUserWeight] = useState<number>(65);
+  const [page, setPage] = useState<Page>(() => getPageFromPathname(window.location.pathname));
+  const [auth, setAuth] = useState<AuthScreen>(() =>
+    localStorage.getItem('guidaplate_token') ? 'app' : 'login',
+  );
+  const [userName, setUserName] = useState(() =>
+    localStorage.getItem('guidaplate_user_name') || '',
+  );
+  const [userStage, setUserStage] = useState(() =>
+    localStorage.getItem('ckd_stage') || 'G3a',
+  );
+  const [userWeight, setUserWeight] = useState<number>(() => {
+    const stored = localStorage.getItem('weight_kg');
+    return stored ? parseFloat(stored) || 65 : 65;
+  });
+  const [showSettings, setShowSettings] = useState(
+    () => window.location.pathname === '/settings',
+  );
 
   const theme = {
     bg: isDark
@@ -51,24 +88,107 @@ export default function App() {
 
   const handleLogin = (data: { name: string; ckdStage: string | null; weightKg: number | null }) => {
     setUserName(data.name);
-    setUserStage(data.ckdStage || '');
-    setUserWeight(data.weightKg || 0);
+    setUserStage(data.ckdStage || 'G3a');
+    setUserWeight(data.weightKg || 65);
+    localStorage.setItem('guidaplate_user_name', data.name);
+    persistProfile(data.ckdStage, data.weightKg);
     setAuth('app');
+    setShowSettings(false);
+    if (window.location.pathname === '/settings') {
+      window.history.replaceState({}, '', '/');
+    }
   };
   const handleSignup = (data: { name: string; ckdStage: string; weightKg: number; dob: string; sex: string; language: string; email: string; phone: string }) => {
     setUserName(data.name);
     setUserStage(data.ckdStage);
     setUserWeight(data.weightKg);
+    localStorage.setItem('guidaplate_user_name', data.name);
+    persistProfile(data.ckdStage, data.weightKg);
     setAuth('app');
+    setShowSettings(false);
   };
+
+  const handleProfileUpdated = (ckdStage: string, weightKg: number) => {
+    setUserStage(ckdStage);
+    setUserWeight(weightKg);
+    persistProfile(ckdStage, weightKg);
+  };
+
+  const navigateToPage = (next: Page) => {
+    setPage(next);
+    const nextPath = pathForPage(next);
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({}, '', nextPath);
+    }
+  };
+
+  const openSettings = () => {
+    setShowSettings(true);
+    window.history.pushState({}, '', '/settings');
+  };
+
+  const openMealPlanner = () => {
+    setShowSettings(false);
+    setPage('meal-planner');
+    window.history.pushState({}, '', '/meal-planner');
+  };
+
+  useEffect(() => {
+    const onPopState = () => {
+      setShowSettings(window.location.pathname === '/settings');
+      if (window.location.pathname !== '/settings') {
+        setPage(getPageFromPathname(window.location.pathname));
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  const resetSuccessMessage = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('reset') === 'success') {
+      window.history.replaceState({}, '', '/');
+      return 'Password reset successfully. Please log in.';
+    }
+    return undefined;
+  }, []);
+
+  const isResetPasswordPage = window.location.pathname === '/reset-password';
 
   const initials = userName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
+  if (isResetPasswordPage) {
+    return <ResetPasswordPage isDark={isDark} theme={theme} />;
+  }
+
   if (auth === 'login') {
-    return <LoginPage isDark={isDark} theme={theme} onLogin={handleLogin} onGoToSignup={() => setAuth('signup')} />;
+    return (
+      <LoginPage
+        isDark={isDark}
+        theme={theme}
+        onLogin={handleLogin}
+        onGoToSignup={() => setAuth('signup')}
+        initialMessage={resetSuccessMessage}
+      />
+    );
   }
   if (auth === 'signup') {
     return <SignupPage isDark={isDark} theme={theme} onSignup={handleSignup} onGoToLogin={() => setAuth('login')} />;
+  }
+
+  if (showSettings) {
+    return (
+      <div className="min-h-screen" style={{ background: theme.bg }}>
+        <main className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
+          <SettingsPage
+            isDark={isDark}
+            theme={theme}
+            onProfileUpdated={handleProfileUpdated}
+          />
+        </main>
+        <MealPlannerButton onClick={openMealPlanner} />
+      </div>
+    );
   }
 
   return (
@@ -114,7 +234,7 @@ export default function App() {
             {navItems.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
-                onClick={() => setPage(id)}
+                onClick={() => navigateToPage(id)}
                 className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-lg text-sm transition-all duration-150"
                 style={{
                   background: page === id
@@ -169,7 +289,16 @@ export default function App() {
               </div>
             </div>
             <button
-              onClick={() => setAuth('login')}
+              onClick={() => {
+                localStorage.removeItem('guidaplate_token');
+                localStorage.removeItem('guidaplate_user_id');
+                setAuth('login');
+                setShowSettings(false);
+                setPage('dashboard');
+                if (window.location.pathname !== '/') {
+                  window.history.replaceState({}, '', '/');
+                }
+              }}
               className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 hover:opacity-70"
               title="Log out"
               style={{
@@ -187,13 +316,25 @@ export default function App() {
       {/* Page content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
         {page === 'dashboard' && (
-          <DashboardPage isDark={isDark} theme={theme} onNavigate={(p) => setPage(p as Page)} />
+          <DashboardPage isDark={isDark} theme={theme} onNavigate={(p) => navigateToPage(p as Page)} />
         )}
         {page === 'explorer' && (
           <FoodExplorer isDark={isDark} theme={theme} />
         )}
         {page === 'assessment' && (
-          <RiskAssessment isDark={isDark} theme={theme} initialBodyWeight={userWeight} />
+          <RiskAssessment
+            key={`${userStage}-${userWeight}`}
+            isDark={isDark}
+            theme={theme}
+            initialBodyWeight={userWeight}
+            initialStage={userStage}
+          />
+        )}
+        {page === 'weekly' && (
+          <WeeklyTrendPage isDark={isDark} theme={theme} onNavigate={(p) => navigateToPage(p as Page)} />
+        )}
+        {page === 'meal-planner' && (
+          <MealPlannerPage isDark={isDark} theme={theme} />
         )}
       </main>
 
@@ -211,6 +352,19 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      <button
+        type="button"
+        onClick={openSettings}
+        title="Settings"
+        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105"
+        style={{ background: 'linear-gradient(135deg, #2E86AB 0%, #1A5F7A 100%)' }}
+        aria-label="Settings"
+      >
+        <Settings size={20} className="text-white" />
+      </button>
+
+      {page !== 'meal-planner' && <MealPlannerButton onClick={openMealPlanner} />}
     </div>
   );
 }

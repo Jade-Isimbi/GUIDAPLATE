@@ -19,8 +19,13 @@ pyreadstat
 joblib
 thefuzz
 python-multipart
+sendgrid
+python-dotenv
 requests
 matplotlib
 seaborn
 streamlit
 plotly
+pypdf
+sentence-transformers
+huggingface_hub

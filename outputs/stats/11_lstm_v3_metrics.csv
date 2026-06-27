@@ -1,0 +1,2 @@
+model,accuracy,f1_weighted,auc_roc,high_sensitivity,mod_sensitivity,decision,v3_beats_b2,v3_trade_off,training_samples,test_samples,features_per_step,epochs_trained,best_epoch
+LSTM v3,0.9208,0.9219,0.9837,0.8844,0.9184,✅ V3 beats B2 — deploy to production,True,True,8784,366,5,25,15

@@ -1,0 +1,6 @@
+stage,accuracy,f1_weighted,f1_MODERATE,high_sensitivity,auc_roc,std_accuracy,std_f1_weighted,f1_LOW,std_f1_LOW,std_f1_MODERATE,f1_HIGH,std_f1_HIGH,std_high_sensitivity,std_auc_roc
+nb09_single_split,0.6104,0.5272,0.0,0.9316,0.6599,,,,,,,,,
+step1_cv_baseline,0.6174,0.5394,0.0,0.9282,0.6462,0.0164,0.0207,0.3583,0.0339,0.0,0.7506,0.0131,0.0087,0.0129
+step2_class_weights,0.4638,0.46,0.1604,0.5036,0.6006,0.0867,0.0725,0.4168,0.0171,0.0364,0.55,0.1317,0.222,0.0259
+step3_risk_features,0.5338,0.5327,0.1846,0.6811,0.6484,0.0413,0.0319,0.4119,0.0282,0.0122,0.6713,0.0552,0.1012,0.0174
+step4_stacked GRU,0.5622,0.5454,0.145,0.7351,0.6455,0.0481,0.0436,,,,,,,

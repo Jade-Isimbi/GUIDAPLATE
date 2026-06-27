@@ -436,19 +436,86 @@ export function isSafeForStage(ckdStageSafe: string, stageNum: number): boolean 
 }
 
 export function getDefaultGrams(category: string): number {
-  const map: Record<string, number> = {
-    Grain: 150,
-    Starch: 150,
-    Meat: 100,
-    Fish: 100,
-    Dairy: 240,
-    Egg: 55,
-    Legume: 150,
-    Vegetable: 100,
-    Fruit: 150,
-    "Fat/Oil": 15,
-    Beverage: 240,
-    Other: 50,
-  };
-  return map[category] ?? 100;
+  return getUnitInfo('', category).grams_per_unit;
+}
+
+const FOOD_UNIT_OVERRIDES: Record<string, { unit: string; grams: number }> = {
+  banana: { unit: 'banana', grams: 120 },
+  egg: { unit: 'egg', grams: 50 },
+  eggs: { unit: 'egg', grams: 50 },
+  bread: { unit: 'slice', grams: 30 },
+  avocado: { unit: 'piece', grams: 200 },
+  pineapple: { unit: 'slice', grams: 80 },
+  watermelon: { unit: 'slice', grams: 200 },
+  sugarcane: { unit: 'piece', grams: 100 },
+  'sugar cane': { unit: 'piece', grams: 100 },
+  milk: { unit: 'glass', grams: 240 },
+  tea: { unit: 'cup', grams: 240 },
+  ikivuguto: { unit: 'cup', grams: 240 },
+  'sour milk': { unit: 'cup', grams: 240 },
+  'sweet potatoes': { unit: 'piece', grams: 200 },
+  'sweet potato': { unit: 'piece', grams: 200 },
+  cassava: { unit: 'piece', grams: 200 },
+  rice: { unit: 'cup', grams: 185 },
+  ugali: { unit: 'serving', grams: 200 },
+  beans: { unit: 'cup', grams: 180 },
+  chicken: { unit: 'piece', grams: 85 },
+  tilapia: { unit: 'piece', grams: 85 },
+  fish: { unit: 'piece', grams: 85 },
+  oats: { unit: 'cup', grams: 80 },
+  'peanut butter': { unit: 'tablespoon', grams: 30 },
+};
+
+const CATEGORY_UNITS: Record<string, { unit: string; grams_per_unit: number }> = {
+  Fruit: { unit: 'piece', grams_per_unit: 150 },
+  Fruit_small: { unit: 'piece', grams_per_unit: 80 },
+  'Starch/Grain': { unit: 'cup', grams_per_unit: 185 },
+  Starch: { unit: 'cup', grams_per_unit: 185 },
+  Grain: { unit: 'cup', grams_per_unit: 185 },
+  Bread: { unit: 'slice', grams_per_unit: 30 },
+  'Root Vegetable': { unit: 'piece', grams_per_unit: 200 },
+  Vegetable: { unit: 'cup', grams_per_unit: 90 },
+  Meat: { unit: 'piece', grams_per_unit: 85 },
+  Fish: { unit: 'piece', grams_per_unit: 85 },
+  Egg: { unit: 'egg', grams_per_unit: 50 },
+  Legume: { unit: 'cup', grams_per_unit: 180 },
+  Dairy: { unit: 'cup', grams_per_unit: 240 },
+  Beverage: { unit: 'cup', grams_per_unit: 240 },
+  'Fat/Oil': { unit: 'tablespoon', grams_per_unit: 14 },
+  Nut: { unit: 'tablespoon', grams_per_unit: 30 },
+  Other: { unit: 'serving', grams_per_unit: 100 },
+};
+
+export function getUnitInfo(foodName: string, category: string): { unit: string; grams_per_unit: number } {
+  const foodLower = foodName.toLowerCase();
+  for (const [key, override] of Object.entries(FOOD_UNIT_OVERRIDES)) {
+    if (foodLower.includes(key)) {
+      return { unit: override.unit, grams_per_unit: override.grams };
+    }
+  }
+
+  const catInfo = CATEGORY_UNITS[category] ?? CATEGORY_UNITS.Other;
+  return { unit: catInfo.unit, grams_per_unit: catInfo.grams_per_unit };
+}
+
+export function pluralizeUnit(quantity: number, unit: string): string {
+  if (quantity > 1 && !unit.endsWith('s')) {
+    return `${unit}s`;
+  }
+  return unit;
+}
+
+export function formatPortionLabel(quantity: number, unit: string): string {
+  const rounded = Number.isInteger(quantity) ? String(quantity) : quantity.toFixed(1).replace(/\.0$/, '');
+  return `${rounded} ${pluralizeUnit(quantity, unit)}`;
+}
+
+export function gramsToPortionLabel(foodName: string, category: string, grams: number): string {
+  if (grams <= 0) return '0g';
+  const { unit, grams_per_unit } = getUnitInfo(foodName, category);
+  const quantity = Math.round((grams / grams_per_unit) * 2) / 2;
+  if (quantity >= 0.5) {
+    return formatPortionLabel(quantity, unit);
+  }
+  return `${Math.round(grams)}g`;
 }

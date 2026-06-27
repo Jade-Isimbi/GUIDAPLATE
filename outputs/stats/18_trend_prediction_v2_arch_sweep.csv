@@ -1,0 +1,5 @@
+config,accuracy,std_accuracy,f1_weighted,std_f1_weighted,f1_LOW,std_f1_LOW,f1_MODERATE,std_f1_MODERATE,f1_HIGH,std_f1_HIGH,high_sensitivity,std_high_sensitivity,auc_roc,std_auc_roc
+baseline (current),0.5325,0.0285,0.5394,0.0174,0.4351,0.0277,0.1886,0.0284,0.6705,0.0294,0.6679,0.0643,0.655,0.0145
+larger single layer,0.5442,0.0334,0.5434,0.0232,0.4247,0.0323,0.1839,0.0432,0.6832,0.0345,0.6994,0.0822,0.6521,0.0144
+higher dropout,0.5065,0.076,0.4912,0.083,0.4474,0.0168,0.1131,0.0678,0.5979,0.1331,0.5682,0.209,0.6187,0.0369
+stacked GRU,0.5622,0.0481,0.5454,0.0436,0.4269,0.0214,0.145,0.0515,0.6942,0.0595,0.7351,0.1157,0.6455,0.0279

@@ -1,0 +1,8 @@
+comparison,metric,before,after,delta
+step1_to_step2,accuracy,0.6174,0.4638,-0.1537
+step1_to_step2,f1_weighted,0.5394,0.46,-0.0794
+step1_to_step2,f1_LOW,0.3583,0.4168,0.0584
+step1_to_step2,f1_MODERATE,0.0,0.1604,0.1604
+step1_to_step2,f1_HIGH,0.7506,0.55,-0.2006
+step1_to_step2,high_sensitivity,0.9282,0.5036,-0.4246
+step1_to_step2,auc_roc,0.6462,0.6006,-0.0456

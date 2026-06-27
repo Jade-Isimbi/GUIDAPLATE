@@ -11,11 +11,21 @@ from backend.models.lstm_model import get_analyzer
 router = APIRouter(tags=["Pattern Analysis"])
 
 MAX_SEQUENCE_STEPS = 6
-FEATURES_PER_STEP = 4
+
+
+class MealStep(BaseModel):
+    potassium: float
+    phosphorus: float
+    protein_per_kg: float
+    sodium: float
+    occasion_encoded: float = 0.5  # default neutral / backward compatible
 
 
 class MealSequenceRequest(BaseModel):
-    meal_sequence: list[list[float]]
+    # Accept both formats:
+    # - legacy: list[list[float]] with 4 values per step
+    # - v2: list[MealStep] (dicts)
+    meal_sequence: list
     ckd_stage: str
 
 
@@ -75,19 +85,38 @@ def predict_pattern(request: MealSequenceRequest) -> PatternAnalysisResponse:
             ),
         )
 
+    normalized: list[list[float]] = []
     for i, step in enumerate(request.meal_sequence):
-        if len(step) != FEATURES_PER_STEP:
+        # New structured form (dict / pydantic model)
+        if isinstance(step, dict):
+            try:
+                s = MealStep(**step)
+            except Exception as exc:
+                raise HTTPException(status_code=400, detail=f"Invalid step {i + 1}: {exc}") from exc
+            normalized.append([s.potassium, s.phosphorus, s.protein_per_kg, s.sodium, s.occasion_encoded])
+            continue
+
+        # Legacy list-of-floats form (4 or 5)
+        if isinstance(step, list):
+            if len(step) == 4:
+                normalized.append([float(step[0]), float(step[1]), float(step[2]), float(step[3]), 0.5])
+                continue
+            if len(step) == 5:
+                normalized.append([float(step[0]), float(step[1]), float(step[2]), float(step[3]), float(step[4])])
+                continue
             raise HTTPException(
                 status_code=400,
                 detail=(
-                    f"Step {i + 1} must have exactly {FEATURES_PER_STEP} values "
-                    f"[potassium, phosphorus, protein_per_kg, sodium]; "
-                    f"received {len(step)}."
+                    f"Step {i + 1} must have 4 values "
+                    f"[potassium, phosphorus, protein_per_kg, sodium] "
+                    f"or 5 values (including occasion_encoded); received {len(step)}."
                 ),
             )
 
+        raise HTTPException(status_code=400, detail=f"Invalid step {i + 1}: expected object or list.")
+
     try:
-        result = get_analyzer().analyze(request.meal_sequence)
+        result = get_analyzer().analyze(normalized)
         risk_label = result["risk_label"]
         trend = result["trend"]
 

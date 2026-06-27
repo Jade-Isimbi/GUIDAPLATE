@@ -1,0 +1,11 @@
+{
+  "accuracy": 0.8579,
+  "f1": 0.8664,
+  "auc": 0.9543,
+  "high_sensitivity": 0.8818,
+  "mod_sensitivity": 0.5897,
+  "features": 5,
+  "occasion_encoded": true,
+  "masking": false,
+  "sequence_aware_labels": false
+}

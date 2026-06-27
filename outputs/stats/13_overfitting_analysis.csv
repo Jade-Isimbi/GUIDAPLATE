@@ -1,0 +1,6 @@
+model,train_acc,test_acc,gap_pct,cv_mean,cv_std,status
+Rule Baseline,,75.0,,,,No params
+XGBoost v3,100.0,98.99,1.01,99.8,0.17,No overfitting
+XGBoost v1 (leakage),74.83,75.34,-0.51,,,Leakage / mismatch
+LSTM v3,92.55,92.08,0.48,92.41,1.06,No overfitting
+HMM Supervised,63.8,67.8,-4.0,,,Too simple

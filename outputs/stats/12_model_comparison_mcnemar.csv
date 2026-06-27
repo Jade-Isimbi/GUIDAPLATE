@@ -1,0 +1,7 @@
+comparison,b,c,statistic,p_value,significant
+Rule-Based vs XGBoost v3,2,73,65.3333,0.0,True
+XGBoost v1 vs v3,2,72,64.3378,0.0,True
+Baseline vs LSTM v1,10,19,2.2069,0.137395,False
+Baseline vs LSTM v3,21,69,24.5444,1e-06,True
+LSTM v1 vs LSTM v3,22,61,17.3976,3e-05,True
+XGBoost v3 vs LSTM v3 (common),6,0,4.1667,0.041227,True
