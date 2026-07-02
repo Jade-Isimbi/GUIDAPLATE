@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Activity, Eye, EyeOff } from 'lucide-react';
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 interface ResetPasswordPageProps {
   isDark: boolean;
@@ -56,7 +56,7 @@ export function ResetPasswordPage({ isDark, theme }: ResetPasswordPageProps) {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/auth/reset-password`, {
+      const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, new_password: password }),

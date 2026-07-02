@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from backend.clinical_constants import KDOQI_DAILY_LIMITS
+
 # ---------------------------------------------------------------------------
 # Project root (repository root; parent of backend/)
 # ---------------------------------------------------------------------------
@@ -80,27 +82,49 @@ CKD_STAGE_ENCODING: dict[str, int] = {
 
 CKD_STAGE_DECODING: dict[int, str] = {v: k for k, v in CKD_STAGE_ENCODING.items()}
 
-# ---------------------------------------------------------------------------
-# Dietary risk thresholds (daily totals) — EDA / synthetic / app risk logic
-# ---------------------------------------------------------------------------
-# Evidence-aligned targets (KDOQI 2020, KDIGO 2024, NKF) — mg/day except protein (g/day).
-DIETARY_RISK_THRESHOLDS: dict[str, dict[str, float]] = {
-    "G2": {"potassium": 3500.0, "phosphorus": 1200.0, "protein": 90.0, "sodium": 2300.0},
-    "G3a": {"potassium": 3000.0, "phosphorus": 1000.0, "protein": 75.0, "sodium": 2300.0},
-    "G3b": {"potassium": 2500.0, "phosphorus": 900.0, "protein": 65.0, "sodium": 2000.0},
-    "G4": {"potassium": 2000.0, "phosphorus": 800.0, "protein": 56.0, "sodium": 2000.0},
-    "G5": {"potassium": 1500.0, "phosphorus": 800.0, "protein": 50.0, "sodium": 1800.0},
+# LEGACY — DO NOT USE IN PRODUCTION
+# These values were used in early EDA
+# (notebook 01_data_exploration.ipynb only)
+# Production limits are in:
+# backend.clinical_constants.KDOQI_DAILY_LIMITS
+LEGACY_EDA_THRESHOLDS: dict[str, dict[str, float]] = {
+    "G2": {
+        "potassium": 3500.0,
+        "phosphorus": 1200.0,
+        "protein": 90.0,
+        "sodium": 2300.0,
+    },
+    "G3a": {
+        "potassium": 3000.0,
+        "phosphorus": 1000.0,
+        "protein": 75.0,
+        "sodium": 2300.0,
+    },
+    "G3b": {
+        "potassium": 2500.0,  # legacy — production: 3000.0
+        "phosphorus": 900.0,  # legacy — production: 800.0
+        "protein": 65.0,  # legacy abs g/day — production: 0.6 g/kg
+        "sodium": 2000.0,  # legacy — production: 2300.0
+    },
+    "G4": {
+        "potassium": 2000.0,
+        "phosphorus": 800.0,
+        "protein": 56.0,
+        "sodium": 2000.0,
+    },
+    "G5": {
+        "potassium": 1500.0,
+        "phosphorus": 800.0,
+        "protein": 50.0,
+        "sodium": 1800.0,
+    },
+    # Do not use — see clinical_constants.py
 }
 
-# Used for XGBoost protein_ratio feature — must match
-# notebook 04 THRESHOLDS exactly (g/kg/day, not g/day)
+# g/kg/day — derived from production limits. Prefer KDOQI_DAILY_LIMITS in new code.
 PROTEIN_PER_KG_THRESHOLDS: dict[str, float] = {
-    "G2": 0.8,
-    "G3a": 0.6,
-    "G3b": 0.6,
-    "G4": 0.55,
-    "G5": 0.55,
-}
+    stage: limits["protein_per_kg"] for stage, limits in KDOQI_DAILY_LIMITS.items()
+} | {"G5": 0.55}
 
 # ---------------------------------------------------------------------------
 # Daily meal budget (fraction of daily nutrient target)

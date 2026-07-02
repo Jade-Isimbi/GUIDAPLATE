@@ -1,0 +1,27 @@
+{
+  "MOD=3": {
+    "accuracy": 0.8358,
+    "f1_macro": 0.8215,
+    "auc": 0.9469,
+    "low_recall": 0.6167,
+    "mod_recall": 0.9026,
+    "high_recall": 0.8595,
+    "cv_f1": 0.8077,
+    "edge_pass": 4,
+    "deployed": true
+  },
+  "MOD=2": {
+    "accuracy": 0.8328,
+    "f1_macro": 0.8177,
+    "auc": 0.9453,
+    "low_recall": 0.6167,
+    "mod_recall": 0.8961,
+    "high_recall": 0.8595,
+    "cv_f1": 0.8092,
+    "edge_pass": 4,
+    "deployed": false
+  },
+  "mcnemar_p": 1.0,
+  "deploy": "MOD=3",
+  "reason": "MOD=3 has higher MOD recall and MOD=2 does not improve other metrics"
+}

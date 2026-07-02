@@ -13,7 +13,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from backend.auth.security import get_current_user_id
-from backend.database.db import FoodLog, Patient, get_db
+from backend.clinical_constants import KDOQI_DAILY_LIMITS
+from backend.database.db import Food, FoodLog, Patient, get_db
 from backend.models.recommender import get_recommender
 from backend.utils.meal_aggregation import (
     energy_for_food_log,
@@ -23,14 +24,6 @@ from backend.utils.meal_aggregation import (
 )
 
 router = APIRouter(tags=["Daily Budget"])
-
-# Notebook 03 assign_risk_label / frontend STAGE_THRESHOLDS — do not change values here.
-KDOQI_DAILY_LIMITS: dict[str, dict[str, float]] = {
-    "G2": {"potassium": 3500.0, "phosphorus": 1000.0, "protein_per_kg": 0.8, "sodium": 2300.0},
-    "G3a": {"potassium": 3000.0, "phosphorus": 800.0, "protein_per_kg": 0.6, "sodium": 2300.0},
-    "G3b": {"potassium": 3000.0, "phosphorus": 800.0, "protein_per_kg": 0.6, "sodium": 2300.0},
-    "G4": {"potassium": 2500.0, "phosphorus": 700.0, "protein_per_kg": 0.55, "sodium": 2300.0},
-}
 
 SUPPORTED_STAGES = set(KDOQI_DAILY_LIMITS)
 REFERENCE_PORTION_G = 100.0
@@ -83,6 +76,25 @@ PLATE_ROLE_CATEGORIES: dict[str, list[str]] = {
     "Vegetable": ["Vegetable"],
     "Protein": ["Meat", "Fish", "Egg", "Legume"],
 }
+
+PLATE_ROLE_MAP: dict[str, str] = {
+    "Starch/Grain": "Starch",
+    "Bread": "Starch",
+    "Root Vegetable": "Starch",
+    "Starch": "Starch",
+    "Grain": "Starch",
+    "Vegetable": "Vegetable",
+    "Fruit": "Vegetable",
+    "Meat": "Protein",
+    "Fish": "Protein",
+    "Egg": "Protein",
+    "Legume": "Protein",
+    "Dairy": "Protein",
+}
+
+
+def plate_role_for_food(food: dict) -> str:
+    return PLATE_ROLE_MAP.get(str(food.get("category") or "Other"), "Side")
 
 MEAL_ORDER = ["Breakfast", "Lunch", "Dinner", "Snack"]
 
@@ -489,11 +501,21 @@ def _fallback_flat_last_resort(
         ]
         if eligible:
             ranked = sorted(eligible, key=lambda f: _fallback_weighted_score(f, exceeded_nutrients))
-            return [_food_to_fallback_dict(f, tier, None) for f in ranked[:top_n]]
+            return [
+                _food_to_fallback_dict(
+                    f,
+                    tier,
+                    plate_role_for_food(f),
+                )
+                for f in ranked[:top_n]
+            ]
     ranked = sorted(guarded, key=lambda f: _fallback_weighted_score(f, exceeded_nutrients))
     if not ranked:
         return []
-    return [_food_to_fallback_dict(f, 2, None) for f in ranked[:top_n]]
+    return [
+        _food_to_fallback_dict(f, 2, plate_role_for_food(f))
+        for f in ranked[:top_n]
+    ]
 
 
 def _fallback_lowest_impact_foods(
@@ -596,6 +618,7 @@ def suggest_balanced_foods(
             "variety_score": variety_score,
             "energy_rank_score": energy_rank_score,
             "fallback": False,
+            "plate_role": plate_role_for_food(food),
         })
 
     safe_foods.sort(
@@ -647,6 +670,7 @@ def compute_daily_budget(
     logs: list[FoodLog],
     ckd_stage: str,
     weight_kg: float,
+    db: Session,
     food_database: list[dict] | None = None,
 ) -> dict:
     if ckd_stage not in KDOQI_DAILY_LIMITS:
@@ -678,10 +702,9 @@ def compute_daily_budget(
         remaining_headroom[key] = nutrients[key].remaining
 
     if food_database is None:
-        food_database = get_recommender().get_all_foods(stage=ckd_stage)
+        food_database = get_recommender().get_all_foods(db=db, stage=ckd_stage)
 
-    recommender = get_recommender()
-    total_foods = len(recommender.foods)
+    total_foods = db.query(Food).count()
 
     exceeded_nutrients = [
         key for key in NUTRIENT_KEYS if nutrients[key].percent_used >= 100.0
@@ -760,5 +783,5 @@ def get_daily_budget(
 
     ckd_stage = normalize_ckd_stage(patient.ckd_stage)
     weight_kg = float(patient.body_weight_kg or 70.0)
-    result = compute_daily_budget(logs, ckd_stage, weight_kg)
+    result = compute_daily_budget(logs, ckd_stage, weight_kg, db)
     return DailyBudgetResponse(date=target.isoformat(), **result)

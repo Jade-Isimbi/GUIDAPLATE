@@ -11,6 +11,10 @@ import joblib
 import numpy as np
 
 from backend.config import CKD_STAGE_ENCODING, XGBOOST_MODEL_PATH
+from backend.clinical_constants import (
+    CLINICAL_SEVERITY_WEIGHTS,
+    KDOQI_DAILY_LIMITS,
+)
 
 _predictor: XGBoostRiskPredictor | None = None
 
@@ -29,39 +33,12 @@ FEATURE_ORDER = [
 
 STAGE_NUMERIC = {"G2": 2, "G3a": 3, "G3b": 3, "G4": 4}
 
-WEIGHTS = {
-    "potassium": 0.35,
-    "phosphorus": 0.30,
-    "protein_per_kg": 0.25,
-    "sodium": 0.10,
-}
-
-KDOQI_LIMITS = {
-    "G2": {
-        "potassium": 3500,
-        "phosphorus": 1000,
-        "protein_per_kg": 0.8,
-        "sodium": 2300,
-    },
-    "G3a": {
-        "potassium": 3000,
-        "phosphorus": 800,
-        "protein_per_kg": 0.6,
-        "sodium": 2300,
-    },
-    "G3b": {
-        "potassium": 3000,
-        "phosphorus": 800,
-        "protein_per_kg": 0.6,
-        "sodium": 2300,
-    },
-    "G4": {
-        "potassium": 2500,
-        "phosphorus": 700,
-        "protein_per_kg": 0.55,
-        "sodium": 2300,
-    },
-}
+_CLINICAL_SCORE_NUTRIENTS = (
+    ("potassium", "potassium"),
+    ("phosphorus", "phosphorus"),
+    ("protein_per_kg", "protein"),
+    ("sodium", "sodium"),
+)
 
 
 def compute_clinical_score(
@@ -71,7 +48,7 @@ def compute_clinical_score(
     sodium: float,
     ckd_stage: str,
 ) -> float:
-    limits = KDOQI_LIMITS[ckd_stage]
+    limits = KDOQI_DAILY_LIMITS[ckd_stage]
     score = 0.0
     values = {
         "potassium": potassium,
@@ -79,7 +56,8 @@ def compute_clinical_score(
         "protein_per_kg": protein_per_kg,
         "sodium": sodium,
     }
-    for nutrient, weight in WEIGHTS.items():
+    for nutrient, weight_key in _CLINICAL_SCORE_NUTRIENTS:
+        weight = CLINICAL_SEVERITY_WEIGHTS[weight_key]
         ratio = values[nutrient] / limits[nutrient]
         if ratio > 1.0:
             score += weight * (1 + (ratio - 1) * 2)

@@ -15,7 +15,8 @@ from sqlalchemy.orm import Session
 
 from backend.auth.security import get_current_user_id
 from backend.database.db import FoodLog, Patient, RiskAssessmentLog, User, get_db
-from backend.utils.meal_aggregation import day_bounds, nutrients_for_food_name
+from backend.database.food_queries import get_food_nutrients
+from backend.utils.meal_aggregation import day_bounds
 
 router = APIRouter(tags=["Patient Data"])
 
@@ -40,6 +41,10 @@ class FoodLogRequest(BaseModel):
     stage_safe_range: str  # CKD stage safety range, e.g. "1-5" or "1-3"
     portion_grams: float = Field(default=100.0, gt=0)
     meal_occasion: str | None = None  # Breakfast | Lunch | Dinner | Snack
+    potassium_mg: float | None = None
+    phosphorus_mg: float | None = None
+    protein_g: float | None = None
+    sodium_mg: float | None = None
 
 
 class FoodLogHistoryItem(BaseModel):
@@ -60,6 +65,10 @@ class RiskAssessmentRequest(BaseModel):
     risk_level: str
     risk_score: float
     nutrients_summary: str | None = None  # JSON string of nutrient totals
+    shap_contributions: dict | None = None
+    shap_explanation: str | None = None
+    feature_values: dict | None = None
+    ckd_stage: str | None = None
 
 
 def _parse_nutrient_totals(raw: str | None) -> dict | list | None:
@@ -154,6 +163,39 @@ def _serialize_food_log(log: FoodLog) -> dict:
     }
 
 
+def _resolve_food_log_nutrients(
+    food_name: str,
+    portion_grams: float,
+    db: Session,
+    potassium_mg: float | None = None,
+    phosphorus_mg: float | None = None,
+    protein_g: float | None = None,
+    sodium_mg: float | None = None,
+) -> dict[str, float]:
+    """Use client nutrients when present; otherwise look up from foods table."""
+    if potassium_mg is not None and potassium_mg > 0:
+        return {
+            "potassium_mg": float(potassium_mg),
+            "phosphorus_mg": float(phosphorus_mg or 0),
+            "protein_g": float(protein_g or 0),
+            "sodium_mg": float(sodium_mg or 0),
+        }
+
+    if not food_name or not food_name.strip():
+        raise ValueError("food_name is required to compute nutrients")
+
+    nutrients = get_food_nutrients(food_name.strip(), portion_grams, db)
+    if nutrients is None:
+        raise ValueError(f"Food not found in database: {food_name.strip()!r}")
+
+    return {
+        "potassium_mg": nutrients["potassium_mg"],
+        "phosphorus_mg": nutrients["phosphorus_mg"],
+        "protein_g": nutrients["protein_g"],
+        "sodium_mg": nutrients["sodium_mg"],
+    }
+
+
 @router.post("/patient/food-log")
 def save_food_log(
     request: FoodLogRequest,
@@ -161,9 +203,23 @@ def save_food_log(
     db: Session = Depends(get_db),
 ):
     try:
-        nutrients = nutrients_for_food_name(request.food_name, request.portion_grams)
+        nutrients = _resolve_food_log_nutrients(
+            request.food_name,
+            request.portion_grams,
+            db,
+            request.potassium_mg,
+            request.phosphorus_mg,
+            request.protein_g,
+            request.sodium_mg,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    if nutrients["potassium_mg"] <= 0 and nutrients["phosphorus_mg"] <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not resolve nutrients for {request.food_name!r}",
+        )
 
     log = FoodLog(
         log_id=str(uuid.uuid4()),
@@ -220,25 +276,8 @@ def _parse_log_date(raw: str | None) -> date:
         raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD") from exc
 
 
-@router.delete("/patient/food-log/{log_id}")
-def delete_food_log(
-    log_id: str,
-    user_id: str = Depends(get_current_user_id),
-    db: Session = Depends(get_db),
-):
-    log = (
-        db.query(FoodLog)
-        .filter(FoodLog.log_id == log_id, FoodLog.patient_id == user_id)
-        .first()
-    )
-    if log is None:
-        raise HTTPException(status_code=404, detail="Food log not found")
-    db.delete(log)
-    db.commit()
-    return {"status": "deleted", "log_id": log_id}
-
-
 @router.delete("/patient/food-log/day")
+@router.delete("/patient/food-log/today")
 def clear_food_logs_for_day(
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
@@ -263,6 +302,24 @@ def clear_food_logs_for_day(
     return {"status": "cleared", "deleted_count": deleted, "date": target.isoformat()}
 
 
+@router.delete("/patient/food-log/{log_id}")
+def delete_food_log(
+    log_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    log = (
+        db.query(FoodLog)
+        .filter(FoodLog.log_id == log_id, FoodLog.patient_id == user_id)
+        .first()
+    )
+    if log is None:
+        raise HTTPException(status_code=404, detail="Food log not found")
+    db.delete(log)
+    db.commit()
+    return {"status": "deleted", "log_id": log_id}
+
+
 @router.post("/patient/risk-assessment")
 def save_risk_assessment(
     request: RiskAssessmentRequest,
@@ -277,7 +334,7 @@ def save_risk_assessment(
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     patient = db.query(Patient).filter(Patient.patient_id == user_id).first()
-    ckd_stage = patient.ckd_stage if patient else None
+    ckd_stage = request.ckd_stage or (patient.ckd_stage if patient else None)
 
     assessment = RiskAssessmentLog(
         assessment_id=str(uuid.uuid4()),
@@ -286,6 +343,9 @@ def save_risk_assessment(
         risk_label=request.risk_level,
         confidence=request.risk_score,
         nutrient_totals=nutrient_totals,
+        shap_values=request.shap_contributions,
+        shap_explanation=request.shap_explanation,
+        feature_values=request.feature_values,
         assessed_at=datetime.utcnow(),
     )
     db.add(assessment)

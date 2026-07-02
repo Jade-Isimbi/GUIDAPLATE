@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import logging
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -10,45 +12,181 @@ from huggingface_hub import InferenceClient
 from pydantic import BaseModel, Field
 
 from backend.auth.security import get_current_user_id
+from backend.clinical_constants import KDOQI_DAILY_LIMITS, STAGE_NUMERIC as _CLINICAL_STAGE_NUMERIC
+from backend.database.db import Food, SessionLocal
 from backend.rag.retriever import get_retriever
+
+_mp_logger = logging.getLogger(__name__)
 
 
 router = APIRouter(prefix="/meal-planner", tags=["Meal Planner"])
 
+CLINICAL_SAFETY_RULES = """
 
-KDOQI_LIMITS: dict[str, dict[str, float]] = {
-    "G2": {"potassium": 3500, "phosphorus": 1000, "protein_per_kg": 0.8, "sodium": 2300},
-    "G3a": {"potassium": 3000, "phosphorus": 800, "protein_per_kg": 0.6, "sodium": 2300},
-    "G3b": {"potassium": 3000, "phosphorus": 800, "protein_per_kg": 0.6, "sodium": 2300},
-    "G4": {"potassium": 2500, "phosphorus": 700, "protein_per_kg": 0.55, "sodium": 2300},
-}
+STRICT CLINICAL SAFETY RULES —
+NEVER VIOLATE THESE:
 
-RWANDA_FOOD_CONTEXT = """
-Common Rwandan foods by meal:
+1. NEVER recommend or mention
+   these high-risk foods for
+   Stage 3b or Stage 4 patients:
+   beans, ibishyimbo, haricots,
+   peas, amashaza, lentils,
+   soybeans, soya, groundnuts,
+   arachides, ubunyobwa,
+   avocado, banana, umuneke,
+   potato, ibirayi, spinach,
+   tomato sauce, orange juice,
+   nuts of any kind.
 
-Breakfast: bread, milk, tea, oats,
-  ikivuguto (fermented milk),
-  sweet potatoes, cassava,
-  maize porridge (uji), eggs,
-  peanut butter, bananas
+2. NEVER suggest a food that
+   has potassium above 300mg
+   per 100g serving.
 
-Lunch/Dinner: ugali (ubugali),
-  isombe (cassava leaves),
-  beans (ibishyimbo), rice,
-  irish potatoes, sweet potatoes,
-  cassava, matoke (cooking banana),
-  tilapia, chicken, beef, goat meat,
-  cabbage, tomatoes, onions,
-  peas (amashaza), sorghum
+3. NEVER suggest a food that
+   has phosphorus above 200mg
+   per 100g serving.
 
-Snacks/Fruits: banana, pineapple,
-  avocado, mango, passion fruit,
-  watermelon, sugarcane
+4. ALWAYS recommend only foods
+   you have seen in the provided
+   context that are explicitly
+   marked as safe for the
+   patient's CKD stage.
 
-Do NOT suggest: almond milk, quinoa,
-  kale smoothies, tofu, sushi,
-  or any non-Rwandan foods.
+5. If you are not certain a
+   food is safe, do not mention
+   it. Recommend only foods
+   from the provided clinical
+   context.
+
+6. NEVER contradict the
+   structured food table
+   in your response. If a food
+   appears in the table it was
+   verified safe. If it does not
+   appear in the table do not
+   recommend it in your text.
 """
+
+HIGH_RISK_FOODS = [
+    "beans",
+    "ibishyimbo",
+    "haricots",
+    "peas",
+    "amashaza",
+    "lentils",
+    "soybeans",
+    "soya",
+    "groundnuts",
+    "arachides",
+    "ubunyobwa",
+    "avocado",
+    "banana",
+    "umuneke",
+    "spinach",
+    "potato",
+    "ibirayi",
+    "kidney beans",
+    "black beans",
+]
+
+
+def get_rwanda_food_context(ckd_stage: str) -> str:
+    """
+    Returns stage-filtered Rwandan food context. Never lists
+    forbidden foods as normal foods for the patient's stage.
+    """
+    # Foods safe for ALL stages
+    always_safe = (
+        "rice, sorghum, cassava, "
+        "cabbage, carrots, pumpkin, "
+        "eggplant, apples, mangoes, "
+        "pineapples, watermelon, "
+        "papaya, sugarcane, "
+        "ikivuguto (small portions), "
+        "eggs, tea, bread, oats, "
+        "maize porridge (uji), "
+        "tilapia (small portions), "
+        "chicken (small portions)"
+    )
+
+    # Additional foods by stage
+    stage_extras = {
+        "G2": (
+            ", sweet potatoes, "
+            "banana, avocado, "
+            "beans (ibishyimbo), "
+            "peas (amashaza), "
+            "irish potatoes, "
+            "matoke, isombe, "
+            "ugali (ubugali), "
+            "tomatoes, onions, "
+            "beef, goat meat"
+        ),
+        "G3A": (
+            ", sweet potatoes, "
+            "ugali (ubugali), "
+            "tomatoes, onions, "
+            "beef (small portions), "
+            "goat meat (small portions)"
+        ),
+        "G3B": (
+            ", ugali (ubugali), "
+            "tomatoes (small amounts), "
+            "onions"
+        ),
+        "G4": (
+            ", ugali (small portions)"
+        ),
+    }
+
+    stage_key = ckd_stage.upper()
+
+    extras = stage_extras.get(stage_key, stage_extras["G3B"])
+
+    safe_foods = always_safe + extras
+
+    # Stage-specific forbidden list
+    forbidden = {
+        "G2": "None — all portions moderate",
+        "G3A": (
+            "groundnuts, soybeans, "
+            "very large portions of "
+            "beans or banana"
+        ),
+        "G3B": (
+            "beans (ibishyimbo), "
+            "peas (amashaza), "
+            "banana, matoke, "
+            "avocado, irish potatoes, "
+            "ibirayi, isombe, "
+            "cassava leaves, "
+            "groundnuts, soybeans, "
+            "spinach, large tomatoes"
+        ),
+        "G4": (
+            "beans, peas, banana, "
+            "matoke, avocado, "
+            "irish potatoes, isombe, "
+            "groundnuts, soybeans, "
+            "spinach, sweet potatoes, "
+            "milk (large amounts), "
+            "oranges, tomatoes"
+        ),
+    }
+
+    forbidden_str = forbidden.get(stage_key, forbidden["G3B"])
+
+    return (
+        f"Common Rwandan foods safe "
+        f"for Stage {ckd_stage} CKD:\n"
+        f"{safe_foods}\n\n"
+        f"NEVER recommend these for "
+        f"Stage {ckd_stage}:\n"
+        f"{forbidden_str}\n\n"
+        f"Do NOT suggest: almond milk, "
+        f"quinoa, kale smoothies, tofu, "
+        f"sushi, or non-Rwandan foods."
+    )
 
 
 class MealPlannerRequest(BaseModel):
@@ -56,17 +194,17 @@ class MealPlannerRequest(BaseModel):
     ckd_stage: str = Field(default="G3b")
     weight_kg: float = Field(default=65.0, gt=0)
     uploaded_text: str | None = None
+    conversation_history: list[dict[str, str]] = Field(default_factory=list)
 
 
-def _stage_num(ckd_stage: str) -> int:
-    s = ckd_stage.strip()
-    if s.startswith("G"):
-        s = s[1:]
-    s = s.replace("a", "").replace("b", "")
-    try:
-        return int(s)
-    except ValueError:
-        return 3
+def _stage_num(stage: str) -> int:
+    """
+    Food safety stage encoding. G2=1, G3a=2, G3b=3, G4=4.
+
+    Note: differs from ML feature encoding in xgboost_model.py (G2=2, G3a=3,
+    G3b=3, G4=4) which is fixed to match trained model feature space.
+    """
+    return _CLINICAL_STAGE_NUMERIC.get(stage, 3)
 
 
 def _is_stage_safe(ckd_stage_safe: str, stage_number: int) -> bool:
@@ -87,9 +225,10 @@ def _is_stage_safe(ckd_stage_safe: str, stage_number: int) -> bool:
 
 
 def _load_food_db() -> pd.DataFrame:
-    path = Path("backend/data/food_database.csv")
-    df = pd.read_csv(path)
-    for c in [
+    """
+    Load foods from SQLite (seeded from CSV). Falls back to CSV if DB is empty/unavailable.
+    """
+    required_cols = [
         "english",
         "kinyarwanda",
         "category",
@@ -98,13 +237,41 @@ def _load_food_db() -> pd.DataFrame:
         "phosphorus_mg",
         "protein_g",
         "sodium_mg",
-    ]:
+    ]
+
+    try:
+        db = SessionLocal()
+        try:
+            foods = db.query(Food).all()
+            if foods:
+                df = pd.DataFrame([f.to_dict() for f in foods])
+                for c in required_cols:
+                    if c not in df.columns:
+                        df[c] = None
+                return df
+        finally:
+            db.close()
+    except Exception as e:
+        _mp_logger.warning("DB food load failed, falling back to CSV: %s", e)
+
+    path = Path(__file__).resolve().parent.parent / "data" / "food_database.csv"
+    df = pd.read_csv(path)
+    for c in required_cols:
         if c not in df.columns:
             df[c] = None
     return df
 
 
-def query_llm(prompt: str) -> str | None:
+def _contains_nutrient_values(text: str) -> bool:
+    """
+    Returns True if text contains specific mg or g values that could
+    be hallucinated nutrient data.
+    """
+    nutrient_pattern = re.compile(r"\d+\.?\d*\s*(?:mg|g)\b", re.IGNORECASE)
+    return bool(nutrient_pattern.search(text))
+
+
+def query_llm(prompt: str, history: list[dict] | None = None) -> str | None:
     token = os.getenv("HF_TOKEN")
     if not token:
         return None
@@ -115,35 +282,42 @@ def query_llm(prompt: str) -> str | None:
             api_key=token,
         )
 
+        messages: list[dict[str, str]] = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a CKD dietary advisor for Rwanda. "
+                    "Give concise advice. "
+                    "Never mention specific mg or g nutrient values — "
+                    "those come from the clinical database."
+                    f"{CLINICAL_SAFETY_RULES}"
+                ),
+            },
+        ]
+
+        if history:
+            for turn in history[-6:]:
+                role = turn.get("role", "user")
+                if role not in ("user", "assistant"):
+                    role = "user"
+                content = turn.get("content") or turn.get("text") or ""
+                if content:
+                    messages.append({"role": role, "content": content})
+
+        messages.append({"role": "user", "content": prompt})
+
         response = client.chat.completions.create(
             model="meta-llama/Llama-3.1-8B-Instruct",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a CKD dietary advisor "
-                        "for patients in Rwanda. "
-                        "You only recommend foods commonly "
-                        "eaten in Rwanda. "
-                        "Never suggest Western foods like "
-                        "almond milk, quinoa, or tofu. "
-                        "Always give portions in grams. "
-                        "Be concise and practical."
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": prompt,
-                },
-            ],
-            max_tokens=2048,
+            messages=messages,
+            max_tokens=600,
             temperature=0.3,
         )
 
-        return response.choices[0].message.content.strip()
+        result = response.choices[0].message.content.strip()
+        return result if result else None
 
     except Exception as e:
-        print(f"HuggingFace API error: {e}")
+        _mp_logger.warning("LLM failed (using template): %s", e)
         return None
 
 
@@ -217,7 +391,7 @@ def build_flan_prompt(
             f"Protein={protein_limit_g:.0f}g, "
             f"Na={limits['sodium']}mg\n\n"
             f"RWANDA FOOD CONTEXT:\n"
-            f"{RWANDA_FOOD_CONTEXT}\n\n"
+            f"{get_rwanda_food_context(ckd_stage)}\n\n"
             f"SAFE FOODS FROM DATABASE:\n"
             f"{food_str}\n\n"
             f"Clinical context:\n"
@@ -235,30 +409,61 @@ def build_flan_prompt(
     return prompt
 
 
-def _apply_flan_enhancement(
-    message: str,
-    ckd_stage: str,
-    limits: dict[str, float],
-    protein_limit_g: float,
-    retrieved_chunks: list[dict],
-    answer_parts: list[str],
-    safe_foods: pd.DataFrame | None = None,
-) -> str:
-    template_answer = "\n".join(answer_parts)
-    flan_prompt = build_flan_prompt(
-        message=message,
-        ckd_stage=ckd_stage,
-        limits=limits,
-        protein_limit_g=protein_limit_g,
-        retrieved_chunks=retrieved_chunks,
-        safe_foods=safe_foods,
+def _apply_flan_enhancement(template_answer: str, llm_answer: str | None) -> str:
+    if not llm_answer or len(llm_answer) < 20:
+        return template_answer
+
+    if _contains_nutrient_values(llm_answer):
+        sentences = llm_answer.split(".")
+        intro = ". ".join(s.strip() for s in sentences[:2] if s.strip())
+        if intro:
+            intro = intro.rstrip(".") + "."
+        return f"{intro}\n\n{template_answer}" if intro else template_answer
+
+    return llm_answer
+
+
+def _clean_llm_response(text: str) -> str:
+    """
+    Remove empty numbered list items like '2.' or '3. '
+    that appear without content, typically when LLM switches
+    from list to table format.
+    """
+    text = re.sub(
+        r"^\d+\.\s*$",
+        "",
+        text,
+        flags=re.MULTILINE,
     )
-    flan_answer = query_llm(flan_prompt)
+    text = re.sub(
+        r"\n{3,}",
+        "\n\n",
+        text,
+    )
+    return text.strip()
 
-    if flan_answer and len(flan_answer) > 20:
-        return flan_answer
 
-    return template_answer
+def _filter_high_risk_mentions(text: str, ckd_stage: str) -> str:
+    """
+    For Stage 3b and Stage 4,
+    remove sentences that mention
+    high-risk foods from the
+    LLM conversational text.
+    Only applies to stages where
+    these foods are restricted.
+    """
+    restricted_stages = ["G3b", "G3a", "G4"]
+    if ckd_stage not in restricted_stages:
+        return text
+
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    safe_sentences = []
+    for sentence in sentences:
+        s_lower = sentence.lower()
+        contains_risk = any(food in s_lower for food in HIGH_RISK_FOODS)
+        if not contains_risk:
+            safe_sentences.append(sentence)
+    return " ".join(safe_sentences)
 
 
 def build_meal_plan(
@@ -327,6 +532,7 @@ def build_meal_plan(
                     "phosphorus_mg": round(food_p, 1),
                     "protein_g": round(food_protein, 1),
                     "sodium_mg": round(food_na, 1),
+                    "category": str(food.get("category") or "Other"),
                 }
             )
             k_used += food_k
@@ -355,6 +561,7 @@ def get_safe_alternatives(
             "phosphorus_mg": float(r.get("phosphorus_mg") or 0),
             "protein_g": float(r.get("protein_g") or 0),
             "sodium_mg": float(r.get("sodium_mg") or 0),
+            "category": str(r.get("category") or "Other"),
         }
         for _, r in safe.iterrows()
     ]
@@ -713,7 +920,7 @@ async def meal_planner_chat(
     _ = user_id
     retriever = get_retriever()
 
-    limits = KDOQI_LIMITS.get(request.ckd_stage, KDOQI_LIMITS["G3b"])
+    limits = KDOQI_DAILY_LIMITS.get(request.ckd_stage, KDOQI_DAILY_LIMITS["G3b"])
     protein_limit_g = limits["protein_per_kg"] * request.weight_kg
 
     query = (
@@ -727,7 +934,7 @@ async def meal_planner_chat(
     if request.uploaded_text:
         query += f"\n{request.uploaded_text}"
 
-    chunks = retriever.retrieve(query, top_k=5)
+    chunks = retriever.retrieve(query, top_k=5, patient_stage=request.ckd_stage)
 
     food_db = _load_food_db()
     stage_number = _stage_num(request.ckd_stage)
@@ -747,14 +954,20 @@ async def meal_planner_chat(
 
     # HuggingFace LLM is called only on user chat requests — never at startup.
     template_answer = result.get("answer", "")
-    result["answer"] = _apply_flan_enhancement(
+    flan_prompt = build_flan_prompt(
         message=request.message,
         ckd_stage=request.ckd_stage,
         limits=limits,
         protein_limit_g=protein_limit_g,
         retrieved_chunks=chunks,
-        answer_parts=[template_answer] if template_answer else [],
         safe_foods=safe_foods,
+    )
+    llm_raw = query_llm(flan_prompt, history=request.conversation_history)
+    result["answer"] = _filter_high_risk_mentions(
+        _clean_llm_response(
+            _apply_flan_enhancement(template_answer, llm_raw)
+        ),
+        request.ckd_stage,
     )
     sources = result.get("sources") or []
     result["sources"] = list({s["source"]: s for s in sources}.values())
@@ -785,7 +998,8 @@ async def meal_planner_chat(
 
     display_text = llm_answer
 
-    if is_weekly or (llm_answer and len(llm_answer) > 100):
+    # Only suppress foods for weekly plans where the LLM generates a full text plan.
+    if is_weekly:
         suggested_foods_for_response: list[dict[str, Any]] = []
         result["meal_plan"] = None
     else:

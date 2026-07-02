@@ -46,7 +46,12 @@ def forgot_password(body: ForgotPasswordRequest, db: Session = Depends(get_db)):
         db.add(reset_token)
         db.commit()
 
-        reset_url = f"http://localhost:5173/reset-password?token={token}"
+        _base = os.getenv("RESET_BASE_URL", "http://localhost:5173")
+        reset_url = (
+            f"{_base.rstrip('/')}"
+            f"/reset-password"
+            f"?token={token}"
+        )
 
         message = Mail(
             from_email=os.getenv("SENDGRID_FROM_EMAIL"),
@@ -85,7 +90,14 @@ def forgot_password(body: ForgotPasswordRequest, db: Session = Depends(get_db)):
             sg = SendGridAPIClient(os.getenv("SENDGRID_API_KEY"))
             sg.send(message)
         except Exception as e:
-            logger.error("SendGrid error sending password reset email: %s", e)
+            logger.error("SendGrid error: %s", e)
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Email service temporarily unavailable. Please try "
+                    "again in a few minutes."
+                ),
+            ) from e
 
     return {"message": "If this email is registered, a reset link has been sent."}
 

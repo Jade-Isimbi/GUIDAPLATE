@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  TrendingUp,
   Droplets,
   Zap,
   Flame,
@@ -19,9 +18,12 @@ import {
   Legend,
   ResponsiveContainer,
   ReferenceLine,
+  ReferenceArea,
 } from 'recharts';
+import { authFetch, getAuthToken } from '../../utils/auth';
+import { formatStageDisplay, getRiskDisplay, getWeeklyRiskLabel } from '../../utils/riskDisplay';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const TEAL = '#2E86AB';
 
 type Risk = 'High' | 'Moderate' | 'Low';
@@ -65,9 +67,19 @@ interface LstmPattern {
   days_analyzed: number;
 }
 
+interface WeeklySummary {
+  risk_label: string;
+  confidence: number;
+  method: string;
+  days_analyzed: number;
+  model_name: string;
+  mod_recall: number;
+}
+
 interface WeeklyTrendResponse {
   days: BackendDay[];
   lstm_pattern: LstmPattern | null;
+  weekly_summary: WeeklySummary | null;
   ckd_stage: string;
   weight_kg: number;
 }
@@ -120,9 +132,6 @@ const NUTRIENT_COLORS = {
   Protein: '#16a34a',
   Sodium: '#ef4444',
 };
-
-const CARD_CLASS =
-  'bg-white dark:bg-card rounded-xl border border-border/50 p-4 shadow-sm';
 
 function mapRisk(level: string | null | undefined): Risk {
   if (!level) return 'Low';
@@ -224,7 +233,7 @@ function buildRecommendations(days: DayData[]): Recommendation[] {
       color: '#2E86AB',
       icon: Droplets,
       what: `Potassium exceeded your ${days[0]?.limits.k}mg limit on ${kDays} day${kDays > 1 ? 's' : ''} this week.`,
-      why: 'High potassium can cause dangerous heart rhythm problems in CKD. Your kidneys cannot remove the excess.',
+      why: 'High potassium can cause dangerous heart rhythm problems when your kidneys cannot remove the excess.',
       action:
         'Replace banana and avocado with pineapple or cabbage. Boil vegetables and discard cooking water to reduce potassium content.',
     });
@@ -236,7 +245,7 @@ function buildRecommendations(days: DayData[]): Recommendation[] {
       color: '#F39C12',
       icon: Zap,
       what: `Phosphorus exceeded ${days[0]?.limits.p}mg on ${pDays} day${pDays > 1 ? 's' : ''} this week.`,
-      why: 'Elevated phosphorus weakens bones and damages blood vessels — a common complication in CKD stages G3–G5.',
+      why: 'Elevated phosphorus weakens bones and damages blood vessels — a common complication in advanced kidney disease.',
       action:
         'Avoid kidney beans and whole milk. Choose egg whites over whole eggs. Avoid processed foods with phosphate additives.',
     });
@@ -248,7 +257,7 @@ function buildRecommendations(days: DayData[]): Recommendation[] {
       color: '#27AE60',
       icon: Flame,
       what: `Protein intake exceeded your limit on ${proDays} day${proDays > 1 ? 's' : ''} this week.`,
-      why: 'Too much protein creates waste products your kidneys struggle to filter, accelerating CKD progression.',
+      why: 'Too much protein creates waste products your kidneys struggle to filter, which can worsen kidney disease.',
       action:
         'Keep meat portions palm-sized. Choose egg whites over whole eggs. Replace one meat serving with small fish portions.',
     });
@@ -260,7 +269,7 @@ function buildRecommendations(days: DayData[]): Recommendation[] {
       color: '#E74C3C',
       icon: Wind,
       what: `Sodium exceeded ${days[0]?.limits.na}mg on ${naDays} day${naDays > 1 ? 's' : ''} this week.`,
-      why: 'Excess sodium raises blood pressure, accelerating CKD progression and cardiovascular risk.',
+      why: 'Excess sodium raises blood pressure, which can further harm your kidneys and heart.',
       action: 'Cook from fresh ingredients. Use herbs and lemon instead of salt. Avoid processed and packaged foods.',
     });
   }
@@ -280,80 +289,70 @@ function buildRecommendations(days: DayData[]): Recommendation[] {
   return recommendations;
 }
 
-function computeDietScore(daysWithData: DayData[]): number {
-  if (daysWithData.length === 0) return 0;
-  return Math.round(
-    daysWithData.reduce((sum, d) => {
-      const dayScore =
-        100 -
-        Math.max(
-          0,
-          ((d.potassium / d.limits.k - 1) * 30 +
-            (d.phosphorus / d.limits.p - 1) * 25 +
-            (d.protein / d.limits.pro - 1) * 25 +
-            (d.sodium / d.limits.na - 1) * 20) *
-            100,
-        );
-      return sum + Math.max(0, Math.min(100, dayScore));
-    }, 0) / daysWithData.length,
-  );
-}
-
-function NutrientBar({
+function PlainNutrientBar({
   label,
   value,
   limit,
   unit,
-  color,
 }: {
   label: string;
   value: number;
   limit: number;
   unit: string;
-  color: string;
 }) {
   const pct = limit > 0 ? Math.min(100, Math.round((value / limit) * 100)) : 0;
+  const filled = Math.min(10, Math.round(pct / 10));
+  const bar = `${'█'.repeat(filled)}${'░'.repeat(10 - filled)}`;
   return (
     <div>
-      <div className="flex justify-between items-center mb-1">
-        <span className="text-sm font-medium text-foreground">{label}</span>
-        <span className="text-xs text-muted-foreground">
+      <div className="flex justify-between items-baseline gap-2 text-sm">
+        <span className="font-medium text-foreground">{label}</span>
+        <span className="text-muted-foreground tabular-nums text-xs sm:text-sm">
           {Math.round(value).toLocaleString()} / {limit.toLocaleString()} {unit}
         </span>
       </div>
-      <div className="w-full bg-muted rounded-full h-1.5">
-        <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+      <div className="flex items-center gap-2 mt-1 font-mono text-xs text-teal-700 dark:text-teal-400">
+        <span className="tracking-tighter">{bar}</span>
+        <span className="text-muted-foreground font-sans">{pct}%</span>
       </div>
-      <p className="text-xs text-muted-foreground mt-0.5">{pct}% of limit</p>
     </div>
   );
 }
 
-function RecommendationCard({ rec }: { rec: Recommendation }) {
+function InsightBlock({ rec }: { rec: Recommendation }) {
   const Icon = rec.icon;
   return (
-    <div className={`${CARD_CLASS} space-y-2`}>
-      <div className="flex items-center gap-2">
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center"
-          style={{ background: `${rec.color}18` }}
-        >
-          <Icon size={16} style={{ color: rec.color }} />
-        </div>
-        <span className="text-sm font-semibold text-foreground">{rec.nutrient}</span>
+    <div className="min-w-0 p-3">
+      <div className="flex items-center gap-2 mb-2">
+        <Icon size={14} style={{ color: rec.color }} />
+        <span className="text-base font-semibold text-foreground">{rec.nutrient}</span>
       </div>
-      <p className="text-sm text-foreground leading-relaxed">
-        <strong>What:</strong> {rec.what}
-      </p>
-      <p className="text-sm text-muted-foreground leading-relaxed">
-        <strong className="text-foreground">Why:</strong> {rec.why}
-      </p>
-      <p className="text-sm text-foreground leading-relaxed">
-        <strong>Action:</strong> {rec.action}
-      </p>
+      <p className="text-sm text-foreground leading-relaxed">{rec.what}</p>
+      <p className="text-sm text-muted-foreground leading-relaxed mt-1">{rec.action}</p>
     </div>
   );
 }
+
+const trendConfig = {
+  escalating: {
+    label: 'Risk is increasing',
+    icon: '↑',
+    color: 'text-red-600',
+    bg: 'bg-red-50',
+  },
+  stable: {
+    label: 'Risk is steady',
+    icon: '→',
+    color: 'text-amber-500',
+    bg: 'bg-amber-50',
+  },
+  improving: {
+    label: 'Risk is improving',
+    icon: '↓',
+    color: 'text-green-600',
+    bg: 'bg-green-50',
+  },
+} as const;
 
 export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
   const [days, setDays] = useState<DayData[]>([]);
@@ -362,28 +361,32 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
   const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
   const [lstmRisk, setLstmRisk] = useState<Risk>('Low');
   const [confidence, setConfidence] = useState(0);
-  const [patternStable, setPatternStable] = useState(true);
+  const [, setPatternStable] = useState(true);
+  const [lstmTrend, setLstmTrend] = useState<string>('stable');
+  const [weeklySummary, setWeeklySummary] = useState<WeeklySummary | null>(null);
+  const [lstmDaysAnalyzed, setLstmDaysAnalyzed] = useState(0);
 
   useEffect(() => {
-    const token = localStorage.getItem('guidaplate_token');
+    const token = getAuthToken();
     if (!token) {
       setLoading(false);
       return;
     }
 
-    const headers = { Authorization: `Bearer ${token}` };
-
     Promise.all([
-      fetch(`${API_BASE_URL}/patient/weekly-trend`, { headers }).then(async (r) => {
+      authFetch(`${API_BASE}/api/patient/weekly-trend`).then(async (r) => {
+        if (r.status === 401) return null;
         if (!r.ok) throw new Error(await r.text());
         return r.json() as Promise<WeeklyTrendResponse>;
       }),
-      fetch(`${API_BASE_URL}/patient/profile`, { headers }).then(async (r) => {
+      authFetch(`${API_BASE}/api/patient/profile`).then(async (r) => {
+        if (r.status === 401) return null;
         if (!r.ok) throw new Error(await r.text());
         return r.json() as Promise<{ ckd_stage?: string; weight_kg?: number; name?: string }>;
       }),
     ])
       .then(([trendData, profileData]) => {
+        if (!trendData || !profileData) return;
         const stage = profileData.ckd_stage || trendData.ckd_stage || 'G3b';
         const weightKg = profileData.weight_kg || trendData.weight_kg || 65;
         setProfile({
@@ -403,6 +406,9 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
         setLstmRisk(mapRisk(trendData.lstm_pattern?.risk_label));
         setConfidence(Math.round((trendData.lstm_pattern?.confidence ?? 0) * 100));
         setPatternStable(trendData.lstm_pattern?.trend !== 'escalating');
+        setLstmTrend(trendData.lstm_pattern?.trend ?? 'stable');
+        setLstmDaysAnalyzed(trendData.lstm_pattern?.days_analyzed ?? 0);
+        setWeeklySummary(trendData.weekly_summary ?? null);
         setLoading(false);
       })
       .catch((err) => {
@@ -412,6 +418,7 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
   }, []);
 
   const daysWithData = useMemo(() => days.filter((d) => d.meals > 0), [days]);
+  const loggedDaysCount = daysWithData.length;
 
   const chartData = useMemo(
     () =>
@@ -426,12 +433,31 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
   );
 
   const recommendations = useMemo(() => buildRecommendations(days), [days]);
-  const dietScore = useMemo(() => computeDietScore(daysWithData), [daysWithData]);
 
   const weekRange =
     days.length > 0 ? `${days[0].shortDate} – ${days[days.length - 1].shortDate}` : 'This week';
 
-  const riskStyle = RISK_STYLES[lstmRisk];
+  const statusRiskKey = weeklySummary?.risk_label
+    ?? (lstmRisk === 'High' ? 'HIGH' : lstmRisk === 'Moderate' ? 'MODERATE' : 'LOW');
+  const statusRisk = getRiskDisplay(statusRiskKey);
+  const statusLabel = weeklySummary
+    ? getRiskDisplay(weeklySummary.risk_label).label
+    : getWeeklyRiskLabel(statusRiskKey);
+
+  const trendKey = (lstmTrend in trendConfig ? lstmTrend : 'stable') as keyof typeof trendConfig;
+  const trendCfg =
+    lstmRisk === 'High' && lstmTrend === 'stable'
+      ? { ...trendConfig.stable, label: 'Consistently high risk', color: 'text-red-600', bg: 'bg-red-50' }
+      : trendConfig[trendKey];
+  const lstmRiskStyle = RISK_STYLES[lstmRisk];
+
+  const selectedDayExceeded =
+    selectedDay != null &&
+    selectedDay.meals > 0 &&
+    (selectedDay.potassium > selectedDay.limits.k ||
+      selectedDay.phosphorus > selectedDay.limits.p ||
+      selectedDay.protein > selectedDay.limits.pro ||
+      selectedDay.sodium > selectedDay.limits.na);
 
   if (loading) {
     return (
@@ -445,155 +471,190 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6 space-y-4 bg-muted/30 dark:bg-transparent rounded-2xl">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">Weekly Dietary Trend</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {weekRange} · Stage {profile?.ckd_stage || 'G3b'} · {profile?.name || 'Patient'}
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className={`${CARD_CLASS} sm:col-span-1`}>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Diet Score</p>
-          <p className="text-4xl font-bold" style={{ color: TEAL }}>
-            {dietScore}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">— vs last week</p>
-        </div>
-
-        <div className={`${riskStyle.bg} ${riskStyle.border} border rounded-xl p-4 shadow-sm sm:col-span-2`}>
-          <p className="text-xs text-muted-foreground mb-1">Your Overall Risk This Week</p>
-          <p className={`text-lg font-bold ${riskStyle.text}`}>{lstmRisk} Risk</p>
-          <p className="text-xs text-muted-foreground mt-2">
-            AI confidence: {confidence >= 90 ? 'High' : confidence >= 70 ? 'Moderate' : 'Low'} ({confidence}%)
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {patternStable
-              ? '✓ Your eating habits were consistent this week.'
-              : '↕ Your eating pattern varied significantly this week.'}
-          </p>
-        </div>
-      </div>
-
-      <div className={CARD_CLASS}>
-        <p className="text-sm font-semibold text-foreground mb-3">7-day risk trend</p>
-        <div className="grid grid-cols-7 gap-2 mb-4">
-          {days.map((day) => {
-            const style = day.meals > 0 ? RISK_STYLES[day.risk] : null;
-            const selected = selectedDay?.date === day.date;
-            return (
-              <button
-                key={day.date}
-                type="button"
-                onClick={() => day.meals > 0 && setSelectedDay(day)}
-                className={`rounded-lg border p-2 text-center transition-all ${
-                  selected ? 'ring-2 ring-teal-500 border-teal-400' : 'border-border/50'
-                } ${day.meals === 0 ? 'opacity-60 cursor-default' : 'hover:border-teal-400 cursor-pointer'}`}
-              >
-                <p className="text-xs text-muted-foreground">{day.dayName}</p>
-                <p className="text-xs font-medium text-foreground">{day.shortDate}</p>
-                <div className="flex justify-center my-2">
-                  {day.meals > 0 ? (
-                    <span className={`w-3 h-3 rounded-full ${style?.dot}`} />
-                  ) : (
-                    <span className="w-3 h-3 rounded-full border-2 border-dashed border-muted bg-transparent" />
-                  )}
-                </div>
-                <p className="text-[10px] text-muted-foreground">
-                  {day.meals > 0 ? `${day.meals} meal${day.meals !== 1 ? 's' : ''}` : 'No data'}
-                </p>
-                <p className={`text-[10px] font-medium mt-0.5 ${day.meals > 0 ? style?.text : 'text-muted-foreground'}`}>
-                  {day.meals > 0
-                    ? day.risk === 'Low'
-                      ? '🟢 Good'
-                      : day.risk === 'Moderate'
-                        ? '🟡 Moderate'
-                        : '🔴 High'
-                    : '— No data'}
-                </p>
-              </button>
-            );
-          })}
-        </div>
-
-        <p className="text-sm font-semibold text-foreground mb-3">How close you were to your daily nutrient limits</p>
-        <ResponsiveContainer width="100%" height={220}>
-          <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="day" tick={{ fontSize: 11, fill: theme.textSecondary }} tickLine={false} />
-            <YAxis
-              tick={{ fontSize: 11, fill: theme.textSecondary }}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(v) => `${v}%`}
-              domain={[0, 150]}
-            />
-            <Tooltip formatter={(value: number, name: string) => [`${value}%`, name]} />
-            <ReferenceLine y={100} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} />
-            <Line type="monotone" dataKey="Potassium" stroke={NUTRIENT_COLORS.Potassium} strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
-            <Line type="monotone" dataKey="Phosphorus" stroke={NUTRIENT_COLORS.Phosphorus} strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
-            <Line type="monotone" dataKey="Protein" stroke={NUTRIENT_COLORS.Protein} strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
-            <Line type="monotone" dataKey="Sodium" stroke={NUTRIENT_COLORS.Sodium} strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
-            <Legend wrapperStyle={{ fontSize: 11 }} iconType="circle" iconSize={8} />
-          </LineChart>
-        </ResponsiveContainer>
-        <p className="text-xs text-muted-foreground mt-2">Red dashed line = your daily limit</p>
-      </div>
-
-      {selectedDay && selectedDay.meals > 0 && (
-        <div className={CARD_CLASS}>
-          <p className="text-sm font-semibold text-foreground mb-1">
-            Daily breakdown — {selectedDay.dayName}, {selectedDay.shortDate}
-          </p>
-          <p className="text-xs text-muted-foreground mb-4">
-            {selectedDay.meals} meal{selectedDay.meals !== 1 ? 's' : ''} logged ·{' '}
-            <span className={`font-medium ${RISK_STYLES[selectedDay.risk].text}`}>{selectedDay.risk} risk</span>
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <NutrientBar label="Potassium" value={selectedDay.potassium} limit={selectedDay.limits.k} unit="mg" color={NUTRIENT_COLORS.Potassium} />
-            <NutrientBar label="Phosphorus" value={selectedDay.phosphorus} limit={selectedDay.limits.p} unit="mg" color={NUTRIENT_COLORS.Phosphorus} />
-            <NutrientBar label="Protein" value={selectedDay.protein} limit={selectedDay.limits.pro} unit="g" color={NUTRIENT_COLORS.Protein} />
-            <NutrientBar label="Sodium" value={selectedDay.sodium} limit={selectedDay.limits.na} unit="mg" color={NUTRIENT_COLORS.Sodium} />
+    <div className="max-w-[1600px] mx-auto w-full min-w-0 px-4 py-6 space-y-5">
+      {/* ROW 1 — header + weekly risk summary */}
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold text-foreground">Your Dietary Pattern</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                AI-powered analysis of whether your risk is escalating, stable, or improving
+              </p>
+            </div>
+            <span className="text-muted-foreground hidden sm:inline">·</span>
+            <span className={`text-lg font-semibold ${statusRisk.color}`}>
+              {statusRisk.icon} {statusLabel}
+            </span>
+            {weeklySummary && (
+              <span className="text-xs bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300 px-2 py-0.5 rounded-full font-medium">
+                AI Pattern Analysis
+              </span>
+            )}
           </div>
+          <p className="text-sm text-muted-foreground">
+            {weekRange} · {formatStageDisplay(profile?.ckd_stage || 'G3b')} · {profile?.name || 'Patient'}
+          </p>
         </div>
-      )}
 
-      {daysWithData.length === 0 && (
-        <div className={`${CARD_CLASS} flex flex-col items-center text-center py-12`}>
-          <TrendingUp size={32} className="text-muted-foreground mb-3" />
-          <p className="text-sm font-semibold text-foreground mb-2">No meal history yet.</p>
-          <p className="text-sm text-muted-foreground max-w-sm mb-4">
-            Start logging meals in Meal Assessment to see your weekly dietary trend here.
+        {loggedDaysCount > 0 && (
+          <div className="mt-4 pt-4 border-t border-border">
+            <p className="text-sm font-semibold text-foreground">Recent Meal Pattern</p>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              <span
+                className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${lstmRiskStyle.bg} ${lstmRiskStyle.text} ${lstmRiskStyle.border}`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${lstmRiskStyle.dot}`} />
+                {lstmRisk} risk · {confidence}% confidence
+              </span>
+              <span
+                className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${trendCfg.bg} ${trendCfg.color}`}
+              >
+                {trendCfg.icon} {trendCfg.label}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Based on your last {lstmDaysAnalyzed} meals
+            </p>
+          </div>
+        )}
+      </div>
+
+      <hr className="border-border" />
+
+      {/* ROW 2 — timeline + chart | day detail */}
+      {loggedDaysCount === 0 ? (
+        <div className="py-8 text-center">
+          <p className="text-sm font-medium text-foreground mb-1">No meals logged this week</p>
+          <p className="text-xs text-muted-foreground">
+            Log meals in Meal Check to see your weekly dietary pattern
           </p>
           {onNavigate && (
             <button
               type="button"
               onClick={() => onNavigate('assessment')}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-semibold hover:opacity-90"
+              className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 rounded-xl text-white text-sm font-semibold hover:opacity-90"
               style={{ background: `linear-gradient(135deg, ${TEAL} 0%, #1A5F7A 100%)` }}
             >
-              Go to Meal Assessment
+              Go to Meal Check
               <ChevronRight size={15} />
             </button>
           )}
         </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-[60%_40%] gap-6 lg:gap-8 items-start">
+            <div className="min-w-0 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="flex justify-between w-full mb-2 pr-3">
+                {days.map((day) => {
+                  const style = day.meals > 0 ? RISK_STYLES[day.risk] : null;
+                  const selected = selectedDay?.date === day.date;
+                  return (
+                    <button
+                      key={day.date}
+                      type="button"
+                      onClick={() => day.meals > 0 && setSelectedDay(day)}
+                      className={`flex-1 min-w-0 text-center py-1 px-0.5 rounded transition-colors ${
+                        selected ? 'bg-teal-50 dark:bg-teal-900/20 ring-2 ring-teal-500 ring-offset-1 shadow-md' : ''
+                      } ${day.meals === 0 ? 'opacity-50 cursor-default' : 'hover:bg-muted/50 cursor-pointer'}`}
+                    >
+                      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{day.dayName}</p>
+                      <p className="text-[10px] sm:text-xs font-medium text-foreground truncate">{day.shortDate}</p>
+                      <div className="flex justify-center my-1">
+                        {day.meals > 0 ? (
+                          <span className={`w-2 h-2 rounded-full ${style?.dot}`} />
+                        ) : (
+                          <span className="w-2 h-2 rounded-full border border-dashed border-muted" />
+                        )}
+                      </div>
+                      <p className="text-[9px] sm:text-[10px] text-muted-foreground">
+                        {day.meals > 0 ? `${day.meals} meal${day.meals !== 1 ? 's' : ''}` : '—'}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="h-[200px] lg:h-[220px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 5, right: 12, bottom: 5, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    {selectedDay && (
+                      <ReferenceArea
+                        x1={selectedDay.dayName}
+                        x2={selectedDay.dayName}
+                        fill={TEAL}
+                        fillOpacity={0.1}
+                        strokeOpacity={0}
+                      />
+                    )}
+                    <XAxis dataKey="day" tick={{ fontSize: 10, fill: theme.textSecondary }} tickLine={false} />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: theme.textSecondary }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(v) => `${v}%`}
+                      domain={[0, 150]}
+                    />
+                    <Tooltip formatter={(value: number, name: string) => [`${value}%`, name]} />
+                    <ReferenceLine y={100} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} />
+                    <Line type="monotone" dataKey="Potassium" stroke={NUTRIENT_COLORS.Potassium} strokeWidth={2} dot={{ r: 3 }} connectNulls={true} strokeDasharray="4 2" />
+                    <Line type="monotone" dataKey="Phosphorus" stroke={NUTRIENT_COLORS.Phosphorus} strokeWidth={2} dot={{ r: 3 }} connectNulls={true} strokeDasharray="4 2" />
+                    <Line type="monotone" dataKey="Protein" stroke={NUTRIENT_COLORS.Protein} strokeWidth={2} dot={{ r: 3 }} connectNulls={true} strokeDasharray="4 2" />
+                    <Line type="monotone" dataKey="Sodium" stroke={NUTRIENT_COLORS.Sodium} strokeWidth={2} dot={{ r: 3 }} connectNulls={true} strokeDasharray="4 2" />
+                    <Legend wrapperStyle={{ fontSize: 10 }} iconType="circle" iconSize={7} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Red dashed line = your daily allowance limit
+              </p>
+            </div>
+
+            <div className="min-w-0 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              {selectedDay && selectedDay.meals > 0 ? (
+                <>
+                  {selectedDayExceeded && (
+                    <div className="rounded-lg bg-red-50 border border-red-200 p-2 mb-3 flex items-center gap-2">
+                      <span className="text-red-600 font-semibold text-sm">⚠ Daily limit exceeded</span>
+                      <span className="text-red-500 text-xs">on this day — see details below</span>
+                    </div>
+                  )}
+                  <p className="text-sm font-medium text-foreground">
+                    {selectedDay.dayName} {selectedDay.shortDate} · {selectedDay.meals} meal
+                    {selectedDay.meals !== 1 ? 's' : ''} logged
+                  </p>
+                  <hr className="my-3 border-border" />
+                  <div className="space-y-4">
+                    <PlainNutrientBar label="Potassium" value={selectedDay.potassium} limit={selectedDay.limits.k} unit="mg" />
+                    <PlainNutrientBar label="Phosphorus" value={selectedDay.phosphorus} limit={selectedDay.limits.p} unit="mg" />
+                    <PlainNutrientBar label="Protein" value={selectedDay.protein} limit={selectedDay.limits.pro} unit="g" />
+                    <PlainNutrientBar label="Sodium" value={selectedDay.sodium} limit={selectedDay.limits.na} unit="mg" />
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Select a logged day to view nutrient details.</p>
+              )}
+            </div>
+          </div>
+
+          <hr className="border-border" />
+        </>
       )}
 
-      {recommendations.length > 0 && (
-        <div className="space-y-3">
-          <p className="text-sm font-semibold text-foreground">Personalized Recommendations</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {/* ROW 3 — what this means for you */}
+      {loggedDaysCount > 0 && recommendations.length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+          <p className="text-sm font-semibold text-foreground mb-3">What this means for you</p>
+          <div className="grid grid-cols-2 gap-3">
             {recommendations.map((rec) => (
-              <RecommendationCard key={rec.nutrient} rec={rec} />
+              <InsightBlock key={rec.nutrient} rec={rec} />
             ))}
           </div>
         </div>
       )}
 
-      <p className="text-xs text-center text-muted-foreground pb-2">
-        This information supports — not replaces — professional medical advice. Always consult your healthcare provider
-        before making dietary changes.
+      <p className="text-xs text-center text-muted-foreground pb-2 pt-2">
+        This is for information only. Always follow your doctor&apos;s or dietitian&apos;s advice.
       </p>
     </div>
   );

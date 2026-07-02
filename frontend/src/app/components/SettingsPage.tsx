@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { authFetch, getAuthToken } from '../../utils/auth';
+import { stageOptionLabel } from '../../utils/riskDisplay';
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const CKD_STAGES = ['G2', 'G3a', 'G3b', 'G4'] as const;
 
 type CKDStage = (typeof CKD_STAGES)[number];
@@ -20,7 +22,7 @@ export function SettingsPage({ isDark, theme, onProfileUpdated }: SettingsPagePr
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem('guidaplate_token');
+    const token = getAuthToken();
     if (!token) {
       setLoading(false);
       return;
@@ -28,9 +30,8 @@ export function SettingsPage({ isDark, theme, onProfileUpdated }: SettingsPagePr
 
     const loadProfile = async () => {
       try {
-        const response = await fetch(`${API_BASE}/patient/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await authFetch(`${API_BASE}/api/patient/profile`);
+        if (response.status === 401) return;
         if (!response.ok) throw new Error('Failed to load profile');
         const data = await response.json();
         if (data.ckd_stage && CKD_STAGES.includes(data.ckd_stage)) {
@@ -61,7 +62,7 @@ export function SettingsPage({ isDark, theme, onProfileUpdated }: SettingsPagePr
     setSuccessMessage('');
     setErrorMessage('');
 
-    const token = localStorage.getItem('guidaplate_token');
+    const token = getAuthToken();
     if (!token) {
       setErrorMessage('Failed to update profile. Please try again.');
       setSaving(false);
@@ -69,15 +70,13 @@ export function SettingsPage({ isDark, theme, onProfileUpdated }: SettingsPagePr
     }
 
     try {
-      const response = await fetch(`${API_BASE}/patient/profile`, {
+      const response = await authFetch(`${API_BASE}/api/patient/profile`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ckd_stage: ckdStage, weight_kg: weightKg }),
       });
 
+      if (response.status === 401) return;
       if (!response.ok) throw new Error('Update failed');
 
       const data = await response.json();
@@ -111,7 +110,7 @@ export function SettingsPage({ isDark, theme, onProfileUpdated }: SettingsPagePr
         Settings
       </h1>
       <p style={{ color: theme.textSecondary, fontSize: '0.9rem', marginBottom: 32 }}>
-        Update your CKD profile
+        Update your kidney health profile
       </p>
 
       {loading ? (
@@ -122,7 +121,7 @@ export function SettingsPage({ isDark, theme, onProfileUpdated }: SettingsPagePr
           style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}
         >
           <div>
-            <div style={{ color: theme.text, fontWeight: 600, marginBottom: 14 }}>CKD Stage</div>
+            <div style={{ color: theme.text, fontWeight: 600, marginBottom: 14 }}>Kidney Disease Stage</div>
             <div className="grid grid-cols-4 gap-2">
               {CKD_STAGES.map((s) => (
                 <button
@@ -138,7 +137,7 @@ export function SettingsPage({ isDark, theme, onProfileUpdated }: SettingsPagePr
                     fontSize: '0.875rem',
                   }}
                 >
-                  {s}
+                  {stageOptionLabel(s)}
                 </button>
               ))}
             </div>
@@ -149,7 +148,7 @@ export function SettingsPage({ isDark, theme, onProfileUpdated }: SettingsPagePr
               htmlFor="settings-weight"
               style={{ color: theme.text, fontWeight: 600, marginBottom: 8, display: 'block' }}
             >
-              Body Weight (kg)
+              Your weight (kg)
             </label>
             <input
               id="settings-weight"

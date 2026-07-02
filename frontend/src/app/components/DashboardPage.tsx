@@ -9,29 +9,29 @@ interface DashboardPageProps {
 const metrics = [
   { label: 'Foods in Database', value: '386', sub: 'in our database', color: '#2E86AB', icon: Database },
   { label: 'Nutrients Tracked', value: '4', sub: 'key biomarkers', color: '#27AE60', icon: FlaskConical },
-  { label: 'CKD Stages', value: '4 (G2-G4)', sub: 'clinical stages', color: '#F39C12', icon: Shield },
-  { label: 'Risk Assessments', value: '1,862 NHANES patients', sub: 'training cohort', color: '#E74C3C', icon: Activity },
+  { label: 'Kidney Disease Stages', value: '4 stages', sub: 'Stage 2–4 supported', color: '#F39C12', icon: Shield },
+  { label: 'Meal Checks', value: '1,862', sub: 'patients in training data', color: '#E74C3C', icon: Activity },
 ];
 
 const steps = [
   {
     n: '01',
     title: 'Explore Foods',
-    desc: 'Browse our database of 386 foods - including Rwanda-validated staples and regional ingredients - with complete nutrient profiles and CKD suitability ratings.',
+    desc: 'Browse our database of 386 foods — including Rwanda-validated staples and regional ingredients — with complete nutrient profiles and kidney-health suitability ratings.',
     icon: Utensils,
     color: '#2E86AB',
   },
   {
     n: '02',
-    title: 'Assess Your Risk',
-    desc: 'Enter your dietary intake and CKD stage to receive an instant, personalised risk assessment based on clinical thresholds.',
+    title: 'Check Your Meal',
+    desc: 'Enter what you ate and your kidney disease stage to receive instant, personalised feedback based on clinical thresholds.',
     icon: FlaskConical,
     color: '#F39C12',
   },
   {
     n: '03',
     title: 'Get Recommendations',
-    desc: 'Receive AI-powered dietary guidance tailored to your CKD stage, with safer food alternatives and practical meal suggestions.',
+    desc: 'Receive AI-powered dietary guidance tailored to your kidney condition, with safer food alternatives and practical meal suggestions.',
     icon: Heart,
     color: '#27AE60',
   },
@@ -39,29 +39,29 @@ const steps = [
 
 const mlComponents = [
   {
-    title: 'XGBoost Risk Classifier',
-    desc: 'Predicts HIGH / MODERATE / LOW dietary risk from 9 features including nutrient intake and CKD stage. Trained on 1,862 NHANES CKD patients.',
+    title: 'Meal Risk Checker',
+    desc: 'Predicts whether a meal is safe, needs caution, or should be reduced — using nutrient intake and your kidney disease stage.',
     icon: Brain,
     color: '#2E86AB',
     status: 'Active' as const,
   },
   {
-    title: 'LSTM Pattern Analyzer',
-    desc: 'Analyzes sequences of daily nutrient intake to detect dietary risk patterns over time. Trained on 1,862 NHANES CKD patients using KDOQI clinical thresholds. Powers the Weekly Trend page.',
+    title: 'Meal Pattern Tracker',
+    desc: 'Analyzes sequences of daily nutrient intake to detect eating patterns over time. Powers the Weekly Progress page.',
     icon: TrendingUp,
     color: '#F39C12',
     status: 'Active' as const,
   },
   {
-    title: 'SHAP Explainability',
-    desc: 'Explains every XGBoost prediction by showing which nutrients contributed most to the risk score — with exact percentages and stage-specific context. Essential for clinical trust and patient understanding.',
+    title: 'Smart Risk Explainer',
+    desc: 'Explains every meal check by showing which nutrients contributed most — with exact percentages and stage-specific context.',
     icon: Eye,
     color: '#8E44AD',
     status: 'Active' as const,
   },
   {
     title: 'Food Recommender',
-    desc: 'Suggests safer food alternatives when a nutrient limit is exceeded. Grounded in KDOQI 2020 guidelines.',
+    desc: 'Suggests safer food alternatives when a nutrient limit is exceeded. Grounded in international kidney health guidelines.',
     icon: ListChecks,
     color: '#27AE60',
     status: 'Active' as const,
@@ -69,8 +69,8 @@ const mlComponents = [
 ];
 
 const insights = [
-  { stat: '10–15%', label: 'of adults in sub-Saharan Africa live with CKD' },
-  { stat: '60%', label: 'of CKD complications are linked to dietary non-adherence' },
+  { stat: '10–15%', label: 'of adults in sub-Saharan Africa live with kidney disease' },
+  { stat: '60%', label: 'of kidney disease complications are linked to dietary non-adherence' },
   { stat: '3×', label: 'higher hospitalisation risk with unmanaged phosphorus' },
 ];
 
@@ -129,7 +129,7 @@ export function DashboardPage({ isDark, theme, onNavigate }: DashboardPageProps)
               }}
             >
               <Globe size={12} />
-              Designed for Rwanda · CKD Dietary Guidance
+              Designed for Rwanda · Kidney Health Diet Guide
             </div>
 
             <div
@@ -156,7 +156,7 @@ export function DashboardPage({ isDark, theme, onNavigate }: DashboardPageProps)
                 marginBottom: '1.75rem',
               }}
             >
-              GuidaPlate is an AI-powered dietary guidance platform that helps CKD patients
+              GuidaPlate is an AI-powered dietary guidance platform that helps people with kidney disease
               understand nutrient risks in everyday foods and make safer, informed meal choices.
             </p>
 
@@ -166,7 +166,7 @@ export function DashboardPage({ isDark, theme, onNavigate }: DashboardPageProps)
                 className="flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl text-white transition-all duration-200 hover:opacity-90"
                 style={{ background: 'linear-gradient(135deg, #2E86AB 0%, #1A5F7A 100%)', fontSize: '0.875rem', fontWeight: 600 }}
               >
-                Start Meal Assessment
+                Start Meal Check
                 <ArrowRight size={15} />
               </button>
               <button
@@ -210,34 +210,34 @@ export function DashboardPage({ isDark, theme, onNavigate }: DashboardPageProps)
       </div>
 
       {/* ── Metrics ──────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-4 gap-3">
         {metrics.map((m) => {
           const Icon = m.icon;
           return (
             <div
               key={m.label}
-              className="p-5 sm:p-6 rounded-2xl"
+              className="p-3 rounded-xl"
               style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}
             >
               <div
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center mb-3 sm:mb-4"
+                className="w-5 h-5 rounded-lg flex items-center justify-center mb-2"
                 style={{ background: `${m.color}18` }}
               >
-                <Icon size={18} style={{ color: m.color }} />
+                <Icon size={12} style={{ color: m.color }} />
               </div>
-              <div style={{ color: theme.text, fontSize: 'clamp(1.4rem, 3vw, 1.9rem)', fontWeight: 700, lineHeight: 1 }}>{m.value}</div>
-              <p style={{ color: theme.text, fontSize: '0.85rem', fontWeight: 500, marginTop: 4 }}>{m.label}</p>
-              <p style={{ color: theme.textTertiary, fontSize: '0.72rem', marginTop: 2 }}>{m.sub}</p>
+              <div className="text-xl font-bold leading-tight" style={{ color: theme.text }}>{m.value}</div>
+              <p className="text-xs font-medium mt-1" style={{ color: theme.text }}>{m.label}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{m.sub}</p>
             </div>
           );
         })}
       </div>
 
-      {/* ── ML Architecture ──────────────────────────────────────────────── */}
+      {/* ── How Our AI Keeps You Safe ─────────────────────────────────────── */}
       <div>
         <div style={{ marginBottom: '1.5rem' }}>
-          <div style={{ color: theme.text, fontSize: '1.3rem', fontWeight: 600 }}>ML Architecture</div>
-          <p style={{ color: theme.textSecondary, marginTop: 4, fontSize: '0.875rem' }}>Four components powering GuidaPlate risk intelligence</p>
+          <div style={{ color: theme.text, fontSize: '1.3rem', fontWeight: 600 }}>How Our AI Keeps You Safe</div>
+          <p style={{ color: theme.textSecondary, marginTop: 4, fontSize: '0.875rem' }}>Four tools working together to guide your kidney diet</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
           {mlComponents.map((c) => {
@@ -345,7 +345,7 @@ export function DashboardPage({ isDark, theme, onNavigate }: DashboardPageProps)
         <div className="lg:col-span-2 flex flex-col gap-4">
           {[
             { label: 'Food Explorer', desc: 'Search and filter 386 foods', page: 'explorer', icon: Utensils, color: '#27AE60' },
-            { label: 'Meal Assessment', desc: 'Log a meal and get your dietary risk score', page: 'assessment', icon: Shield, color: '#E74C3C' },
+            { label: 'Meal Check', desc: 'Log a meal and get instant kidney-safe feedback', page: 'assessment', icon: Shield, color: '#E74C3C' },
           ].map((nav) => {
             const Icon = nav.icon;
             return (
@@ -384,7 +384,7 @@ export function DashboardPage({ isDark, theme, onNavigate }: DashboardPageProps)
               <span style={{ color: theme.text, fontWeight: 600, fontSize: '0.85rem' }}>About this project</span>
             </div>
             <p style={{ color: theme.textSecondary, fontSize: '0.8rem', lineHeight: 1.6 }}>
-              GuidaPlate is a research and MVP demonstration project combining clinical nutrition science with machine learning to address a critical gap in CKD
+              GuidaPlate is a research and MVP demonstration project combining clinical nutrition science with machine learning to address a critical gap in kidney disease
               dietary management across East Africa.
             </p>
           </div>

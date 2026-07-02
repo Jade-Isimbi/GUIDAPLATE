@@ -65,6 +65,18 @@ def build_clinical_note(risk_label: str, trend: str) -> str:
             "Meal sequence shows stable, low-risk dietary patterns for the "
             "analyzed period."
         ),
+        ("HIGH", "improving"): (
+            "Overall dietary risk remains high, but nutrient intake is trending "
+            "downward across recent meals. Keep up the improving pattern."
+        ),
+        ("MODERATE", "improving"): (
+            "Moderate dietary risk with nutrient intake trending downward across "
+            "meals. Your recent choices are moving in the right direction."
+        ),
+        ("LOW", "improving"): (
+            "Low dietary risk with nutrient intake trending downward across meals. "
+            "Excellent progress — keep it up."
+        ),
     }
     return notes.get(
         (risk_label, trend),

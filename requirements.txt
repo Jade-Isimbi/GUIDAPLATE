@@ -17,7 +17,8 @@ scipy
 scikit-posthocs
 pyreadstat
 joblib
-thefuzz
+imbalanced-learn
+thefuzz==0.22.1
 python-multipart
 sendgrid
 python-dotenv

@@ -7,6 +7,26 @@ from sklearn.metrics.pairwise import cosine_similarity
 from backend.rag.document_processor import load_chunks
 
 
+def filter_by_stage(docs: list[dict], patient_stage: str) -> list[dict]:
+    stage_num = {
+        "G2": 2,
+        "G3a": 3,
+        "G3b": 3,
+        "G4": 4,
+    }.get(patient_stage, 3)
+
+    filtered: list[dict] = []
+    for doc in docs:
+        source = str(doc.get("source", "")).lower()
+        has_stage_marker = any(f"g{i}" in source for i in [2, 3, 4, 5])
+        if not has_stage_marker:
+            filtered.append(doc)
+            continue
+        if f"g{stage_num}" in source or patient_stage.lower() in source:
+            filtered.append(doc)
+    return filtered
+
+
 class RAGRetriever:
     def __init__(self) -> None:
         self.chunks: list[dict] = []
@@ -29,29 +49,61 @@ class RAGRetriever:
         self._initialized = True
         print(f"RAG ready: {len(self.chunks)} chunks")
 
-    def retrieve(self, query: str, top_k: int = 5) -> list[dict]:
+    def _expand_query(self, query: str) -> str:
+        """
+        Add clinical keywords to improve TF-IDF matching on patient-friendly questions.
+        """
+        query_lower = query.lower()
+        expansions: list[str] = []
+
+        if any(w in query_lower for w in ["breakfast", "morning", "eat"]):
+            expansions.append("dietary recommendations food intake nutrition")
+
+        if any(w in query_lower for w in ["potassium", "phosphorus", "protein", "sodium"]):
+            expansions.append("CKD nutrient restriction kidney disease dietary")
+
+        if any(w in query_lower for w in ["safe", "avoid", "eat", "drink"]):
+            expansions.append("food safety CKD stage dietary guidance")
+
+        if expansions:
+            return query + " " + " ".join(expansions)
+        return query
+
+    def retrieve(
+        self,
+        query: str,
+        top_k: int = 5,
+        patient_stage: str | None = None,
+    ) -> list[dict]:
         if not self._initialized:
             self.initialize()
         if not self.vectorizer or self.tfidf_matrix is None:
             return []
 
-        query_vec = self.vectorizer.transform([query])
+        expanded = self._expand_query(query)
+        query_vec = self.vectorizer.transform([expanded])
         similarities = cosine_similarity(query_vec, self.tfidf_matrix)[0]
-        top_indices = np.argsort(similarities)[::-1][:top_k]
+
+        threshold = 0.03 if len(query.split()) < 6 else 0.05
+        top_indices = np.argsort(similarities)[::-1]
 
         results: list[dict] = []
         for idx in top_indices:
             score = float(similarities[idx])
-            if score <= 0.05:
+            if score < threshold:
                 continue
             chunk = self.chunks[int(idx)]
-            results.append(
-                {
-                    "text": chunk.get("text", ""),
-                    "source": chunk.get("source", ""),
-                    "score": score,
-                }
-            )
+            candidate = {
+                "text": chunk.get("text", ""),
+                "source": chunk.get("source", ""),
+                "score": score,
+            }
+            if patient_stage:
+                if not filter_by_stage([candidate], patient_stage):
+                    continue
+            results.append(candidate)
+            if len(results) >= top_k:
+                break
         return results
 
 
@@ -64,4 +116,3 @@ def get_retriever() -> RAGRetriever:
         _retriever = RAGRetriever()
         _retriever.initialize()
     return _retriever
-

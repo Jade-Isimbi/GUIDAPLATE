@@ -1,41 +1,146 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Search, Filter, ChevronDown, Info, BarChart2, X } from 'lucide-react';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
-import { CATEGORIES, FOODS, type Food, isSafeForStage, potassiumColor } from '../../data/foodDatabase';
+import { CATEGORIES, FOODS, type Food, potassiumColor } from '../../data/foodDatabase';
+import { foodTranslation, matchesFoodQuery } from '../../utils/foodDisplay';
+import { formatStageDisplay, getStageSafety } from '../../utils/riskDisplay';
 
 interface FoodExplorerProps {
   isDark: boolean;
   theme: Record<string, string>;
+  patientStage?: string;
 }
 
 const STAGE_FILTER_OPTIONS = [
-  { label: 'All', value: 'all' },
-  { label: 'Safe for G2', value: '2' },
-  { label: 'Safe for G3', value: '3' },
-  { label: 'Safe for G4', value: '4' },
-] as const;
+  { label: 'All', value: 'all' as const },
+  { label: 'Safe for Stage 2', value: 'G2' as const },
+  { label: 'Safe for Stage 3a', value: 'G3a' as const },
+  { label: 'Safe for Stage 3b', value: 'G3b' as const },
+  { label: 'Safe for Stage 4', value: 'G4' as const },
+];
 
-export function FoodExplorer({ isDark, theme }: FoodExplorerProps) {
+function foodStageSafety(food: Food, patientStage: string) {
+  return getStageSafety(
+    food.ckd_stage_safe,
+    patientStage,
+    food.potassium_mg,
+    food.phosphorus_mg ?? 0,
+    food.protein_g ?? 0,
+  );
+}
+
+const STAGE_NUTRIENT_LIMITS: Record<string, { k: number; p: number; pro: number; na: number }> = {
+  G2: { k: 525, p: 150, pro: 13, na: 230 },
+  G3a: { k: 450, p: 120, pro: 9, na: 230 },
+  G3b: { k: 450, p: 120, pro: 9, na: 230 },
+  G4: { k: 375, p: 105, pro: 8, na: 230 },
+};
+
+function getHighestNutrientName(food: Food, patientStage: string): string {
+  const limits = STAGE_NUTRIENT_LIMITS[patientStage] || STAGE_NUTRIENT_LIMITS.G3b;
+  const nutrients = [
+    { name: 'potassium', ratio: food.potassium_mg / limits.k },
+    { name: 'phosphorus', ratio: food.phosphorus_mg / limits.p },
+    { name: 'protein', ratio: food.protein_g / limits.pro },
+    { name: 'sodium', ratio: food.sodium_mg / limits.na },
+  ];
+  nutrients.sort((a, b) => b.ratio - a.ratio);
+  return nutrients[0].name;
+}
+
+function getTableSafetyReason(food: Food, patientStage: string): string {
+  const safety = foodStageSafety(food, patientStage);
+  const stageDisplay = formatStageDisplay(patientStage);
+
+  if (safety.isSafe) {
+    return `This food fits within ${stageDisplay} limits`;
+  }
+
+  const highest = getHighestNutrientName(food, patientStage);
+
+  if (safety.label.includes('Avoid')) {
+    return `Not recommended for ${stageDisplay} — too high in ${highest}`;
+  }
+
+  return `Use small portions — ${highest} is elevated`;
+}
+
+function generateClinicalNote(food: Food, _patientStage: string): string {
+  const warnings: string[] = [];
+
+  if (food.potassium_mg >= 400) {
+    warnings.push(
+      `Very high potassium (${Math.round(food.potassium_mg)}mg) — avoid at Stage 3b and above`,
+    );
+  } else if (food.potassium_mg >= 250) {
+    warnings.push(
+      `High potassium (${Math.round(food.potassium_mg)}mg) — limit portions at Stage 3b and above`,
+    );
+  } else if (food.potassium_mg >= 150) {
+    warnings.push(
+      `Moderate potassium (${Math.round(food.potassium_mg)}mg) — watch portions`,
+    );
+  }
+
+  if (food.phosphorus_mg >= 300) {
+    warnings.push(
+      `High phosphorus (${Math.round(food.phosphorus_mg)}mg) — limit at Stage 3 and above`,
+    );
+  } else if (food.phosphorus_mg >= 150) {
+    warnings.push(
+      `Moderate phosphorus (${Math.round(food.phosphorus_mg)}mg) — watch portions`,
+    );
+  }
+
+  if (food.protein_g >= 20) {
+    warnings.push(`High protein (${food.protein_g}g) — limit portions`);
+  }
+
+  if (food.sodium_mg >= 400) {
+    warnings.push(
+      `High sodium (${Math.round(food.sodium_mg)}mg) — restrict at all CKD stages`,
+    );
+  }
+
+  if (warnings.length === 0) {
+    return 'Low in key nutrients — safe for most CKD stages in normal portions.';
+  }
+
+  return `${warnings.join('. ')}.`;
+}
+
+export function FoodExplorer({ isDark, theme, patientStage = 'G3b' }: FoodExplorerProps) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
   const [stageFilter, setStageFilter] = useState<(typeof STAGE_FILTER_OPTIONS)[number]['value']>('all');
+  const [showSafeOnly, setShowSafeOnly] = useState(false);
   const [kRange, setKRange] = useState<[number, number]>([0, 1800]);
   const [selected, setSelected] = useState<Food | null>(null);
   const [showCatMenu, setShowCatMenu] = useState(false);
 
-  const filtered = FOODS.filter((f) => {
-    const q = search.trim().toLowerCase();
-    const matchSearch =
-      !q ||
-      f.english.toLowerCase().includes(q) ||
-      f.french.toLowerCase().includes(q) ||
-      f.kinyarwanda.toLowerCase().includes(q);
-    const matchCat = category === 'All' || f.category === category;
-    const matchStage =
-      stageFilter === 'all' || isSafeForStage(f.ckd_stage_safe, parseInt(stageFilter, 10));
-    const matchK = f.potassium_mg >= kRange[0] && f.potassium_mg <= kRange[1];
-    return matchSearch && matchCat && matchStage && matchK;
-  });
+  const stageColumnHeader = `Safe for ${formatStageDisplay(patientStage)}?`;
+
+  const thStyle = {
+    color: theme.textSecondary,
+    fontSize: '0.75rem',
+    fontWeight: 600,
+  } as const;
+
+  const TABLE_MIN_WIDTH = 960;
+
+  const filtered = useMemo(() => {
+    return FOODS.filter((f) => {
+      const matchSearch = matchesFoodQuery(f, search);
+      const matchCat = category === 'All' || f.category === category;
+      const safety = foodStageSafety(f, patientStage);
+      const matchStage =
+        stageFilter === 'all' ||
+        getStageSafety(f.ckd_stage_safe, stageFilter, f.potassium_mg, f.phosphorus_mg ?? 0, f.protein_g ?? 0).isSafe;
+      const matchSafeOnly = !showSafeOnly || safety.isSafe;
+      const matchK = f.potassium_mg >= kRange[0] && f.potassium_mg <= kRange[1];
+      return matchSearch && matchCat && matchStage && matchSafeOnly && matchK;
+    });
+  }, [search, category, stageFilter, showSafeOnly, kRange, patientStage]);
 
   const radarData = selected
     ? [
@@ -55,14 +160,12 @@ export function FoodExplorer({ isDark, theme }: FoodExplorerProps) {
       ]
     : [];
 
-  const gridCols = '2fr 1.2fr 0.9fr 0.7fr 0.7fr 0.7fr 0.9fr';
-
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="space-y-4 lg:space-y-3 min-w-0">
       <div>
-        <div style={{ color: theme.text, fontSize: '1.4rem', fontWeight: 600 }}>CKD Food Explorer</div>
+        <div style={{ color: theme.text, fontSize: '1.4rem', fontWeight: 600 }}>Kidney Health Food Explorer</div>
         <p style={{ color: theme.textSecondary, marginTop: 4, fontSize: '0.9rem' }}>
-          Explore foods and their CKD safety ratings — {FOODS.length} foods in database
+          Explore foods and their kidney-health safety ratings — {FOODS.length} foods in database
         </p>
       </div>
 
@@ -150,7 +253,19 @@ export function FoodExplorer({ isDark, theme }: FoodExplorerProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showSafeOnly}
+            onChange={(e) => setShowSafeOnly(e.target.checked)}
+            className="rounded"
+          />
+          Show only foods safe for {formatStageDisplay(patientStage)}
+        </label>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 sm:gap-4 min-w-0">
         <span style={{ color: theme.textSecondary, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>Potassium (mg)</span>
         <input
           type="range"
@@ -158,7 +273,7 @@ export function FoodExplorer({ isDark, theme }: FoodExplorerProps) {
           max={1800}
           value={kRange[0]}
           onChange={(e) => setKRange([Math.min(Number(e.target.value), kRange[1]), kRange[1]])}
-          className="flex-1"
+          className="flex-1 min-w-0"
         />
         <input
           type="range"
@@ -166,85 +281,116 @@ export function FoodExplorer({ isDark, theme }: FoodExplorerProps) {
           max={1800}
           value={kRange[1]}
           onChange={(e) => setKRange([kRange[0], Math.max(Number(e.target.value), kRange[0])])}
-          className="flex-1"
+          className="flex-1 min-w-0"
         />
         <span style={{ color: theme.text, fontSize: '0.8rem', minWidth: 90 }}>
           {kRange[0]} – {kRange[1]}
         </span>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 sm:gap-6">
-        <div className="lg:col-span-3">
-          <div className="rounded-2xl overflow-hidden" style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}>
-            <div className="overflow-x-auto">
-              <div
-                className="grid px-4 sm:px-5 py-3"
-                style={{
-                  gridTemplateColumns: gridCols,
-                  borderBottom: `1px solid ${theme.cardBorder}`,
-                  background: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.025)',
-                  minWidth: 640,
-                }}
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 lg:gap-5 items-start min-w-0 lg:items-stretch">
+        <div className="w-full min-w-0 lg:col-span-7 flex flex-col min-h-0">
+          <div className="rounded-2xl overflow-hidden w-full flex-1 min-h-0" style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}>
+            <div className="w-full overflow-x-auto max-h-[min(540px,65vh)] lg:max-h-[calc(100vh-17rem)]" style={{ overflowY: 'auto' }}>
+              <table
+                className="w-full border-collapse"
+                style={{ minWidth: TABLE_MIN_WIDTH, tableLayout: 'fixed' }}
               >
-                {['Food', 'Kinyarwanda', 'Category', 'K (mg)', 'P (mg)', 'Pro (g)', 'CKD Safe'].map((h) => (
-                  <span key={h} style={{ color: theme.textSecondary, fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 600 }}>
-                    {h}
-                  </span>
-                ))}
-              </div>
-              <div style={{ maxHeight: 420, overflowY: 'auto' }}>
+                <colgroup>
+                  <col style={{ width: '22%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '11%' }} />
+                  <col style={{ width: '8%' }} />
+                  <col style={{ width: '27%' }} />
+                </colgroup>
+                <thead
+                  className="sticky top-0 z-10"
+                  style={{
+                    background: theme.cardBg,
+                    borderBottom: `1px solid ${theme.cardBorder}`,
+                    boxShadow: isDark ? '0 1px 0 rgba(255,255,255,0.06)' : '0 1px 0 rgba(0,0,0,0.06)',
+                  }}
+                >
+                  <tr>
+                    <th className="px-3 py-2.5 text-left whitespace-nowrap" style={thStyle}>Food</th>
+                    <th className="px-3 py-2.5 text-left whitespace-nowrap" style={thStyle}>Kinyarwanda</th>
+                    <th className="px-3 py-2.5 text-left whitespace-nowrap" style={thStyle}>Category</th>
+                    <th className="px-3 py-2.5 text-left whitespace-nowrap" style={thStyle}>Potassium</th>
+                    <th className="px-3 py-2.5 text-left whitespace-nowrap" style={thStyle}>Phosphorus</th>
+                    <th className="px-3 py-2.5 text-left whitespace-nowrap" style={thStyle}>Protein</th>
+                    <th className="px-3 py-2.5 text-left whitespace-nowrap" style={{ ...thStyle, fontSize: '0.72rem' }}>
+                      {stageColumnHeader}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
                 {filtered.length === 0 && (
-                  <div className="py-14 flex flex-col items-center gap-2">
-                    <Search size={26} style={{ color: theme.textTertiary }} />
-                    <p style={{ color: theme.textSecondary, fontSize: '0.9rem' }}>No foods match your filters</p>
-                  </div>
+                  <tr>
+                    <td colSpan={7}>
+                      <div className="py-14 flex flex-col items-center gap-2">
+                        <Search size={26} style={{ color: theme.textTertiary }} />
+                        <p style={{ color: theme.textSecondary, fontSize: '0.9rem' }}>No foods match your filters</p>
+                      </div>
+                    </td>
+                  </tr>
                 )}
                 {filtered.map((food, i) => {
                   const isSelected = selected?.id === food.id;
                   const kColor = potassiumColor(food.potassium_mg);
+                  const frenchName = foodTranslation(food.french);
+                  const kinyarwandaName = foodTranslation(food.kinyarwanda);
+                  const safety = foodStageSafety(food, patientStage);
                   return (
-                    <button
+                    <tr
                       key={food.id}
                       onClick={() => setSelected(isSelected ? null : food)}
-                      className="w-full text-left grid px-4 sm:px-5 py-3"
+                      className="cursor-pointer transition-colors"
                       style={{
-                        gridTemplateColumns: gridCols,
                         borderBottom: i < filtered.length - 1 ? `1px solid ${theme.cardBorder}` : 'none',
                         background: isSelected ? (isDark ? 'rgba(46,134,171,0.1)' : 'rgba(46,134,171,0.07)') : 'transparent',
-                        alignItems: 'center',
-                        minWidth: 640,
                       }}
                     >
-                      <div className="min-w-0 pr-2">
-                        <div className="capitalize truncate" style={{ color: theme.text, fontSize: '0.85rem', fontWeight: 600 }}>
-                          {food.english}
+                      <td className="px-3 py-3 align-middle">
+                        <div className="min-w-0">
+                          <div className="capitalize truncate" style={{ color: theme.text, fontSize: '0.85rem', fontWeight: 600 }}>
+                            {food.english}
+                          </div>
+                          {frenchName && (
+                            <div className="truncate" style={{ color: theme.text, fontSize: '0.8rem', marginTop: 2 }}>
+                              {frenchName}
+                            </div>
+                          )}
                         </div>
-                        <div className="truncate" style={{ color: theme.text, fontSize: '0.8rem', marginTop: 2 }}>
-                          {food.french}
-                        </div>
-                      </div>
-                      <span style={{ color: theme.textSecondary, fontSize: '0.75rem' }} className="truncate italic">
-                        {food.kinyarwanda}
-                      </span>
-                      <span
-                        className="inline-block w-fit px-2 py-0.5 rounded-full"
-                        style={{ background: 'rgba(46,134,171,0.12)', color: '#2E86AB', fontSize: '0.68rem', fontWeight: 500 }}
-                      >
-                        {food.category}
-                      </span>
-                      <span style={{ color: kColor, fontSize: '0.85rem', fontWeight: 600 }}>{food.potassium_mg}</span>
-                      <span style={{ color: theme.text, fontSize: '0.85rem' }}>{food.phosphorus_mg}</span>
-                      <span style={{ color: theme.text, fontSize: '0.85rem' }}>{food.protein_g}</span>
-                      <span
-                        className="inline-block w-fit px-2 py-0.5 rounded-full"
-                        style={{ background: 'rgba(39,174,96,0.12)', color: '#27AE60', fontSize: '0.68rem', fontWeight: 600 }}
-                      >
-                        {food.ckd_stage_safe}
-                      </span>
-                    </button>
+                      </td>
+                      <td className="px-3 py-3 align-middle truncate italic" style={{ color: theme.textSecondary, fontSize: '0.75rem' }}>
+                        {kinyarwandaName ?? ''}
+                      </td>
+                      <td className="px-3 py-3 align-middle">
+                        <span
+                          className="inline-block max-w-full truncate px-2 py-0.5 rounded-full"
+                          style={{ background: 'rgba(46,134,171,0.12)', color: '#2E86AB', fontSize: '0.68rem', fontWeight: 500 }}
+                        >
+                          {food.category}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 align-middle tabular-nums whitespace-nowrap" style={{ color: kColor, fontSize: '0.85rem', fontWeight: 600 }}>{food.potassium_mg}</td>
+                      <td className="px-3 py-3 align-middle tabular-nums whitespace-nowrap" style={{ color: theme.text, fontSize: '0.85rem' }}>{food.phosphorus_mg}</td>
+                      <td className="px-3 py-3 align-middle tabular-nums whitespace-nowrap" style={{ color: theme.text, fontSize: '0.85rem' }}>{food.protein_g}</td>
+                      <td className="px-3 py-2 align-middle">
+                        <span className={`text-xs font-medium block ${safety.color}`}>
+                          {safety.label}
+                        </span>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                          {getTableSafetyReason(food, patientStage)}
+                        </p>
+                      </td>
+                    </tr>
                   );
                 })}
-              </div>
+                </tbody>
+              </table>
             </div>
           </div>
           <p style={{ color: theme.textTertiary, fontSize: '0.75rem', marginTop: 8 }}>
@@ -252,23 +398,30 @@ export function FoodExplorer({ isDark, theme }: FoodExplorerProps) {
           </p>
         </div>
 
-        <div className="lg:col-span-2 space-y-4">
-          {selected ? (
+        <div className="w-full min-w-0 lg:col-span-3 space-y-3 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-6.5rem)] lg:overflow-y-auto">
+          {selected ? (() => {
+            const selectedSafety = foodStageSafety(selected, patientStage);
+            return (
             <>
               <div className="p-5 sm:p-6 rounded-2xl" style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}>
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div>
                     <div className="capitalize" style={{ color: theme.text, fontWeight: 700, fontSize: '1rem' }}>{selected.english}</div>
-                    <div style={{ color: theme.text, fontSize: '0.9rem', marginTop: 4 }}>{selected.french}</div>
-                    <div className="italic" style={{ color: theme.textSecondary, fontSize: '0.85rem', marginTop: 4 }}>{selected.kinyarwanda}</div>
-                    <div className="flex gap-2 mt-2 flex-wrap">
+                    {foodTranslation(selected.french) && (
+                      <div style={{ color: theme.text, fontSize: '0.9rem', marginTop: 4 }}>{foodTranslation(selected.french)}</div>
+                    )}
+                    {foodTranslation(selected.kinyarwanda) && (
+                      <div className="italic" style={{ color: theme.textSecondary, fontSize: '0.85rem', marginTop: 4 }}>{foodTranslation(selected.kinyarwanda)}</div>
+                    )}
+                    <div className="flex gap-2 mt-2 flex-wrap items-center">
                       <span className="px-2.5 py-0.5 rounded-full" style={{ background: 'rgba(46,134,171,0.12)', color: '#2E86AB', fontSize: '0.72rem' }}>
                         {selected.category}
                       </span>
-                      <span className="px-2.5 py-0.5 rounded-full" style={{ background: 'rgba(39,174,96,0.12)', color: '#27AE60', fontSize: '0.72rem', fontWeight: 600 }}>
-                        Safe stages {selected.ckd_stage_safe}
+                      <span className={`text-xs font-medium ${selectedSafety.color}`}>
+                        {selectedSafety.label}
                       </span>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">{selectedSafety.detail}</p>
                   </div>
                   <button onClick={() => setSelected(null)} className="p-1">
                     <X size={14} style={{ color: theme.textSecondary }} />
@@ -276,7 +429,9 @@ export function FoodExplorer({ isDark, theme }: FoodExplorerProps) {
                 </div>
                 <div className="flex items-start gap-2 p-3 rounded-xl mb-4" style={{ background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }}>
                   <Info size={12} style={{ color: '#2E86AB', marginTop: 1, flexShrink: 0 }} />
-                  <p style={{ color: theme.textSecondary, fontSize: '0.8rem', lineHeight: 1.55 }}>{selected.notes}</p>
+                  <p style={{ color: theme.textSecondary, fontSize: '0.8rem', lineHeight: 1.55 }}>
+                    {generateClinicalNote(selected, patientStage)}
+                  </p>
                 </div>
                 <div className="space-y-3">
                   {nutrientBars.map((b) => {
@@ -310,7 +465,8 @@ export function FoodExplorer({ isDark, theme }: FoodExplorerProps) {
                 </ResponsiveContainer>
               </div>
             </>
-          ) : (
+            );
+          })() : (
             <div
               className="rounded-2xl flex flex-col items-center justify-center text-center p-8"
               style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}`, minHeight: 320 }}

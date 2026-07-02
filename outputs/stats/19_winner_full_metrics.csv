@@ -1,0 +1,2 @@
+Model,Tier,Accuracy,F1_Macro,F1_Weighted,AUC_OvR,LOW_Precision,LOW_Recall,LOW_F1,LOW_Specificity,MOD_Precision,MOD_Recall,MOD_F1,MOD_Specificity,HIGH_Precision,HIGH_Recall,HIGH_F1,HIGH_Specificity,Train_Accuracy,Test_Accuracy,Overfit_Gap,CV_F1_Mean,CV_F1_Std,McNemar_p,Baseline_MOD_R,MOD_R_Improvement
+RF + Class Weight MOD=3,Tier 3 — Weekly,0.8358,0.8215,0.8334,0.9469,1.0,0.6167,0.7629,1.0,0.7765,0.9026,0.8348,0.779,0.8739,0.8595,0.8667,0.9299,0.8216,0.8358,-0.0142,0.8077,0.028,0.0,0.7468,0.1558

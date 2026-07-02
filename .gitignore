@@ -41,7 +41,9 @@ models/*.keras
 models/*.npz
 
 # Archive
-archive/
+/archive/
+!notebooks/archive/
+!models/archive/
 
 # Keep outputs
 !outputs/

@@ -9,11 +9,18 @@ const LABELS = [
   'Help me eat safely',
 ];
 
-export function MealPlannerButton({ onClick }: { onClick: () => void }) {
+export function MealPlannerButton({
+  onClick,
+  fixedLabel,
+}: {
+  onClick: () => void;
+  fixedLabel?: string;
+}) {
   const [labelIndex, setLabelIndex] = useState(0);
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
+    if (fixedLabel) return;
     const interval = setInterval(() => {
       setVisible(false);
       setTimeout(() => {
@@ -22,7 +29,7 @@ export function MealPlannerButton({ onClick }: { onClick: () => void }) {
       }, 300);
     }, 2200);
     return () => clearInterval(interval);
-  }, []);
+  }, [fixedLabel]);
 
   return (
     <button
@@ -32,7 +39,7 @@ export function MealPlannerButton({ onClick }: { onClick: () => void }) {
       style={{
         background: 'linear-gradient(135deg, #2E86AB 0%, #1A5F7A 100%)',
       }}
-      aria-label="AI Meal Planner"
+      aria-label="Meal Suggestions"
     >
       <ChefHat className="w-4 h-4 text-white shrink-0" />
       <span
@@ -43,7 +50,7 @@ export function MealPlannerButton({ onClick }: { onClick: () => void }) {
           minWidth: '140px',
         }}
       >
-        {LABELS[labelIndex]}
+        {fixedLabel ?? LABELS[labelIndex]}
       </span>
     </button>
   );

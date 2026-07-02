@@ -8,8 +8,33 @@ import {
   type Food,
   potassiumColor,
 } from '../../data/foodDatabase';
+import { foodTranslation, matchesFoodQuery } from '../../utils/foodDisplay';
+import { authFetch, getAuthToken } from '../../utils/auth';
+import { displayBudgetStatus, formatStageDisplay, getRiskDisplay, getWeeklyRiskLabel, isFoodInStageRange } from '../../utils/riskDisplay';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const FOOD_DB_COUNT = 386;
+
+function mapApiFood(row: Record<string, unknown>): Food {
+  return {
+    id: Number(row.food_id ?? row.id ?? 0),
+    english: String(row.english ?? ''),
+    french: row.french ? String(row.french) : null,
+    kinyarwanda: row.kinyarwanda ? String(row.kinyarwanda) : null,
+    category: String(row.category ?? 'Other'),
+    meal_type: String(row.meal_type ?? 'Any'),
+    protein_g: Number(row.protein_g ?? 0),
+    potassium_mg: Number(row.potassium_mg ?? 0),
+    phosphorus_mg: Number(row.phosphorus_mg ?? 0),
+    sodium_mg: Number(row.sodium_mg ?? 0),
+    energy_kcal: Number(row.energy_kcal ?? 0),
+    preparation_method: String(row.preparation_method ?? ''),
+    source: String(row.source ?? ''),
+    ckd_stage_safe: String(row.ckd_stage_safe ?? '1-5'),
+    notes: String(row.notes ?? ''),
+  };
+}
 
 const UNIT_MAP: Record<string, { unit: string; grams: number }> = {
   Fruit: { unit: 'piece', grams: 150 },
@@ -100,16 +125,12 @@ const RESULTS_STORAGE_KEY = 'results_by_occasion';
 const RESULTS_DATE_KEY = 'results_by_occasion_date';
 
 const saveFoodLog = async (food: Food, portionGrams: number, mealOccasion: string): Promise<boolean> => {
-  const token = localStorage.getItem('guidaplate_token');
-  if (!token) return false;
+  if (!getAuthToken()) return false;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/patient/food-log`, {
+    const response = await authFetch(`${API_BASE}/api/patient/food-log`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         food_name: food.english,
         category: food.category,
@@ -118,6 +139,7 @@ const saveFoodLog = async (food: Food, portionGrams: number, mealOccasion: strin
         meal_occasion: mealOccasion,
       }),
     });
+    if (response.status === 401) return false;
     return response.ok;
   } catch (err) {
     console.error('Failed to save food log:', err);
@@ -133,27 +155,121 @@ const saveRiskAssessment = async (
   riskLevel: string,
   riskScore: number,
   nutrientTotals: Record<string, number>,
+  extras?: {
+    shap_contributions?: Record<string, number> | null;
+    shap_explanation?: string | null;
+    ckd_stage?: string;
+    bodyWeightKg?: number;
+  },
 ) => {
-  const token = localStorage.getItem('guidaplate_token');
-  if (!token) return;
+  if (!getAuthToken()) return;
+
+  const featureValues =
+    extras?.ckd_stage && extras.bodyWeightKg
+      ? {
+          potassium: nutrientTotals.potassium,
+          phosphorus: nutrientTotals.phosphorus,
+          protein_per_kg: nutrientTotals.protein / extras.bodyWeightKg,
+          sodium: nutrientTotals.sodium,
+          ckd_stage: extras.ckd_stage,
+        }
+      : undefined;
 
   try {
-    await fetch(`${API_BASE_URL}/patient/risk-assessment`, {
+    await authFetch(`${API_BASE}/api/patient/risk-assessment`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         risk_level: riskLevel,
         risk_score: riskScore,
         nutrients_summary: JSON.stringify(nutrientTotals),
+        shap_contributions: extras?.shap_contributions ?? null,
+        shap_explanation: extras?.shap_explanation ?? null,
+        feature_values: featureValues ?? null,
+        ckd_stage: extras?.ckd_stage ?? null,
       }),
     });
   } catch (err) {
     console.error('Failed to save risk assessment:', err);
   }
 };
+
+interface FoodSuggestion {
+  english: string;
+  french: string | null;
+  kinyarwanda: string | null;
+  category: string | null;
+  reason: string;
+}
+
+interface MealOccasionSuggestions {
+  occasion: string;
+  suggestions: FoodSuggestion[];
+}
+
+interface WeeklySuggestionsResponse {
+  trajectory_risk: string;
+  flagged_nutrient: string | null;
+  flagged_reason: string;
+  remaining_days: number;
+  suggestions_by_meal: MealOccasionSuggestions[];
+  clinical_note: string;
+  analysis_available: boolean;
+}
+
+const SUGGESTION_OCCASION_LABELS: Record<string, string> = {
+  breakfast: 'Breakfast',
+  lunch: 'Lunch',
+  dinner: 'Dinner',
+  snack: 'Snack',
+};
+
+const getNextOccasion = (current: string): string => {
+  const order = ['breakfast', 'lunch', 'dinner', 'snack'];
+  const idx = order.indexOf((current ?? '').toLowerCase());
+  if (idx === -1) return 'lunch';
+  if (idx === order.length - 1) return 'breakfast';
+  return order[idx + 1];
+};
+
+const getTimeBasedOccasion = (): string => {
+  const hour = new Date().getHours();
+  if (hour < 10) return 'breakfast';
+  if (hour < 14) return 'lunch';
+  if (hour < 19) return 'dinner';
+  return 'snack';
+};
+
+function mealOccasionToSuggestionTab(occasion: string | null | undefined): string {
+  const key = (occasion ?? '').toLowerCase();
+  if (key === 'breakfast' || key === 'lunch' || key === 'dinner' || key === 'snack') {
+    return key;
+  }
+  return getTimeBasedOccasion();
+}
+
+const SUGGESTIONS_DEFAULT_SUBTITLE =
+  'Based on your recent meals, here are safe options for your next meal';
+
+const toPlainNutrient = (key: string): string => {
+  const map: Record<string, string> = {
+    potassium: 'potassium',
+    protein_per_kg: 'protein',
+    phosphorus: 'phosphorus',
+    sodium: 'sodium',
+  };
+  return map[key?.toLowerCase()] ?? key;
+};
+
+function getSuggestionsSubtitle(
+  hasResult: boolean,
+  suggestions: WeeklySuggestionsResponse | null,
+): string {
+  if (!hasResult) return SUGGESTIONS_DEFAULT_SUBTITLE;
+  const nutrient = suggestions?.flagged_nutrient?.trim();
+  if (!nutrient) return SUGGESTIONS_DEFAULT_SUBTITLE;
+  return `Based on the meal you just checked, we updated your suggestions to be lower in ${toPlainNutrient(nutrient)}`;
+}
 
 interface RiskAssessmentProps {
   isDark: boolean;
@@ -192,19 +308,6 @@ function getStageLimits(stage: CKDStage, bodyWeightKg: number) {
     gfr: STAGE_META[stage].gfr,
   };
 }
-
-const stageCovers = (ckd_stage_safe: string, stage: string): boolean => {
-  const stageNum: Record<string, number> = {
-    G1: 1, G2: 2, G3a: 3, G3b: 3, G4: 4, G5: 5,
-  };
-  const n = stageNum[stage] ?? 2;
-  if (ckd_stage_safe === '1') return n === 1;
-  const parts = ckd_stage_safe.split('-');
-  if (parts.length !== 2) return true;
-  const min = parseInt(parts[0], 10);
-  const max = parseInt(parts[1], 10);
-  return n >= min && n <= max;
-};
 
 function substituteCategories(category: string): string[] {
   const rules: Record<string, string[]> = {
@@ -274,7 +377,7 @@ function getSmartSubstitutions(
         .filter((f) => !mealIds.has(f.id))
         .filter((f) => allowedCats.includes(f.category))
         .filter((f) => f.potassium_mg < riskyFood.potassium_mg)
-        .filter((f) => stageCovers(f.ckd_stage_safe, stage))
+        .filter((f) => isFoodInStageRange(f.ckd_stage_safe, stage))
         .sort((a, b) => a.potassium_mg - b.potassium_mg)
         .slice(0, 3);
       return { riskyFood, substitutes };
@@ -404,13 +507,6 @@ function findBestFoodMatch(phrase: string, foodDatabase: Food[]): Food | undefin
 }
 
 function extractFoodsFromSpeech(transcript: string, foodDatabase: Food[]): SpeechExtractionResult {
-  console.log(
-    '[voice] foods containing "bean":',
-    foodDatabase
-      .filter((f) => f.english.toLowerCase().includes('bean'))
-      .map((f) => f.english),
-  );
-
   const cleaned = transcript
     .toLowerCase()
     .trim()
@@ -424,25 +520,20 @@ function extractFoodsFromSpeech(transcript: string, foodDatabase: Food[]): Speec
     .map((s) => s.trim())
     .filter((s) => s.length > 2);
 
-  console.log('[voice] 1. cleaned transcript:', cleaned);
-  console.log('[voice] 2. candidates after split:', candidates);
-
   const matched: Food[] = [];
   const matchedIds = new Set<number>();
 
-  const addMatch = (food: Food | undefined, source: string) => {
+  const addMatch = (food: Food | undefined) => {
     if (food && !matchedIds.has(food.id)) {
       matched.push(food);
       matchedIds.add(food.id);
-      console.log('[voice] 3. matched:', source, '→', food.english);
       return true;
     }
-    console.log('[voice] 3. no match:', source);
     return false;
   };
 
   for (const candidate of candidates) {
-    addMatch(findBestFoodMatch(candidate, foodDatabase), `candidate "${candidate}"`);
+    addMatch(findBestFoodMatch(candidate, foodDatabase));
   }
 
   const words = cleaned.split(/\s+/).filter(Boolean);
@@ -459,9 +550,7 @@ function extractFoodsFromSpeech(transcript: string, foodDatabase: Food[]): Speec
       const food = findBestFoodMatch(phrase, foodDatabase);
       if (food) {
         if (!matchedIds.has(food.id)) {
-          addMatch(food, `sliding "${phrase}"`);
-        } else {
-          console.log('[voice] 3. already matched:', `sliding "${phrase}" → ${food.english}`);
+          addMatch(food);
         }
         break;
       }
@@ -495,9 +584,6 @@ function extractFoodsFromSpeech(transcript: string, foodDatabase: Food[]): Speec
   }
 
   const unmatched = [...new Set(unmatchedWords)].filter((w) => w.length > 2);
-
-  console.log('[voice] final matched:', matched.map((f) => f.english));
-  console.log('[voice] final unmatched:', unmatched);
 
   return { matched, unmatched };
 }
@@ -610,10 +696,79 @@ function generateRecommendations(
 
 const NUTRIENT_COLORS: Record<string, string> = { Potassium: '#2E86AB', Phosphorus: '#F39C12', Protein: '#27AE60', Sodium: '#E74C3C' };
 
+const BREAKDOWN_TO_DAILY_KEY: Record<string, string> = {
+  Potassium: 'potassium',
+  Phosphorus: 'phosphorus',
+  Protein: 'protein_per_kg',
+  Sodium: 'sodium',
+};
+
+function dailyNutrientBadge(percentUsed: number | undefined): {
+  label: string;
+  color: string;
+  Icon: typeof CheckCircle2;
+} {
+  const pct = percentUsed ?? 0;
+  if (pct > 100) {
+    return { label: '⚠ Daily limit exceeded', color: '#F59E0B', Icon: AlertTriangle };
+  }
+  if (pct >= 80) {
+    return { label: '⚠ Approaching limit', color: '#F59E0B', Icon: AlertTriangle };
+  }
+  return { label: '✔ Within limit', color: '#27AE60', Icon: CheckCircle2 };
+}
+
+function isDailyBudgetExceeded(dailyBudget: DailyBudgetData | null): boolean {
+  return !!dailyBudget &&
+    ['potassium', 'phosphorus', 'protein_per_kg', 'sodium'].some((k) => {
+      const n = dailyBudget.nutrients[k];
+      return typeof n?.percent_used === 'number' && n.percent_used > 100;
+    });
+}
+
+function isDailyNutrientAmber(percentUsed: number | undefined): boolean {
+  return (percentUsed ?? 0) >= 80;
+}
+
+function dailyNutrientCardValues(
+  name: string,
+  mealEntry: BreakdownEntry,
+  dailyKey: string | undefined,
+  dailyBudget: DailyBudgetData | null,
+  bodyWeightKg: number,
+): { value: number; limit: number; pct: number; sourceLabel: 'This meal' | 'Today total' } {
+  const dailyData = dailyKey ? dailyBudget?.nutrients[dailyKey] : undefined;
+  const dailyPct = dailyData?.percent_used;
+
+  if (dailyData && isDailyNutrientAmber(dailyPct)) {
+    if (name === 'Protein') {
+      return {
+        value: +(dailyData.consumed * bodyWeightKg).toFixed(1),
+        limit: +(dailyData.limit * bodyWeightKg).toFixed(1),
+        pct: dailyPct ?? mealEntry.pct,
+        sourceLabel: 'Today total',
+      };
+    }
+    return {
+      value: Math.round(dailyData.consumed),
+      limit: Math.round(dailyData.limit),
+      pct: dailyPct ?? mealEntry.pct,
+      sourceLabel: 'Today total',
+    };
+  }
+
+  return {
+    value: mealEntry.value,
+    limit: mealEntry.limit,
+    pct: mealEntry.pct,
+    sourceLabel: 'This meal',
+  };
+}
+
 const RISK_CFG = {
-  HIGH:     { color: '#E74C3C', bg: 'rgba(231,76,60,0.1)',  border: 'rgba(231,76,60,0.35)',  icon: XCircle,       label: 'High Risk',     desc: 'This meal significantly exceeds safe nutrient limits for your CKD stage' },
-  MODERATE: { color: '#F39C12', bg: 'rgba(243,156,18,0.1)', border: 'rgba(243,156,18,0.35)', icon: AlertTriangle, label: 'Moderate Risk', desc: 'Some nutrients in this meal are near or above recommended thresholds' },
-  LOW:      { color: '#27AE60', bg: 'rgba(39,174,96,0.1)',  border: 'rgba(39,174,96,0.35)',  icon: CheckCircle2,  label: 'Low Risk',      desc: 'This meal is within safe nutrient ranges for your CKD stage' },
+  HIGH:     { color: '#E74C3C', bg: 'rgba(231,76,60,0.1)',  border: 'rgba(231,76,60,0.35)',  icon: XCircle,       label: getRiskDisplay('HIGH').label,     desc: getRiskDisplay('HIGH').sublabel },
+  MODERATE: { color: '#F39C12', bg: 'rgba(243,156,18,0.1)', border: 'rgba(243,156,18,0.35)', icon: AlertTriangle, label: getRiskDisplay('MODERATE').label, desc: getRiskDisplay('MODERATE').sublabel },
+  LOW:      { color: '#27AE60', bg: 'rgba(39,174,96,0.1)',  border: 'rgba(39,174,96,0.35)',  icon: CheckCircle2,  label: getRiskDisplay('LOW').label,      desc: getRiskDisplay('LOW').sublabel },
 };
 
 const MEAL_TYPES: MealOccasion[] = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
@@ -681,9 +836,9 @@ function persistResultsByOccasion(data: Record<MealOccasion, OccasionAssessment 
 }
 
 function occasionRiskBadgeLabel(level: RiskLevel): { text: string; color: string } {
-  if (level === 'LOW') return { text: '✓ LOW Risk', color: '#27AE60' };
-  if (level === 'MODERATE') return { text: '⚠ MODERATE Risk', color: '#F39C12' };
-  return { text: '✗ HIGH Risk', color: '#E74C3C' };
+  const d = getRiskDisplay(level);
+  const color = level === 'LOW' ? '#27AE60' : level === 'MODERATE' ? '#F39C12' : '#E74C3C';
+  return { text: `${d.icon} ${d.label}`, color };
 }
 
 function assessmentDotClass(level: RiskLevel): string {
@@ -738,6 +893,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
   const [result,          setResult]          = useState<ResultState | null>(initialAssessment?.result ?? null);
   const [error,           setError]           = useState('');
   const [search,          setSearch]          = useState('');
+  const [searchResults,   setSearchResults]   = useState<Food[]>([]);
   const [showDrop,        setShowDrop]        = useState(false);
   const [selectedFood,    setSelectedFood]    = useState<Food | null>(null);
   const [foodQty,         setFoodQty]         = useState<number>(1);
@@ -756,6 +912,10 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
   );
   const [dailyBudget,     setDailyBudget]     = useState<DailyBudgetData | null>(null);
   const [resettingDay,    setResettingDay]    = useState(false);
+  const [suggestions, setSuggestions] = useState<WeeklySuggestionsResponse | null>(null);
+  const [suggestionTab, setSuggestionTab] = useState<string>('breakfast');
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [entryQuantities, setEntryQuantities] = useState<Record<number, number>>({});
   const wrapRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const currentMealTypeRef = useRef<MealOccasion>(currentMealType);
@@ -764,14 +924,102 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
     currentMealTypeRef.current = currentMealType;
   }, [currentMealType]);
 
-  const fetchDailyBudget = async () => {
-    const token = localStorage.getItem('guidaplate_token');
-    if (!token) return;
+  useEffect(() => {
+    if (result) return;
+    setSuggestionTab(mealOccasionToSuggestionTab(currentMealType));
+  }, [currentMealType, result]);
+
+  useEffect(() => {
+    if (!result) return;
+    const showLstmAlternatives =
+      result.level === 'HIGH' ||
+      result.level === 'MODERATE' ||
+      isDailyBudgetExceeded(dailyBudget);
+    if (showLstmAlternatives) {
+      setSuggestionTab(getNextOccasion(currentMealType));
+    }
+  }, [result, dailyBudget, currentMealType]);
+
+  useEffect(() => {
+    if (!getAuthToken()) {
+      setSuggestions(null);
+      return;
+    }
+
+    let cancelled = false;
+    setSuggestions(null);
+    setLoadingSuggestions(true);
+
+    authFetch(`${API_BASE}/api/next-meal/weekly-suggestions`)
+      .then(async (r) => {
+        if (r.status === 401 || !r.ok) return null;
+        return r.json() as Promise<WeeklySuggestionsResponse>;
+      })
+      .then((data) => {
+        if (cancelled) return;
+        const hasSuggestions = data?.suggestions_by_meal?.some(
+          (group) => group.suggestions.length > 0,
+        );
+        if (hasSuggestions) {
+          setSuggestionTab(
+            result
+              ? getNextOccasion(currentMealTypeRef.current)
+              : mealOccasionToSuggestionTab(currentMealTypeRef.current),
+          );
+        }
+        setSuggestions(hasSuggestions ? data : null);
+      })
+      .catch(() => {
+        if (!cancelled) setSuggestions(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingSuggestions(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [result]);
+
+  const searchFoods = async (query: string) => {
+    const q = query.trim();
+    if (q.length < 2) {
+      setSearchResults([]);
+      return;
+    }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/patient/daily-budget`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await authFetch(
+        `${API_BASE}/api/foods/search/${encodeURIComponent(q)}`,
+      );
+      if (res.ok) {
+        const data = await res.json() as { results?: Record<string, unknown>[]; foods?: Record<string, unknown>[] };
+        const rows = data.results ?? data.foods ?? [];
+        setSearchResults(rows.slice(0, 8).map(mapApiFood));
+        return;
+      }
+    } catch (err) {
+      console.error('Food search failed:', err);
+    }
+
+    setSearchResults(
+      FOODS.filter((f) => matchesFoodQuery(f, q)).slice(0, 8),
+    );
+  };
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void searchFoods(search);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const fetchDailyBudget = async () => {
+    if (!getAuthToken()) return;
+
+    try {
+      const response = await authFetch(`${API_BASE}/api/patient/daily-budget`);
+      if (response.status === 401) return;
       if (!response.ok) {
         console.warn('daily-budget request failed:', response.status, await response.text());
         return;
@@ -783,13 +1031,11 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
   };
 
   const fetchTodayLogs = async () => {
-    const token = localStorage.getItem('guidaplate_token');
-    if (!token) return;
+    if (!getAuthToken()) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/patient/food-log/history`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await authFetch(`${API_BASE}/api/patient/food-log/history`);
+      if (response.status === 401) return;
       if (!response.ok) {
         console.warn('food-log history failed:', response.status, await response.text());
         return;
@@ -809,15 +1055,14 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
   };
 
   const deleteFoodLog = async (logId: string) => {
-    const token = localStorage.getItem('guidaplate_token');
-    if (!token) return;
+    if (!getAuthToken()) return;
 
     setDeletingLogId(logId);
     try {
-      const response = await fetch(`${API_BASE_URL}/patient/food-log/${logId}`, {
+      const response = await authFetch(`${API_BASE}/api/patient/food-log/${logId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
       });
+      if (response.status === 401) return;
       if (!response.ok) {
         console.warn('delete food log failed:', response.status, await response.text());
         return;
@@ -884,6 +1129,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
     setOccasionAddMode(false);
     setEntries([]);
     setError('');
+    setSearch('');
     applyAssessmentToDisplay(resultsByOccasion[type]);
   };
 
@@ -897,6 +1143,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
 
   const mealOccasion = currentMealType;
   const showLoggedView =
+    !occasionAddMode &&
     (logsByOccasion[mealOccasion] || []).length > 0;
 
   const totalLoggedToday = MEAL_TYPES.reduce(
@@ -920,15 +1167,12 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
   }, [initialStage, initialBodyWeight]);
 
   useEffect(() => {
-    const token = localStorage.getItem('guidaplate_token');
-    if (!token) return;
+    if (!getAuthToken()) return;
 
     const loadProfile = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/patient/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!response.ok) return;
+        const response = await authFetch(`${API_BASE}/api/patient/profile`);
+        if (response.status === 401 || !response.ok) return;
         const data = await response.json();
         if (data.ckd_stage) {
           const nextStage = toCKDStage(data.ckd_stage);
@@ -948,7 +1192,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
   }, []);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/health`, { signal: AbortSignal.timeout(2000) })
+    fetch(`${API_BASE}/api/health`, { signal: AbortSignal.timeout(2000) })
       .then((res) => setApiStatus(res.ok ? 'connected' : 'unavailable'))
       .catch(() => setApiStatus('unavailable'));
   }, []);
@@ -1059,15 +1303,10 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
     setVoiceSpeechResult(null);
   };
 
-  const q = search.trim().toLowerCase();
-  const visibleFoods = (q === ''
-    ? FOODS
-    : FOODS.filter((food) =>
-        food.english.toLowerCase().includes(q) ||
-        food.french.toLowerCase().includes(q) ||
-        food.kinyarwanda.toLowerCase().includes(q)
-      )
-  ).filter((f) => !entries.find((e) => e.food.id === f.id));
+  const q = search.trim();
+  const visibleFoods = searchResults.filter(
+    (f) => !entries.find((e) => e.food.id === f.id),
+  );
 
   const selectFood = (food: Food) => {
     setSelectedFood(food);
@@ -1081,6 +1320,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
     const unitInfo = getUnitInfo(selectedFood.english, selectedFood.category || 'Other');
     const computedGrams = Math.round(foodQty * unitInfo.grams);
     setEntries((prev) => [...prev, { food: selectedFood, grams: computedGrams }]);
+    setEntryQuantities((prev) => ({ ...prev, [selectedFood.id]: foodQty }));
     setSelectedFood(null);
     setFoodQty(1);
     setSearch('');
@@ -1095,17 +1335,41 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
 
   const updateGrams = (id: number, delta: number) => {
     setEntries((prev) => prev.map((e) => e.food.id === id ? { ...e, grams: Math.max(10, e.grams + delta) } : e));
+    setEntryQuantities((prev) => {
+      const next = { ...prev };
+      const entry = entries.find((e) => e.food.id === id);
+      if (!entry) return prev;
+      const unitInfo = getUnitInfo(entry.food.english, entry.food.category || 'Other');
+      next[id] = Math.max(0.5, Math.min(10, Math.round(((entry.grams + delta) / unitInfo.grams) * 2) / 2));
+      return next;
+    });
     setResult(null);
   };
 
   const setGrams = (id: number, val: string) => {
     const n = parseInt(val, 10);
-    if (!isNaN(n) && n > 0) setEntries((prev) => prev.map((e) => e.food.id === id ? { ...e, grams: n } : e));
+    if (!isNaN(n) && n > 0) {
+      setEntries((prev) => prev.map((e) => e.food.id === id ? { ...e, grams: n } : e));
+      setEntryQuantities((prev) => {
+        const next = { ...prev };
+        const entry = entries.find((e) => e.food.id === id);
+        if (!entry) return prev;
+        const unitInfo = getUnitInfo(entry.food.english, entry.food.category || 'Other');
+        next[id] = Math.max(0.5, Math.min(10, Math.round((n / unitInfo.grams) * 2) / 2));
+        return next;
+      });
+    }
     setResult(null);
   };
 
   const removeEntry = (id: number) => {
     setEntries((prev) => prev.filter((e) => e.food.id !== id));
+    setEntryQuantities((prev) => {
+      if (!(id in prev)) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
     setResult(null);
     setError('');
   };
@@ -1128,7 +1392,21 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
 
   const computeRisk = async (foodsOverride?: MealFoodItem[], skipSave = false) => {
     const occasion = currentMealType;
-    const foodsToAssess = foodsOverride ?? entries;
+    const isAddMore = occasionAddMode && !foodsOverride;
+
+    if (isAddMore && entries.length === 0) {
+      setError('Add at least one new food item.');
+      return;
+    }
+
+    const existingLoggedItems = (logsByOccasion[occasion] ?? [])
+      .map(logToMealFoodItem)
+      .filter((item): item is MealFoodItem => item !== null);
+
+    const foodsToAssess = isAddMore
+      ? [...existingLoggedItems, ...entries]
+      : (foodsOverride ?? entries);
+
     if (foodsToAssess.length === 0) {
       setError('Add at least one food item to assess this meal.');
       return;
@@ -1149,7 +1427,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
 
     if (apiStatus === 'connected') {
       try {
-        const response = await fetch(`${API_BASE_URL}/predict/risk`, {
+        const response = await fetch(`${API_BASE}/api/predict/risk`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1198,19 +1476,28 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
           shap_dominant_nutrient: apiResult.shap_dominant_nutrient,
         };
 
+        const newEntriesToSave = isAddMore ? [...entries] : assessedFoods;
+
         if (!skipSave) {
           setEntries([]);
           setOccasionAddMode(false);
-          await saveMealFoodLogs(assessedFoods, occasion);
+          if (newEntriesToSave.length > 0) {
+            await saveMealFoodLogs(newEntriesToSave, occasion);
+          }
         } else {
           setOccasionAddMode(false);
         }
-        void saveRiskAssessment(level, apiResult.confidence, mealTotals);
+        void saveRiskAssessment(level, apiResult.confidence, mealTotals, {
+          shap_contributions: apiResult.shap_contributions ?? null,
+          shap_explanation: apiResult.shap_explanation ?? null,
+          ckd_stage: stage,
+          bodyWeightKg,
+        });
 
         try {
-          const token = localStorage.getItem('guidaplate_token');
+          const token = getAuthToken();
           if (token) {
-            const patternResponse = await fetch(`${API_BASE_URL}/predict/pattern`, {
+            const patternResponse = await fetch(`${API_BASE}/api/predict/pattern`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -1289,14 +1576,21 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
       substitutions: getSmartSubstitutions(assessedFoods, stage, limits),
     };
 
+    const newEntriesToSave = isAddMore ? [...entries] : assessedFoods;
+
     if (!skipSave) {
       setEntries([]);
       setOccasionAddMode(false);
-      await saveMealFoodLogs(assessedFoods, occasion);
+      if (newEntriesToSave.length > 0) {
+        await saveMealFoodLogs(newEntriesToSave, occasion);
+      }
     } else {
       setOccasionAddMode(false);
     }
-    void saveRiskAssessment(level, fallbackScore / 100, mealTotals);
+    void saveRiskAssessment(level, fallbackScore / 100, mealTotals, {
+      ckd_stage: stage,
+      bodyWeightKg,
+    });
 
     commitOccasionAssessment(occasion, {
       result: resultState,
@@ -1325,34 +1619,47 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
     setEntries([]);
     setError('');
     setSearch('');
-    applyAssessmentToDisplay(resultsByOccasion[currentMealType]);
+    if (occasionAddMode) {
+      setOccasionAddMode(false);
+    } else {
+      applyAssessmentToDisplay(resultsByOccasion[currentMealType]);
+    }
   };
 
   const resetDay = async () => {
-    const token = localStorage.getItem('guidaplate_token');
-    if (!token) return;
-    if (!window.confirm('Clear all meals logged today? This cannot be undone.')) return;
+    if (!getAuthToken()) return;
+    if (!window.confirm("Reset all food logs for today? This cannot be undone.")) return;
 
     setResettingDay(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/patient/food-log/day`, {
+      const response = await authFetch(`${API_BASE}/api/patient/food-log/day`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
       });
+      if (response.status === 401) return;
       if (!response.ok) {
-        console.warn('reset-day request failed:', response.status, await response.text());
+        console.error('Reset failed:', await response.text());
         return;
       }
-      reset();
+
+      setEntries([]);
+      setSearch('');
+      setError('');
+      setLogsByOccasion({ ...EMPTY_LOGS_BY_OCCASION });
       clearAllOccasionAssessments();
       await fetchDailyBudget();
       await fetchTodayLogs();
     } catch (err) {
-      console.warn('reset-day request error:', err);
+      console.error('Reset error:', err);
     } finally {
       setResettingDay(false);
     }
   };
+
+  const hasTodayLogs = MEAL_TYPES.some(
+    (occasion) => (logsByOccasion[occasion]?.length ?? 0) > 0,
+  );
+  const canResetToday =
+    hasTodayLogs || (dailyBudget?.meals_logged_today ?? 0) > 0;
 
   const nutrientSummary = [
     { label: 'Potassium',  value: Math.round(totals.potassium),  limit: thresholds.potassium,  unit: 'mg', color: '#2E86AB' },
@@ -1361,36 +1668,134 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
     { label: 'Sodium',     value: Math.round(totals.sodium),     limit: thresholds.sodium,     unit: 'mg', color: '#E74C3C' },
   ];
 
+  const renderWeeklySuggestionsPanel = (hasCheckedMeal: boolean) => {
+    if (!suggestions || loadingSuggestions) return null;
+    return (
+      <div className="bg-teal-50 rounded-lg p-3 flex flex-col">
+        <div className="text-sm font-semibold text-teal-700" style={{ marginBottom: 4 }}>
+          What to eat next
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">
+          {getSuggestionsSubtitle(hasCheckedMeal, suggestions)}
+        </p>
+
+        {!suggestions.analysis_available && (
+          <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 mb-3 flex items-center gap-2">
+            <span className="text-amber-600 text-sm font-medium">
+              ⚠ Pattern analysis temporarily unavailable
+            </span>
+            <span className="text-amber-500 text-xs">
+              Showing general safe foods for your stage
+            </span>
+          </div>
+        )}
+
+        <Tabs value={suggestionTab} onValueChange={setSuggestionTab}>
+          <TabsList className="w-full grid grid-cols-4 h-auto mb-2">
+            {suggestions.suggestions_by_meal.map((group) => (
+              <TabsTrigger key={group.occasion} value={group.occasion} className="text-xs sm:text-sm">
+                {SUGGESTION_OCCASION_LABELS[group.occasion] || group.occasion}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          {suggestions.suggestions_by_meal.map((group) => {
+            const foods = group.suggestions.slice(0, 4);
+            return (
+              <TabsContent key={group.occasion} value={group.occasion} className="mt-0">
+                {foods.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-2">No suggestions available</p>
+                ) : (
+                  <ul className="grid grid-cols-2 gap-2">
+                    {foods.map((food) => (
+                      <li key={`${group.occasion}-${food.english}`} className="min-w-0">
+                        <p className="text-sm font-semibold text-foreground capitalize leading-snug">
+                          {food.english}
+                        </p>
+                        {food.category && (
+                          <p className="text-[11px] text-muted-foreground leading-tight">{food.category}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{food.reason}</p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </TabsContent>
+            );
+          })}
+        </Tabs>
+
+        {suggestions.clinical_note && (
+          <p className="text-xs italic text-muted-foreground mt-3 leading-relaxed">
+            {suggestions.clinical_note}
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  const renderDailyBudgetGrid = () => {
+    if (!dailyBudget) {
+      return <p className="text-sm text-muted-foreground mt-4">Loading…</p>;
+    }
+    return (
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-2 gap-y-1 mt-4">
+        {(['potassium', 'phosphorus', 'protein_per_kg', 'sodium'] as const).map((nutrient) => {
+          const data = dailyBudget.nutrients[nutrient];
+          if (!data) return null;
+          const pct = data.percent_used;
+          const status = pct >= 100 ? 'over' : pct >= 70 ? 'near' : 'ok';
+          const pctColor = pct >= 100 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#6b7280';
+          const statusColor = pct >= 100 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#22c55e';
+          const label = nutrient === 'protein_per_kg' ? 'Protein'
+            : nutrient.charAt(0).toUpperCase() + nutrient.slice(1);
+
+          return (
+            <Fragment key={nutrient}>
+              <span className="text-sm font-medium" style={{ color: theme.text }}>{label}</span>
+              <span className="text-sm font-semibold text-right whitespace-nowrap" style={{ color: pctColor }}>
+                {pct.toFixed(0)}%
+              </span>
+              <span className="text-sm text-right whitespace-nowrap" style={{ color: statusColor }}>
+                {displayBudgetStatus(status)}
+              </span>
+            </Fragment>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
-    <div className="w-full max-w-none px-6 space-y-5 sm:space-y-6">
+    <div className="w-full min-w-0 space-y-4 lg:space-y-3">
       {/* Header */}
       <div>
-        <div style={{ color: theme.text, fontSize: '1.4rem', fontWeight: 600 }}>Meal Assessment</div>
+        <div style={{ color: theme.text, fontSize: '1.4rem', fontWeight: 600 }}>Meal Check</div>
         <p style={{ color: theme.textSecondary, marginTop: 4, fontSize: '0.9rem' }}>
-          Log what you just ate or are about to eat — the system calculates the nutrients and assesses the risk for your CKD stage
+          Add the foods you just ate and get instant feedback on whether your meal is safe for your kidneys
         </p>
       </div>
 
-      <div className="flex flex-row gap-5 w-full items-stretch min-h-[calc(100vh-10rem)]">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-5 w-full min-w-0 items-start">
         {/* ── Left: meal builder ─────────────────────── */}
-        <div className="w-80 shrink-0 flex flex-col h-full min-h-0">
+        <div className="w-full min-w-0 flex flex-col lg:col-span-2 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-6.5rem)]">
 
           {/* Meal builder */}
-          <div className="flex flex-col flex-1 min-h-0 p-5 rounded-2xl" style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}>
-            <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="flex flex-col flex-1 min-h-0 p-4 lg:p-4 rounded-2xl overflow-y-auto" style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}>
+            <div className="flex-1 min-h-0">
             <div style={{ color: theme.text, fontWeight: 600, marginBottom: 4 }}>What did you eat?</div>
             <p style={{ color: theme.textSecondary, fontSize: '0.78rem', marginBottom: 14 }}>
-              Search our {FOODS.length}-food database and add each item with its weight in grams
+              Search for a food and add how much you ate
             </p>
 
             <div className="mb-4 w-full">
-              <p style={{ color: theme.textSecondary, fontSize: '0.72rem', marginBottom: 8 }}>Meal type</p>
-              <div className="flex flex-row gap-1.5 w-full mt-1">
+              <p style={{ color: theme.textSecondary, fontSize: '0.72rem', marginBottom: 8 }}>When did you eat this?</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 w-full mt-1">
                 {MEAL_TYPES.map((occasion) => (
                   <button
                     key={occasion}
                     onClick={() => selectMealType(occasion)}
-                    className={`flex-1 py-2 text-sm rounded-lg border transition-colors inline-flex items-center justify-center gap-0.5 ${
+                    className={`w-full py-2 text-sm rounded-lg border transition-colors inline-flex items-center justify-center gap-0.5 ${
                       mealOccasion === occasion
                         ? 'border-teal-600 text-teal-600 font-semibold bg-teal-50'
                         : 'border-muted text-foreground bg-background hover:border-teal-400'
@@ -1400,7 +1805,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                     {resultsByOccasion[occasion] ? (
                       <span
                         className={`shrink-0 w-2 h-2 rounded-full inline-block ${assessmentDotClass(resultsByOccasion[occasion]!.result.level)}`}
-                        title={`${resultsByOccasion[occasion]!.result.level} risk assessed`}
+                        title={`${getRiskDisplay(resultsByOccasion[occasion]!.result.level).label} — checked`}
                       />
                     ) : logsByOccasion[occasion].length > 0 ? (
                       <span className="shrink-0 text-xs bg-teal-500 text-white rounded-full px-1 min-w-[1rem] text-center leading-4">
@@ -1423,7 +1828,15 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                     <span style={{ color: theme.text, fontWeight: 600, fontSize: '0.95rem' }}>{currentMealType}</span>
                   </div>
                   {resultsByOccasion[currentMealType] && (() => {
-                    const badge = occasionRiskBadgeLabel(resultsByOccasion[currentMealType]!.result.level);
+                    const mealLevel = resultsByOccasion[currentMealType]!.result.level;
+                    if (isDailyBudgetExceeded(dailyBudget) && mealLevel === 'LOW') {
+                      return (
+                        <span className="shrink-0 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                          Over Budget
+                        </span>
+                      );
+                    }
+                    const badge = occasionRiskBadgeLabel(mealLevel);
                     return (
                       <span className="shrink-0 text-xs font-semibold" style={{ color: badge.color }}>
                         {badge.text}
@@ -1438,6 +1851,8 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                   {logsByOccasion[currentMealType].map((log) => {
                     const kMg = Math.round(log.potassium_mg ?? 0);
                     const kColor = potassiumStatusColor(kMg, thresholds.potassium);
+                    const dailyOverride = isDailyBudgetExceeded(dailyBudget);
+                    const isPotassiumSafe = kColor === '#27AE60';
                     return (
                       <div
                         key={log.log_id}
@@ -1450,9 +1865,16 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                         <span className="text-sm shrink-0" style={{ color: theme.textSecondary }}>
                           {Math.round(log.portion_grams ?? 0)}g
                         </span>
-                        <span className="text-sm shrink-0 font-medium" style={{ color: kColor }}>
-                          {kMg}mg K
-                        </span>
+                        {dailyOverride ? (
+                          <span className="text-sm shrink-0" style={{ color: theme.textSecondary }}>
+                            {kMg}mg K
+                          </span>
+                        ) : (
+                          <span className="text-sm shrink-0 font-medium" style={{ color: isPotassiumSafe ? '#27AE60' : kColor }}>
+                            {kMg}mg K
+                            {isPotassiumSafe && ' ✔ Safe'}
+                          </span>
+                        )}
                         <button
                           type="button"
                           onClick={() => void deleteFoodLog(log.log_id)}
@@ -1479,7 +1901,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                       className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-80"
                       style={{ background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', border: `1px solid ${theme.cardBorder}`, color: theme.text }}
                     >
-                      + Add more
+                      + Add another food
                     </button>
                     {resultsByOccasion[currentMealType] ? (
                       <button
@@ -1488,7 +1910,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                         className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-80"
                         style={{ background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', border: `1px solid ${theme.cardBorder}`, color: theme.text }}
                       >
-                        ↺ Re-assess
+                        ↺ Re-check
                       </button>
                     ) : (
                       <button
@@ -1497,7 +1919,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                         className="flex-1 flex items-center justify-center gap-1 py-2.5 rounded-xl text-white text-sm font-semibold transition-opacity hover:opacity-90"
                         style={{ background: 'linear-gradient(135deg, #2E86AB 0%, #1A5F7A 100%)' }}
                       >
-                        ✓ Assess
+                        ✓ Checked
                       </button>
                     )}
                   </div>
@@ -1505,6 +1927,19 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
               </div>
             ) : (
               <>
+            {occasionAddMode && (logsByOccasion[currentMealType]?.length ?? 0) > 0 && (
+              <div
+                className="rounded-xl px-3 py-2.5 mb-4"
+                style={{ background: isDark ? 'rgba(46,134,171,0.08)' : 'rgba(46,134,171,0.06)', border: '1px solid rgba(46,134,171,0.2)' }}
+              >
+                <p style={{ color: theme.text, fontSize: '0.78rem', fontWeight: 600 }}>
+                  Adding to {currentMealType}
+                </p>
+                <p style={{ color: theme.textSecondary, fontSize: '0.72rem', marginTop: 4 }}>
+                  {logsByOccasion[currentMealType].length} food{logsByOccasion[currentMealType].length !== 1 ? 's' : ''} already logged — search below to add more, then assess the full meal.
+                </p>
+              </div>
+            )}
             {/* Food search */}
             <div ref={wrapRef} className="relative mb-4">
               <div
@@ -1630,7 +2065,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                 </div>
               )}
 
-              {showDrop && visibleFoods.length > 0 && !voiceSpeechResult && !selectedFood && (
+              {showDrop && q.length >= 2 && visibleFoods.length > 0 && !voiceSpeechResult && !selectedFood && (
                 <div
                   className="absolute top-full mt-1.5 left-0 right-0 z-30 rounded-xl overflow-hidden shadow-xl"
                   style={{ background: isDark ? '#111827' : '#fff', border: `1px solid ${theme.cardBorder}`, maxHeight: '300px', overflowY: 'auto' }}
@@ -1646,11 +2081,15 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                     >
                       <div className="min-w-0">
                         <p style={{ color: theme.text, fontSize: '0.85rem', fontWeight: 600 }} className="truncate capitalize">{f.english}</p>
-                        <p style={{ color: theme.text, fontSize: '0.78rem', marginTop: 2 }} className="truncate">{f.french}</p>
-                        <p style={{ color: theme.textSecondary, fontSize: '0.72rem', marginTop: 2 }} className="truncate italic">{f.kinyarwanda}</p>
+                        {foodTranslation(f.french) && (
+                          <p style={{ color: theme.text, fontSize: '0.78rem', marginTop: 2 }} className="truncate">{foodTranslation(f.french)}</p>
+                        )}
+                        {foodTranslation(f.kinyarwanda) && (
+                          <p style={{ color: theme.textSecondary, fontSize: '0.72rem', marginTop: 2 }} className="truncate italic">{foodTranslation(f.kinyarwanda)}</p>
+                        )}
                       </div>
                       <span className="shrink-0 px-2 py-0.5 rounded-full" style={{ background: potassiumColor(f.potassium_mg) + '20', color: potassiumColor(f.potassium_mg), fontSize: '0.65rem', fontWeight: 600 }}>
-                        {f.ckd_stage_safe}
+                        {f.category}
                       </span>
                     </button>
                   ))}
@@ -1729,43 +2168,99 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                       style={{ background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', borderBottom: `1px solid ${theme.cardBorder}` }}
                     >
                       <div className="w-2 h-2 rounded-full shrink-0" style={{ background: potassiumColor(food.potassium_mg) }} />
-                      <p className="flex-1 min-w-0 truncate" style={{ color: theme.text, fontSize: '0.82rem', fontWeight: 600 }}>{food.english}</p>
+                      <div className="flex-1 min-w-0 flex items-center gap-2">
+                        <p className="min-w-0 truncate" style={{ color: theme.text, fontSize: '0.82rem', fontWeight: 600 }}>{food.english}</p>
+                        {food.preparation_method && String(food.preparation_method).trim().length > 0 && (
+                          <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-normal shrink-0">
+                            {String(food.preparation_method)}
+                          </span>
+                        )}
+                      </div>
                       <span style={{ color: theme.textTertiary, fontSize: '0.68rem' }}>{food.category}</span>
                       <button onClick={() => removeEntry(food.id)} className="ml-1 transition-opacity hover:opacity-60">
                         <Trash2 size={12} style={{ color: theme.textTertiary }} />
                       </button>
                     </div>
                     {/* Gram control row */}
-                    <div className="flex items-center gap-2 px-3 py-2">
-                      <button
-                        onClick={() => updateGrams(food.id, -10)}
-                        className="w-6 h-6 rounded-md flex items-center justify-center transition-opacity hover:opacity-70"
-                        style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)' }}
-                      >
-                        <Minus size={10} style={{ color: theme.textSecondary }} />
-                      </button>
-                      <input
-                        type="number"
-                        className="bg-transparent outline-none text-center"
-                        style={{ color: theme.text, fontSize: '0.82rem', fontWeight: 700, width: 52 }}
-                        value={grams}
-                        onChange={(e) => setGrams(food.id, e.target.value)}
-                        min="10"
-                      />
-                      <span style={{ color: theme.textSecondary, fontSize: '0.72rem' }}>g</span>
-                      <button
-                        onClick={() => updateGrams(food.id, 10)}
-                        className="w-6 h-6 rounded-md flex items-center justify-center transition-opacity hover:opacity-70"
-                        style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)' }}
-                      >
-                        <Plus size={10} style={{ color: theme.textSecondary }} />
-                      </button>
+                    <div className="flex flex-wrap items-center gap-2 px-3 py-2">
+                      {(() => {
+                        const unitInfo = getUnitInfo(food.english, food.category || 'Other');
+                        const qtyFromGrams = unitInfo.grams > 0 ? grams / unitInfo.grams : 1;
+                        const fallbackQty = Math.max(0.5, Math.min(10, Math.round(qtyFromGrams * 2) / 2));
+                        const qty = entryQuantities[food.id] ?? fallbackQty;
+                        const computedGrams = Math.round(qty * unitInfo.grams);
+
+                        const dec = () => {
+                          const nextQty = Math.max(0.5, Math.round((qty - 0.5) * 2) / 2);
+                          setEntryQuantities((prev) => ({ ...prev, [food.id]: nextQty }));
+                          setEntries((prev) => prev.map((e) => e.food.id === food.id ? { ...e, grams: Math.round(nextQty * unitInfo.grams) } : e));
+                          setResult(null);
+                        };
+
+                        const inc = () => {
+                          const nextQty = Math.min(10, Math.round((qty + 0.5) * 2) / 2);
+                          setEntryQuantities((prev) => ({ ...prev, [food.id]: nextQty }));
+                          setEntries((prev) => prev.map((e) => e.food.id === food.id ? { ...e, grams: Math.round(nextQty * unitInfo.grams) } : e));
+                          setResult(null);
+                        };
+
+                        const unitLabel = `${unitInfo.unit}${qty > 1 ? 's' : ''}`;
+                        const method = String(food.preparation_method ?? '').toLowerCase();
+                        const category = String(food.category ?? '');
+                        const showBoiledTip = method.includes('boiled') && (category === 'Starch' || category === 'Vegetable');
+                        const showFriedTip = method.includes('fried');
+                        const showRawMeatTip = method.includes('raw') && (category === 'Meat' || category === 'Fish');
+
+                        return (
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={dec}
+                                className="w-7 h-7 rounded-full border border-gray-300 text-sm flex items-center justify-center hover:bg-gray-100"
+                              >
+                                −
+                              </button>
+                              <div className="flex flex-col items-center min-w-[90px]">
+                                <span className="text-sm font-medium text-center">
+                                  {qty} {unitLabel}
+                                </span>
+                                <span className="text-xs text-gray-400">
+                                  (~{computedGrams}g)
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={inc}
+                                className="w-7 h-7 rounded-full border border-gray-300 text-sm flex items-center justify-center hover:bg-gray-100"
+                              >
+                                +
+                              </button>
+                            </div>
+                            {showBoiledTip && (
+                              <p className="text-xs text-teal-600 mt-1">
+                                Tip: boiling and discarding water reduces potassium content.
+                              </p>
+                            )}
+                            {showFriedTip && (
+                              <p className="text-xs text-amber-600 mt-1">
+                                Tip: frying increases sodium and energy content.
+                              </p>
+                            )}
+                            {showRawMeatTip && (
+                              <p className="text-xs text-amber-600 mt-1">
+                                Tip: cook thoroughly before eating.
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
                       {/* Inline nutrient preview */}
-                      <div className="flex-1 flex justify-end gap-3">
+                      <div className="w-full sm:w-auto sm:flex-1 flex flex-wrap gap-x-3 gap-y-1 justify-start sm:justify-end min-w-0">
                         {[
-                          { label: 'K', value: Math.round(food.potassium_mg * grams / 100), color: '#2E86AB' },
-                          { label: 'P', value: Math.round(food.phosphorus_mg * grams / 100), color: '#F39C12' },
-                          { label: 'Na', value: Math.round(food.sodium_mg * grams / 100), color: '#E74C3C' },
+                          { label: 'Potassium', value: Math.round(food.potassium_mg * grams / 100), color: '#2E86AB' },
+                          { label: 'Phosphorus', value: Math.round(food.phosphorus_mg * grams / 100), color: '#F39C12' },
+                          { label: 'Sodium', value: Math.round(food.sodium_mg * grams / 100), color: '#E74C3C' },
                         ].map((n) => (
                           <span key={n.label} style={{ color: n.color, fontSize: '0.68rem', fontWeight: 600 }}>
                             {n.label} {n.value}
@@ -1812,7 +2307,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                 style={{ background: 'linear-gradient(135deg, #2E86AB 0%, #1A5F7A 100%)', fontWeight: 600, fontSize: '0.9rem' }}
               >
                 <Zap size={15} />
-                Assess Meal
+                Check this meal
               </button>
               <button
                 onClick={reset}
@@ -1840,7 +2335,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
               <div className="flex gap-2">
                 <Info size={12} style={{ color: '#2E86AB', flexShrink: 0, marginTop: 1 }} />
                 <p style={{ color: theme.textSecondary, fontSize: '0.72rem', lineHeight: 1.5 }}>
-                  Nutrient values are per 100 g from our food database. Thresholds follow KDIGO 2024 guidelines for your CKD stage. Always consult your healthcare provider.
+                  Food values are estimates per 100g. Always consult your doctor or dietitian before making changes to your diet.
                 </p>
               </div>
             </div>
@@ -1848,89 +2343,117 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
         </div>
 
         {/* ── Right: Results ────────────────────────────────────── */}
-        <div className="flex-1 min-w-0 space-y-3">
+        <div className="w-full min-w-0 lg:col-span-3 space-y-2 lg:space-y-2">
           {!result ? (
             <div
-              className="rounded-2xl flex flex-col items-center justify-center text-center"
-              style={{ background: theme.cardBg, border: `2px dashed ${theme.cardBorder}`, minHeight: 420, padding: 40 }}
+              className="rounded-2xl p-5 sm:p-6 flex flex-col gap-4 min-h-[420px] sm:min-h-[480px]"
+              style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}
             >
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: isDark ? 'rgba(46,134,171,0.1)' : 'rgba(46,134,171,0.08)' }}>
-                <Zap size={26} style={{ color: '#2E86AB' }} />
+              {suggestions && !loadingSuggestions && (
+                <div className="flex-[11] min-h-0">
+                  {renderWeeklySuggestionsPanel(false)}
+                </div>
+              )}
+              <div className={suggestions && !loadingSuggestions ? 'flex-[9] min-h-0' : 'flex-1'}>
+                <div style={{ color: theme.text, fontWeight: 600, fontSize: '1.05rem' }}>Today&apos;s nutrient budget</div>
+                <p style={{ color: theme.textSecondary, marginTop: 8, fontSize: '0.875rem', lineHeight: 1.6 }}>
+                  Add a meal to see how it affects your daily limits
+                </p>
+                {renderDailyBudgetGrid()}
               </div>
-              <div style={{ color: theme.text, fontWeight: 600, fontSize: '1.05rem' }}>Ready to assess</div>
-              <p style={{ color: theme.textSecondary, marginTop: 8, maxWidth: 300, lineHeight: 1.6, fontSize: '0.875rem' }}>
-                Search and add the foods in your meal, adjust gram weights, then click <strong style={{ color: '#2E86AB' }}>Assess Meal</strong> to see the nutrient risk for your CKD stage
-              </p>
             </div>
           ) : (
             <>
               <p className="text-xs text-muted-foreground mb-2">
-                {currentMealType} Assessment ·{' '}
+                {currentMealType} ·{' '}
                 {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
               </p>
               {/* Risk banner */}
               {(() => {
-                const cfg = RISK_CFG[result.level];
+                const dailyExceeded =
+                  !!dailyBudget &&
+                  ['potassium', 'phosphorus', 'protein_per_kg', 'sodium'].some((k) => {
+                    const n = dailyBudget.nutrients[k];
+                    return typeof n?.percent_used === 'number' && n.percent_used > 100;
+                  });
+
+                const overrideToCaution = result.level === 'LOW' && dailyExceeded;
+                const cfg = overrideToCaution ? RISK_CFG.MODERATE : RISK_CFG[result.level];
                 const Icon = cfg.icon;
                 return (
-                  <div className="p-3.5 sm:p-4 rounded-2xl" style={{ background: cfg.bg, border: `2px solid ${cfg.border}` }}>
-                    <div className="flex items-start sm:items-center gap-3">
+                  <div className="p-3 rounded-2xl" style={{ background: cfg.bg, border: `2px solid ${cfg.border}` }}>
+                    <div className="flex items-start sm:items-center gap-2">
                       <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: `${cfg.color}20` }}>
                         <Icon size={22} style={{ color: cfg.color }} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 flex-wrap mb-1">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
                           <span style={{ color: cfg.color, fontSize: 'clamp(1.05rem,3vw,1.25rem)', fontWeight: 700 }}>{cfg.label}</span>
                           <span className="px-2.5 py-1 rounded-full" style={{ background: `${cfg.color}20`, color: cfg.color, fontSize: '0.7rem', fontWeight: 600 }}>
-                            Avg {result.score}% of limits
+                            Using {result.score}% of your daily allowance
                           </span>
                           {usingLiveModel && (
                             <span className="px-2.5 py-1 rounded-full" style={{ background: 'rgba(46,134,171,0.12)', color: '#2E86AB', fontSize: '0.66rem', fontWeight: 600 }}>
-                              Powered by trained XGBoost model
+                              Checked by AI risk assessment
                             </span>
                           )}
                         </div>
-                        <p style={{ color: theme.textSecondary, fontSize: '0.78rem' }}>{cfg.desc}</p>
+                        <p style={{ color: theme.textSecondary, fontSize: '0.78rem' }}>
+                          {overrideToCaution
+                            ? "This meal is safe, but your daily nutrient limit has been reached. Be careful with your next meal."
+                            : cfg.desc}
+                        </p>
                         <p style={{ color: theme.textTertiary, fontSize: '0.7rem', marginTop: 1 }}>
                           {result.assessedFoods.length} food{result.assessedFoods.length !== 1 ? 's' : ''} · {result.assessedFoods.reduce((a, e) => a + e.grams, 0)} g total
                         </p>
                       </div>
                       <div className="text-right shrink-0 hidden sm:block">
-                        <p style={{ color: theme.textTertiary, fontSize: '0.7rem', marginBottom: 2 }}>CKD Stage</p>
-                        <p style={{ color: '#2E86AB', fontWeight: 700, fontSize: '1.1rem' }}>{stage}</p>
+                        <p style={{ color: theme.textTertiary, fontSize: '0.7rem', marginBottom: 2 }}>Your Stage</p>
+                        <p style={{ color: '#2E86AB', fontWeight: 700, fontSize: '1.1rem' }}>{formatStageDisplay(stage)}</p>
                       </div>
                     </div>
-                    <div className="mt-2.5">
-                      <div className="flex justify-between mb-1.5">
-                        <span style={{ color: theme.textSecondary, fontSize: '0.74rem' }}>Average intake vs. daily limit</span>
+                    <div className="mt-1">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 mb-1.5">
+                        <span style={{ color: theme.textSecondary, fontSize: '0.74rem' }}>How much of your daily allowance this meal uses</span>
                         <span style={{ color: cfg.color, fontWeight: 600, fontSize: '0.74rem' }}>{result.score}%</span>
                       </div>
-                      <div className="rounded-full overflow-hidden" style={{ height: 7, background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
-                        <div style={{ width: `${result.score}%`, height: 7, background: `linear-gradient(90deg,${cfg.color}80,${cfg.color})`, borderRadius: 9999, transition: 'width 0.6s ease' }} />
+                      <div className="rounded-full overflow-hidden" style={{ height: 5, background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
+                        <div style={{ width: `${result.score}%`, height: 5, background: `linear-gradient(90deg,${cfg.color}80,${cfg.color})`, borderRadius: 9999, transition: 'width 0.6s ease' }} />
                       </div>
                     </div>
                     {lstmPattern?.risk_label && (() => {
-                      const lstmCfg = RISK_CFG[lstmPattern.risk_label as RiskLevel] ?? RISK_CFG.MODERATE;
+                      const patternLevel = lstmPattern.risk_label as RiskLevel;
+                      const patternCfg = RISK_CFG[patternLevel] ?? RISK_CFG.MODERATE;
+                      const patternPhrase = getWeeklyRiskLabel(lstmPattern.risk_label).toLowerCase();
                       const mealAloneNote =
                         result.level === 'LOW'
-                          ? 'this meal alone is safe'
+                          ? 'this meal alone looks safe'
                           : result.level === 'HIGH'
-                            ? 'this meal alone is also high risk'
-                            : 'this meal alone is moderate risk';
+                            ? 'this meal alone also suggests reducing intake'
+                            : 'this meal alone suggests caution';
+                      const mealsToday = dailyBudget?.meals_logged_today ?? result.assessedFoods.length;
                       return (
                         <>
-                          <div className="mt-2.5 pt-2.5" style={{ borderTop: `1px solid ${cfg.border}` }} />
+                          <div className="mt-2 pt-2" style={{ borderTop: `1px solid ${cfg.border}` }} />
                           <div
-                            className="mt-2"
-                            title="LSTM analyzes your full day's eating pattern, not just this meal"
+                            className="mt-2 leading-snug"
+                            title="Based on all meals logged today, not just this one"
                           >
-                            <p className="text-xs" style={{ color: lstmCfg.color }}>
-                              Today&apos;s pattern:{' '}
-                              <span style={{ fontWeight: 600 }}>{lstmPattern.risk_label}</span> risk across all meals
+                            <p className="text-xs" style={{ color: patternCfg.color }}>
+                              Today&apos;s pattern: your meals today are showing{' '}
+                              <span style={{ fontWeight: 600 }}>{patternPhrase}</span>
                               <span className="text-muted-foreground font-normal">
                                 {' · '}{mealAloneNote}
                               </span>
                             </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Based on {mealsToday} meal{mealsToday !== 1 ? 's' : ''} logged today
+                            </p>
+                            {(patternLevel === 'HIGH' || patternLevel === 'MODERATE') && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Try to keep your next meal lighter to balance your intake for the day.
+                              </p>
+                            )}
                           </div>
                         </>
                       );
@@ -1939,28 +2462,115 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                 );
               })()}
 
-              {/* Three-card row */}
-              <div className="grid grid-cols-3 gap-3">
+              {/* Chart + nutrient cards — side by side on large screens */}
+              <div className="grid gap-3 mt-2 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-start">
+                <div className="rounded-lg border p-2.5 lg:p-3 bg-white dark:bg-card">
+                  <p className="text-sm font-semibold mb-1.5" style={{ color: theme.text }}>How much of your daily allowance this meal uses</p>
+                  <ResponsiveContainer width="100%" height={100}>
+                    <BarChart height={100} data={Object.entries(result.breakdown).map(([name, b]) => ({ name, pct: Math.round(b.pct), value: b.value, limit: b.limit }))} margin={{ top: 4, right: 8, left: -14, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)'} vertical={false} />
+                      <XAxis dataKey="name" tick={{ fill: theme.textSecondary as string, fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fill: theme.textSecondary as string, fontSize: 10 }} tickFormatter={(v) => `${v}%`} domain={[0, 150]} axisLine={false} tickLine={false} />
+                      <Tooltip
+                        contentStyle={{ background: isDark ? '#111827' : '#fff', border: `1px solid ${theme.cardBorder}`, borderRadius: 10, color: theme.text, fontSize: '0.825rem' }}
+                        formatter={(val: number, _n: string, item: any) => {
+                          const p = item?.payload as { value?: number; limit?: number; name?: string } | undefined;
+                          return [`${val}% — ${p?.value ?? 0} / ${p?.limit ?? 0}`, p?.name ?? ''];
+                        }}
+                      />
+                      <ReferenceLine y={100} stroke="#EF4444" strokeWidth={2} strokeDasharray="6 3" />
+                      <ReferenceLine y={80} stroke="#F59E0B" strokeWidth={1.5} strokeDasharray="4 3" />
+                      <Bar dataKey="pct" radius={[5, 5, 0, 0]}>
+                        {Object.entries(result.breakdown).map(([name, b]) => (
+                          <Cell key={name} fill={b.pct > 100 ? '#E74C3C' : b.pct > 80 ? '#F39C12' : NUTRIENT_COLORS[name] ?? '#2E86AB'} fillOpacity={0.9} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div className="flex gap-3 mt-2">
+                    {[{ label: 'Danger (100%)', color: '#EF4444' }, { label: 'Warning (80%)', color: '#F59E0B' }].map((ref) => (
+                      <div key={ref.label} className="flex items-center gap-1.5">
+                        <svg width={18} height={2}><line x1="0" y1="1" x2="18" y2="1" stroke={ref.color} strokeWidth={2} strokeDasharray="4 2" /></svg>
+                        <span style={{ color: theme.textSecondary, fontSize: '0.68rem' }}>{ref.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(result.breakdown).map(([name, b]) => {
+                    const dailyKey = BREAKDOWN_TO_DAILY_KEY[name];
+                    const dailyPct = dailyKey ? dailyBudget?.nutrients[dailyKey]?.percent_used : undefined;
+                    const { label: badgeLabel, color: statusColor, Icon: StatusIcon } = dailyNutrientBadge(dailyPct);
+                    const { value: displayValue, limit: displayLimit, pct: displayPct, sourceLabel } =
+                      dailyNutrientCardValues(name, b, dailyKey, dailyBudget, bodyWeightKg);
+                    const unit = name === 'Protein' ? 'g' : 'mg';
+                    return (
+                      <div key={name} className="rounded-lg border p-2 lg:p-2 bg-white dark:bg-card">
+                        <div className="flex justify-between items-center mb-0.5">
+                          <span className="text-xs lg:text-sm font-medium" style={{ color: theme.text }}>{name}</span>
+                          <span className="text-[10px] lg:text-xs flex items-center gap-0.5" style={{ color: statusColor }}>
+                            <StatusIcon size={10} />
+                            {badgeLabel}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mb-0.5">{sourceLabel}</p>
+                        <p className="text-base lg:text-lg font-bold leading-tight" style={{ color: statusColor }}>
+                          {displayValue}
+                          <span className="text-xs font-normal text-muted-foreground">
+                            {' '}/ {displayLimit} {unit}
+                          </span>
+                        </p>
+                        <div className="w-full bg-muted rounded-full h-1 mt-1">
+                          <div
+                            className="h-1 rounded-full"
+                            style={{ width: `${Math.min(100, displayPct)}%`, background: statusColor }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Three-card row — 3 across on large screens */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">
                 {/* Card 1 — Recommendations */}
                 <div className="rounded-lg border p-3 flex flex-col bg-white dark:bg-card">
-                  <div style={{ color: theme.text, fontWeight: 600, fontSize: '0.9rem', marginBottom: 8 }}>Recommendations</div>
+                  <div style={{ color: theme.text, fontWeight: 600, fontSize: '0.9rem', marginBottom: 8 }}>What you should do</div>
 
-                  {result.shap_explanation && (
-                    <div className="mb-2 p-2 rounded-md bg-muted/40 border border-muted">
-                      <p className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide">
-                        Why this risk score?
-                      </p>
-                      <p className="text-xs leading-relaxed">
-                        {result.shap_explanation}
-                      </p>
-                    </div>
-                  )}
+                  {(() => {
+                    const inferred =
+                      (result.shap_dominant_nutrient ?? '').trim()
+                      || (result.shap_explanation?.match(/\b(potassium|phosphorus|protein|sodium)\b/i)?.[1] ?? '').trim();
+                    const flaggedNutrient = inferred.length > 0
+                      ? inferred.charAt(0).toUpperCase() + inferred.slice(1).toLowerCase()
+                      : 'nutrient';
+
+                    const actionText =
+                      result.level === 'LOW'
+                        ? 'Your meal is within safe limits. For your next meal, try to keep portions similar to maintain your daily balance.'
+                        : result.level === 'MODERATE'
+                          ? `This meal is at your limit. Keep your next meal light — choose low ${flaggedNutrient} options from the suggestions below.`
+                          : 'This meal exceeds safe limits. Do not add more food today without checking it first. See safer options below.';
+
+                    return (
+                      <div className="mb-2 p-2 rounded-md bg-muted/40 border border-muted">
+                        <p className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide">
+                          Your action
+                        </p>
+                        <p className="text-xs leading-relaxed">
+                          {actionText}
+                        </p>
+                      </div>
+                    );
+                  })()}
 
                   {result.shap_contributions &&
                     Object.values(result.shap_contributions).some((v) => (v as number) > 0) && (
                     <div className="mb-2">
                       <p className="text-xs text-muted-foreground mb-1">
-                        Nutrient contributions
+                        What drove this result
                       </p>
                       {Object.entries(result.shap_contributions)
                         .sort((a, b) => b[1] - a[1])
@@ -1984,20 +2594,64 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                         ))}
                     </div>
                   )}
-
-                  <ul className="space-y-1.5">
-                    {generateRecommendations(result.level, result.breakdown).slice(0, 2).map((r, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <ChevronRight size={11} style={{ color: '#2E86AB', marginTop: 3, flexShrink: 0 }} />
-                        <span style={{ color: theme.textSecondary, fontSize: '0.78rem', lineHeight: 1.45 }}>{r}</span>
-                      </li>
-                    ))}
-                  </ul>
                 </div>
 
                 {/* Card 2 — Safer food choices */}
+                {(() => {
+                  const showLstmAlternatives =
+                    result.level === 'HIGH' ||
+                    result.level === 'MODERATE' ||
+                    isDailyBudgetExceeded(dailyBudget);
+
+                  const currentOccasionKey = currentMealType.toLowerCase();
+                  const occasionFoods = showLstmAlternatives && suggestions
+                    ? (
+                        suggestions.suggestions_by_meal.find(
+                          (group) => group.occasion.toLowerCase() === currentOccasionKey,
+                        )?.suggestions.slice(0, 4) ?? []
+                      )
+                    : [];
+
+                  const flaggedNutrient = suggestions?.flagged_nutrient?.trim();
+                  const nutrientLabel = flaggedNutrient
+                    ? toPlainNutrient(flaggedNutrient)
+                    : 'key nutrients';
+
+                  if (showLstmAlternatives) {
+                    return (
+                      <div className="rounded-lg border p-3 flex flex-col bg-white dark:bg-card">
+                        <div style={{ color: theme.text, fontWeight: 600, fontSize: '0.9rem', marginBottom: 8 }}>
+                          Safer {currentOccasionKey} options
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-3">
+                          Based on your recent meal pattern, these are lower in {nutrientLabel}:
+                        </p>
+                        {occasionFoods.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            No alternatives available — try reducing portion size
+                          </p>
+                        ) : (
+                          <ul className="grid grid-cols-2 gap-2">
+                            {occasionFoods.map((food) => (
+                              <li key={`${currentOccasionKey}-${food.english}`} className="min-w-0">
+                                <p className="text-sm font-semibold text-foreground capitalize leading-snug">
+                                  {food.english}
+                                </p>
+                                {food.category && (
+                                  <p className="text-[11px] text-muted-foreground leading-tight">{food.category}</p>
+                                )}
+                                <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{food.reason}</p>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  return (
                 <div className="rounded-lg border p-3 flex flex-col bg-white dark:bg-card">
-                  <div style={{ color: theme.text, fontWeight: 600, fontSize: '0.9rem', marginBottom: 8 }}>Safer food choices</div>
+                  <div style={{ color: theme.text, fontWeight: 600, fontSize: '0.9rem', marginBottom: 8 }}>Better alternatives</div>
                   {result.substitutions.length === 0 ? (
                     <p className="text-sm text-center" style={{ color: theme.textSecondary }}>
                       {!usingLiveModel
@@ -2009,7 +2663,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                       {result.substitutions.map(({ riskyFood, substitutes }) => (
                         <li key={riskyFood.id}>
                           <p style={{ color: theme.text, fontWeight: 600, fontSize: '0.825rem', marginBottom: 8 }}>
-                            Instead of <span className="capitalize">{riskyFood.english}</span>:
+                            Instead of <span className="capitalize">{riskyFood.english}</span>, try:
                           </p>
                           <ul className="space-y-3 pl-1">
                             {substitutes.map((sub) => (
@@ -2019,17 +2673,19 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                                   <p style={{ color: theme.text, fontWeight: 500, fontSize: '0.825rem' }} className="capitalize">
                                     {sub.english}
                                   </p>
-                                  <p style={{ color: theme.textSecondary, fontSize: '0.75rem', marginTop: 2, fontStyle: 'italic' }}>
-                                    ({sub.kinyarwanda})
-                                  </p>
+                                  {foodTranslation(sub.kinyarwanda) && (
+                                    <p style={{ color: theme.textSecondary, fontSize: '0.75rem', marginTop: 2, fontStyle: 'italic' }}>
+                                      ({foodTranslation(sub.kinyarwanda)})
+                                    </p>
+                                  )}
                                   <p style={{ color: '#2E86AB', fontSize: '0.75rem', marginTop: 4, fontWeight: 600 }}>
-                                    K: {riskyFood.potassium_mg}mg → {sub.potassium_mg}mg
+                                    Potassium: {riskyFood.potassium_mg}mg → {sub.potassium_mg}mg
                                   </p>
                                   <span
                                     className="inline-block mt-2 px-2 py-0.5 rounded-full"
                                     style={{ background: 'rgba(39,174,96,0.12)', color: '#27AE60', fontSize: '0.65rem', fontWeight: 600 }}
                                   >
-                                    {sub.ckd_stage_safe}
+                                    Suitable for your stage
                                   </span>
                                 </div>
                               </li>
@@ -2040,40 +2696,18 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                     </ul>
                   )}
                 </div>
+                  );
+                })()}
 
                 {/* Card 3 — Today's Budget */}
                 {dailyBudget ? (
                   <div className="rounded-lg border p-3 flex flex-col bg-white dark:bg-card">
-                    <div style={{ color: theme.text, fontWeight: 600, fontSize: '0.9rem', marginBottom: 8 }}>Today&apos;s Budget</div>
-                    <div
-                      className="grid gap-y-1 mt-2"
-                      style={{ gridTemplateColumns: '100px 52px 1fr' }}
-                    >
-                      {(['potassium', 'phosphorus', 'protein_per_kg', 'sodium'] as const).map((nutrient) => {
-                        const data = dailyBudget.nutrients[nutrient];
-                        if (!data) return null;
-                        const pct = data.percent_used;
-                        const status = pct >= 100 ? 'over' : pct >= 70 ? 'near' : 'ok';
-                        const pctColor = pct >= 100 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#6b7280';
-                        const statusColor = pct >= 100 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#22c55e';
-                        const label = nutrient === 'protein_per_kg' ? 'Protein'
-                          : nutrient.charAt(0).toUpperCase() + nutrient.slice(1);
-
-                        return (
-                          <Fragment key={nutrient}>
-                            <span className="text-sm font-medium" style={{ color: theme.text }}>{label}</span>
-                            <span className="text-sm font-semibold text-right whitespace-nowrap" style={{ color: pctColor }}>
-                              {pct.toFixed(0)}%
-                            </span>
-                            <span className="text-sm text-right whitespace-nowrap" style={{ color: statusColor }}>
-                              {status === 'over' && '↑ Over limit'}
-                              {status === 'near' && '~ Near limit'}
-                              {status === 'ok' && '✓ OK'}
-                            </span>
-                          </Fragment>
-                        );
-                      })}
-                    </div>
+                    {suggestions && !loadingSuggestions && (
+                      <>
+                        <hr className="border-gray-100 my-3" />
+                        {renderWeeklySuggestionsPanel(true)}
+                      </>
+                    )}
 
                     {dailyBudget.suggestion_context && (
                       <p
@@ -2084,70 +2718,9 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                         {dailyBudget.suggestion_context.message}
                       </p>
                     )}
-
-                    {dailyBudget.balanced_suggestions && dailyBudget.balanced_suggestions.length > 0 && (
-                      <>
-                        <p className="text-sm font-semibold mt-2 mb-1">
-                          {dailyBudget.next_meal_occasion
-                            ? `Suggested ${dailyBudget.next_meal_occasion}`
-                            : 'Suggested next meal'}
-                        </p>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          Small portions recommended — these are the lowest-impact options for your remaining budget.
-                        </p>
-                        <div className="flex flex-row flex-wrap gap-2 mt-2">
-                          {dailyBudget.balanced_suggestions.some((s) => s.plate_role) ? (
-                            ['Starch', 'Vegetable', 'Protein']
-                              .map((role) => ({
-                                role,
-                                options: dailyBudget.balanced_suggestions!
-                                  .filter((s) => s.plate_role === role)
-                                  .sort((a, b) => (a.option_index ?? 1) - (b.option_index ?? 1)),
-                              }))
-                              .filter((g) => g.options.length > 0)
-                              .map(({ role, options }) => (
-                                <div
-                                  key={role}
-                                  className="inline-flex flex-col gap-0.5 px-2 py-1.5 rounded border border-dashed bg-muted/40 text-xs min-w-[100px]"
-                                >
-                                  <span className="font-semibold text-xs">
-                                    {role === 'Starch' && '🍚 Starch base'}
-                                    {role === 'Vegetable' && '🥦 Vegetable'}
-                                    {role === 'Protein' && '🥚 Protein source'}
-                                  </span>
-                                  <span className="font-medium">
-                                    {options[0]?.english}
-                                  </span>
-                                  {options[1] && (
-                                    <>
-                                      <span className="text-muted-foreground">or</span>
-                                      <span className="font-medium">
-                                        {options[1]?.english}
-                                      </span>
-                                    </>
-                                  )}
-                                  <span className="italic text-muted-foreground">
-                                    lowest impact
-                                  </span>
-                                </div>
-                              ))
-                          ) : (
-                            dailyBudget.balanced_suggestions.map((s, i) => (
-                              <div
-                                key={i}
-                                className="inline-flex flex-col gap-0.5 px-2 py-1 rounded border text-xs bg-background"
-                              >
-                                <span className="font-medium">{s.english}</span>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </>
-                    )}
                   </div>
                 ) : (
                   <div className="rounded-lg border p-3 flex flex-col bg-white dark:bg-card">
-                    <div style={{ color: theme.text, fontWeight: 600, fontSize: '0.9rem', marginBottom: 8 }}>Today&apos;s Budget</div>
                     <p style={{ color: theme.textTertiary, fontSize: '0.8rem' }}>Loading…</p>
                   </div>
                 )}
@@ -2156,7 +2729,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
               <div className="flex justify-end">
                 <button
                   onClick={() => void resetDay()}
-                  disabled={resettingDay || !dailyBudget || dailyBudget.meals_logged_today === 0}
+                  disabled={resettingDay || !canResetToday}
                   className="transition-all duration-150 hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{
                     background: 'none',
@@ -2165,7 +2738,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                     fontSize: '0.75rem',
                     fontWeight: 500,
                     padding: '4px 0',
-                    cursor: resettingDay || !dailyBudget || dailyBudget.meals_logged_today === 0 ? 'not-allowed' : 'pointer',
+                    cursor: resettingDay || !canResetToday ? 'not-allowed' : 'pointer',
                   }}
                   title="Clear all meals logged today"
                 >
@@ -2173,73 +2746,6 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                 </button>
               </div>
 
-              {/* Chart + nutrient cards side by side */}
-              <div className="grid gap-4 mt-1" style={{ gridTemplateColumns: '55fr 45fr' }}>
-                <div className="rounded-lg border p-3 bg-white dark:bg-card">
-                  <p className="text-sm font-semibold mb-2" style={{ color: theme.text }}>This meal vs. daily limit</p>
-                  <ResponsiveContainer width="100%" height={120}>
-                    <BarChart height={120} data={Object.entries(result.breakdown).map(([name, b]) => ({ name, pct: Math.round(b.pct), value: b.value, limit: b.limit }))} margin={{ top: 8, right: 8, left: -14, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)'} vertical={false} />
-                      <XAxis dataKey="name" tick={{ fill: theme.textSecondary as string, fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fill: theme.textSecondary as string, fontSize: 10 }} tickFormatter={(v) => `${v}%`} domain={[0, 150]} axisLine={false} tickLine={false} />
-                      <Tooltip
-                        contentStyle={{ background: isDark ? '#111827' : '#fff', border: `1px solid ${theme.cardBorder}`, borderRadius: 10, color: theme.text, fontSize: '0.825rem' }}
-                        formatter={(val: number, _n: string, item: any) => {
-                          const p = item?.payload as { value?: number; limit?: number; name?: string } | undefined;
-                          return [`${val}% — ${p?.value ?? 0} / ${p?.limit ?? 0}`, p?.name ?? ''];
-                        }}
-                      />
-                      <ReferenceLine y={100} stroke="#E74C3C" strokeDasharray="5 5" strokeWidth={1.5} />
-                      <ReferenceLine y={80}  stroke="#F39C12" strokeDasharray="3 3"  strokeWidth={1} />
-                      <Bar dataKey="pct" radius={[5, 5, 0, 0]}>
-                        {Object.entries(result.breakdown).map(([name, b]) => (
-                          <Cell key={name} fill={b.pct > 100 ? '#E74C3C' : b.pct > 80 ? '#F39C12' : NUTRIENT_COLORS[name] ?? '#2E86AB'} fillOpacity={0.9} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <div className="flex gap-3 mt-2">
-                    {[{ label: 'Danger (100%)', color: '#E74C3C' }, { label: 'Warning (80%)', color: '#F39C12' }].map((ref) => (
-                      <div key={ref.label} className="flex items-center gap-1.5">
-                        <svg width={18} height={2}><line x1="0" y1="1" x2="18" y2="1" stroke={ref.color} strokeWidth={2} strokeDasharray="4 2" /></svg>
-                        <span style={{ color: theme.textSecondary, fontSize: '0.68rem' }}>{ref.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(result.breakdown).map(([name, b]) => {
-                    const statusColor = b.status === 'Exceeded' ? '#E74C3C' : b.status === 'Near limit' ? '#F39C12' : '#27AE60';
-                    const StatusIcon  = b.status === 'Exceeded' ? XCircle  : b.status === 'Near limit' ? AlertTriangle : CheckCircle2;
-                    const unit = name === 'Protein' ? 'g' : 'mg';
-                    const shortStatus = b.status === 'Exceeded' ? 'Exceeded' : b.status === 'Near limit' ? 'Near' : 'Safe';
-                    return (
-                      <div key={name} className="rounded-lg border p-2.5 bg-white dark:bg-card">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm font-medium" style={{ color: theme.text }}>{name}</span>
-                          <span className="text-xs flex items-center gap-0.5" style={{ color: statusColor }}>
-                            <StatusIcon size={10} />
-                            {shortStatus}
-                          </span>
-                        </div>
-                        <p className="text-lg font-bold" style={{ color: statusColor }}>
-                          {b.value}
-                          <span className="text-xs font-normal text-muted-foreground">
-                            {' '}/ {b.limit} {unit}
-                          </span>
-                        </p>
-                        <div className="w-full bg-muted rounded-full h-1 mt-1">
-                          <div
-                            className="h-1 rounded-full"
-                            style={{ width: `${Math.min(100, b.pct)}%`, background: statusColor }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
             </>
           )}
         </div>

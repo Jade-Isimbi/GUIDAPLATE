@@ -3,9 +3,12 @@ food_lookup.py
 GuidaPlate — API endpoint for Rwanda food database lookup
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
+from sqlalchemy import or_
+from sqlalchemy.orm import Session
 
+from backend.database.db import Food, get_db
 from backend.models.recommender import get_recommender
 from backend.utils.unit_converter import format_unit_display, get_unit_info, units_to_grams
 
@@ -36,31 +39,53 @@ def list_foods(
     search: str | None = Query(
         default=None, description="Search term for english, french, or kinyarwanda names"
     ),
+    db: Session = Depends(get_db),
 ) -> dict:
     """List foods with optional stage, category, and multilingual name filters."""
     recommender = get_recommender()
-    foods = recommender.get_all_foods(stage=stage, category=category, search=search)
+    foods = recommender.get_all_foods(
+        db=db,
+        stage=stage,
+        category=category,
+        search=search,
+    )
     enriched = [_attach_unit_info(food) for food in foods]
     return {"count": len(enriched), "foods": enriched}
 
 
 @router.get("/foods/search/{query}")
-def search_foods(query: str) -> dict:
-    """Search foods by a term across english, french, and kinyarwanda name columns."""
-    recommender = get_recommender()
-    results = recommender.get_all_foods(search=query)
-    enriched = [_attach_unit_info(food) for food in results]
+def search_foods(
+    query: str,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Search foods by a term across english, french, and kinyarwanda names."""
+    term = f"%{query.strip()}%"
+    foods = (
+        db.query(Food)
+        .filter(
+            or_(
+                Food.english.ilike(term),
+                Food.french.ilike(term),
+                Food.kinyarwanda.ilike(term),
+            )
+        )
+        .limit(limit)
+        .all()
+    )
+    enriched = [_attach_unit_info(food.to_dict()) for food in foods]
     return {"count": len(enriched), "results": enriched}
 
 
 @router.get("/foods/{food_id}")
-def get_food_by_id(food_id: int) -> dict:
+def get_food_by_id(food_id: int, db: Session = Depends(get_db)) -> dict:
     """Return a single food record by its food_id."""
-    recommender = get_recommender()
-    matches = recommender.foods[recommender.foods["food_id"] == food_id]
-    if matches.empty:
+    food = db.query(Food).filter(Food.food_id == str(food_id)).first()
+    if food is None:
+        food = db.query(Food).filter(Food.id == food_id).first()
+    if food is None:
         raise HTTPException(status_code=404, detail=f"Food with id {food_id} not found")
-    return _attach_unit_info(recommender._row_to_dict(matches.iloc[0]))
+    return _attach_unit_info(food.to_dict())
 
 
 @router.post("/foods/convert-units")
@@ -77,12 +102,10 @@ def convert_units(req: ConvertRequest) -> dict:
 
 
 @router.get("/categories")
-def list_categories() -> dict:
+def list_categories(db: Session = Depends(get_db)) -> dict:
     """Return all unique food categories in the database."""
-    recommender = get_recommender()
-    categories = sorted(
-        recommender.foods["category"].dropna().astype(str).unique().tolist()
-    )
+    rows = db.query(Food.category).distinct().all()
+    categories = sorted(str(row[0]) for row in rows if row[0])
     return {"categories": categories}
 
 

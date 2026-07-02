@@ -3,10 +3,11 @@ recommendations.py
 GuidaPlate — API endpoint for safer food recommendations
 """
 
-from fastapi import APIRouter, HTTPException, Query
-
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
+from backend.database.db import get_db
 from backend.models.recommender import get_recommender
 
 router = APIRouter(tags=["Recommendations"])
@@ -21,8 +22,11 @@ class SubstituteRequest(BaseModel):
 
 
 @router.post("/recommendations/substitutes")
-def get_substitutes(request: SubstituteRequest) -> dict:
-    """Return safer same-category food substitutes for a queried food."""
+def get_substitutes(
+    request: SubstituteRequest,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Return safer food substitutes for a queried food."""
     if request.ckd_stage not in SUPPORTED_STAGES:
         raise HTTPException(
             status_code=400,
@@ -30,7 +34,7 @@ def get_substitutes(request: SubstituteRequest) -> dict:
         )
 
     recommender = get_recommender()
-    if recommender.get_food_by_name(request.food_name) is None:
+    if recommender.get_food_by_name(db, request.food_name) is None:
         raise HTTPException(
             status_code=404,
             detail=f"Food {request.food_name!r} not found in database",
@@ -41,6 +45,7 @@ def get_substitutes(request: SubstituteRequest) -> dict:
         ckd_stage=request.ckd_stage,
         risk_label="MODERATE",
         exceeded_nutrients=request.exceeded_nutrients,
+        db=db,
     )
 
     return {
@@ -52,7 +57,7 @@ def get_substitutes(request: SubstituteRequest) -> dict:
 
 
 @router.get("/recommendations/safe-foods/{stage}")
-def get_safe_foods(stage: str) -> dict:
+def get_safe_foods(stage: str, db: Session = Depends(get_db)) -> dict:
     """Return all foods safe for the given CKD stage."""
     if stage not in SUPPORTED_STAGES:
         raise HTTPException(
@@ -61,7 +66,7 @@ def get_safe_foods(stage: str) -> dict:
         )
 
     recommender = get_recommender()
-    foods = recommender.get_all_foods(stage=stage)
+    foods = recommender.get_all_foods(db=db, stage=stage)
 
     return {
         "stage": stage,

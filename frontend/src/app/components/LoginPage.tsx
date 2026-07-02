@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Activity, Eye, EyeOff } from 'lucide-react';
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 interface LoginPageProps {
   isDark: boolean;
@@ -62,7 +62,7 @@ export function LoginPage({ isDark, theme, onLogin, onGoToSignup, initialMessage
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/auth/login`, {
+      const response = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -75,6 +75,7 @@ export function LoginPage({ isDark, theme, onLogin, onGoToSignup, initialMessage
       const data = await response.json();
 
       localStorage.setItem('guidaplate_token', data.access_token);
+      localStorage.setItem('token', data.access_token);
       localStorage.setItem('guidaplate_user_id', data.user_id);
 
       onLogin({
@@ -94,7 +95,7 @@ export function LoginPage({ isDark, theme, onLogin, onGoToSignup, initialMessage
     e.preventDefault();
     setForgotLoading(true);
     try {
-      await fetch(`${API_BASE}/auth/forgot-password`, {
+      await fetch(`${API_BASE}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: forgotEmail }),

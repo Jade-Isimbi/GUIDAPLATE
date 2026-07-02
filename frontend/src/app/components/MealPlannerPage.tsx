@@ -12,30 +12,52 @@ import {
   Paperclip,
 } from 'lucide-react';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+import { authFetch, authHeaders, getAuthToken } from '../../utils/auth';
+import { EGFR_RANGES, formatLimit, getLimits } from '../../utils/clinicalConstants';
+import { formatStageDisplay } from '../../utils/riskDisplay';
 
-const GFR_RANGES: Record<string, string> = {
-  G2: '60–89',
-  G3a: '45–59',
-  G3b: '30–44',
-  G4: '15–29',
-};
-
-const KDOQI_LIMITS: Record<string, { k: string; p: string; na: string }> = {
-  G2: { k: '3,500', p: '1,000', na: '2,300' },
-  G3a: { k: '3,000', p: '800', na: '2,300' },
-  G3b: { k: '3,000', p: '800', na: '2,300' },
-  G4: { k: '2,500', p: '700', na: '2,300' },
-};
-
-const PROTEIN_PER_KG: Record<string, number> = {
-  G2: 0.8,
-  G3a: 0.6,
-  G3b: 0.6,
-  G4: 0.55,
-};
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const TEAL = '#2E86AB';
+
+const SAMPLE_PROMPTS = [
+  'Is cassava safe for me?',
+  'Give me dinner ideas',
+  'What foods are high in potassium?',
+  'What are safe snacks for me?',
+] as const;
+
+const toSourceLabel = (filename: string): string => {
+  const map: Record<string, string> = {
+    'food database safe G3b.txt': 'Kenya Food Composition Tables 2018',
+    'food database safe G3a.txt': 'Kenya Food Composition Tables 2018',
+    'food database safe G4.txt': 'Kenya Food Composition Tables 2018',
+    'food database safe G2.txt': 'Kenya Food Composition Tables 2018',
+    'kidney_diet_guidelines.txt': 'KDOQI Clinical Guidelines 2020',
+    kdoqi: 'KDOQI Clinical Guidelines 2020',
+    nhanes: 'NHANES Dietary Reference Data',
+  };
+
+  const lower = filename.toLowerCase().replace(/_/g, ' ');
+  for (const [key, label] of Object.entries(map)) {
+    if (lower.includes(key.toLowerCase())) {
+      return label;
+    }
+  }
+
+  return filename
+    .replace(/_/g, ' ')
+    .replace('.txt', '')
+    .replace('.pdf', '')
+    .trim();
+};
+
+const STAGE_SAFE_RANGES: Record<string, string> = {
+  G2: '1-2',
+  G3a: '1-3',
+  G3b: '1-3',
+  G4: '1-4',
+};
 
 interface MealPlannerProps {
   isDark: boolean;
@@ -55,6 +77,8 @@ interface MealItem {
   k: string;
   p: string;
   pro: string;
+  na?: string;
+  category?: string;
 }
 
 interface UserMessage {
@@ -87,6 +111,7 @@ interface MealCardProps {
   theme: Record<string, string>;
   token: string;
   occasion?: string;
+  ckdStage?: string;
 }
 
 function detectOccasion(text: string): string {
@@ -263,23 +288,33 @@ function SourceBadge({ source }: { source: string }) {
         background: 'rgba(46,134,171,0.06)',
       }}
     >
-      {source}
+      📚 {toSourceLabel(source)}
     </span>
   );
 }
 
-function MealCard({ items, isDark, theme, token, occasion = 'Lunch' }: MealCardProps) {
+function MealCard({
+  items,
+  isDark,
+  theme,
+  token,
+  occasion = 'Lunch',
+  ckdStage = 'G3b',
+}: MealCardProps) {
   const [added, setAdded] = useState<Record<number, boolean>>({});
   const [allAdded, setAllAdded] = useState(false);
 
+  const stageRange = STAGE_SAFE_RANGES[ckdStage] ?? '1-3';
+
   const addFoodToLog = async (item: MealItem, index: number) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/patient/food-log`, {
+      const sodiumMg = item.na
+        ? parseFloat(item.na.replace('mg', ''))
+        : 0;
+
+      const res = await authFetch(`${API_BASE}/api/patient/food-log`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           food_name: item.food.replace(/^[⚠\s]+/, '').split('(')[0].trim(),
           portion_grams: parseFloat(item.amount.replace('g', '')),
@@ -287,9 +322,9 @@ function MealCard({ items, isDark, theme, token, occasion = 'Lunch' }: MealCardP
           potassium_mg: parseFloat(item.k.replace('mg', '')),
           phosphorus_mg: parseFloat(item.p.replace('mg', '')),
           protein_g: parseFloat(item.pro.replace('g', '')),
-          sodium_mg: 0,
-          category: 'General',
-          stage_safe_range: '1-5',
+          sodium_mg: sodiumMg,
+          category: item.category || 'Other',
+          stage_safe_range: stageRange,
         }),
       });
       if (!res.ok) {
@@ -313,7 +348,7 @@ function MealCard({ items, isDark, theme, token, occasion = 'Lunch' }: MealCardP
         style={{ border: `1px solid ${theme.cardBorder}` }}
       >
         <div
-          className="grid gap-2 px-3 py-2 uppercase tracking-wide font-semibold"
+          className="grid gap-2 px-3 py-2 font-semibold"
           style={{
             gridTemplateColumns: '1.4fr 0.7fr 0.6fr 0.6fr 0.5fr',
             background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
@@ -323,9 +358,9 @@ function MealCard({ items, isDark, theme, token, occasion = 'Lunch' }: MealCardP
         >
           <span>Food</span>
           <span>Amount</span>
-          <span>K (mg)</span>
-          <span>P (mg)</span>
-          <span>Pro</span>
+          <span>Potassium (mg)</span>
+          <span>Phosphorus (mg)</span>
+          <span>Protein (g)</span>
         </div>
         {items.map((item, i) => (
           <div
@@ -391,7 +426,7 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [slowLoad, setSlowLoad] = useState(false);
+  const [loadingStage, setLoadingStage] = useState<'thinking' | 'searching' | 'slow' | null>(null);
   const [uploadedText, setUploadedText] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(true);
@@ -401,19 +436,17 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
   const recognitionRef = useRef<any>(null);
   const currentSessionIdRef = useRef<string | null>(null);
 
-  const token = localStorage.getItem('guidaplate_token') ?? '';
+  const token = getAuthToken() ?? '';
 
-  const authHeaders = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
+  const jsonAuthHeaders = authHeaders({ 'Content-Type': 'application/json' });
 
   const refreshChatHistory = async () => {
     if (!token) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/meal-planner/sessions`, {
-        headers: authHeaders,
+      const res = await authFetch(`${API_BASE}/api/meal-planner/sessions`, {
+        headers: jsonAuthHeaders,
       });
+      if (res.status === 401) return;
       if (res.ok) {
         setChatHistory(await res.json());
       }
@@ -424,11 +457,13 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
 
   useEffect(() => {
     if (!token) return;
-    fetch(`${API_BASE_URL}/patient/profile`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
+    authFetch(`${API_BASE}/api/patient/profile`)
+      .then((r) => {
+        if (r.status === 401) return null;
+        return r.json();
+      })
       .then((data) => {
+        if (!data) return;
         setProfile({
           name: data.name || 'Patient',
           ckd_stage: data.ckd_stage || 'G3b',
@@ -449,12 +484,20 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
   }, [messages, isTyping]);
 
   useEffect(() => {
-    if (isTyping) {
-      const timer = setTimeout(() => setSlowLoad(true), 5000);
-      return () => clearTimeout(timer);
+    if (!isTyping) {
+      setLoadingStage(null);
+      return;
     }
-    setSlowLoad(false);
-    return undefined;
+
+    setLoadingStage('thinking');
+
+    const t1 = setTimeout(() => setLoadingStage('searching'), 2000);
+    const t2 = setTimeout(() => setLoadingStage('slow'), 6000);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, [isTyping]);
 
   useEffect(() => {
@@ -462,15 +505,15 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
   }, [currentSessionId]);
 
   const stage = profile?.ckd_stage || 'G3b';
-  const lims = KDOQI_LIMITS[stage] ?? KDOQI_LIMITS.G3b;
-  const proteinLimit = Math.round((profile?.weight_kg || 65) * (PROTEIN_PER_KG[stage] ?? 0.6));
-  const gfrRange = GFR_RANGES[stage] ?? GFR_RANGES.G3b;
+  const lims = getLimits(stage);
+  const proteinLimit = Math.round((profile?.weight_kg || 65) * lims.protein);
+  const gfrRange = EGFR_RANGES[stage as keyof typeof EGFR_RANGES] ?? EGFR_RANGES.G3b;
 
   const limits = [
-    { label: 'Potassium limit', value: lims.k, unit: 'mg/day', color: TEAL },
-    { label: 'Phosphorus limit', value: lims.p, unit: 'mg/day', color: '#F39C12' },
+    { label: 'Potassium limit', value: formatLimit(lims.potassium), unit: 'mg/day', color: TEAL },
+    { label: 'Phosphorus limit', value: formatLimit(lims.phosphorus), unit: 'mg/day', color: '#F39C12' },
     { label: 'Protein limit', value: proteinLimit.toString(), unit: 'g/day', color: '#27AE60' },
-    { label: 'Sodium limit', value: lims.na, unit: 'mg/day', color: '#E74C3C' },
+    { label: 'Sodium limit', value: formatLimit(lims.sodium), unit: 'mg/day', color: '#E74C3C' },
   ];
 
   const patientLabel = `${profile?.name || 'Patient'} · #${(profile?.user_id || '').slice(0, 6).toUpperCase()}`;
@@ -534,11 +577,12 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
     };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/meal-planner/sessions`, {
+      const res = await authFetch(`${API_BASE}/api/meal-planner/sessions`, {
         method: 'POST',
-        headers: authHeaders,
+        headers: jsonAuthHeaders,
         body: JSON.stringify(sessionData),
       });
+      if (res.status === 401) return;
       if (!res.ok) {
         throw new Error(`Save failed (${res.status})`);
       }
@@ -572,10 +616,10 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
     if (!token) return;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/meal-planner/sessions/${sessionId}`, {
+      const res = await authFetch(`${API_BASE}/api/meal-planner/sessions/${sessionId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
       });
+      if (res.status === 401) return;
       if (!res.ok) {
         throw new Error(`Delete failed (${res.status})`);
       }
@@ -595,13 +639,13 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
     if (!file) return;
 
     if (file.type.startsWith('image/')) {
-      setInput("I've uploaded a photo of my meal. Please analyze it for CKD safety.");
+      setInput("I've uploaded a photo of my meal. Please analyze it for kidney-safe choices.");
     } else {
       const reader = new FileReader();
       reader.onload = (ev) => {
         const text = ev.target?.result as string;
         setInput(
-          `Here is my meal list:\n${text.slice(0, 500)}\nPlease suggest CKD-safe options.`,
+          `Here is my meal list:\n${text.slice(0, 500)}\nPlease suggest kidney-safe options.`,
         );
       };
       reader.readAsText(file);
@@ -618,17 +662,18 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
     setIsTyping(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/meal-planner/chat`, {
+      const res = await authFetch(`${API_BASE}/api/meal-planner/chat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: jsonAuthHeaders,
         body: JSON.stringify({
           message: text.trim(),
           ckd_stage: profile?.ckd_stage || 'G3b',
           weight_kg: profile?.weight_kg || 65,
           uploaded_text: uploadedText,
+          conversation_history: messages.slice(-6).map((m) => ({
+            role: m.role === 'user' ? 'user' : 'assistant',
+            content: m.text,
+          })),
         }),
       });
 
@@ -661,18 +706,22 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
           potassium_mg: number;
           phosphorus_mg: number;
           protein_g: number;
+          sodium_mg?: number;
+          category?: string;
         }) => ({
           food: f.english,
           amount: `${f.portion_grams}g`,
           k: `${Math.round(f.potassium_mg)}mg`,
           p: `${Math.round(f.phosphorus_mg)}mg`,
           pro: `${Number(f.protein_g).toFixed(1)}g`,
+          na: f.sodium_mg != null ? `${Math.round(f.sodium_mg)}mg` : '0mg',
+          category: f.category || 'Other',
         }))
         .slice(0, 6);
 
       const displayText =
         data.answer ||
-        'Here are my recommendations based on your CKD stage and clinical guidelines.';
+        'Here are my recommendations based on your kidney condition and dietary guidelines.';
 
       const aiResp: AIMessage = {
         role: 'ai',
@@ -716,10 +765,11 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
   const borderColor = theme.cardBorder;
 
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden gap-0 -mx-4 sm:-mx-8 -my-6 sm:-my-8">
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex flex-1 overflow-hidden flex-row min-h-0">
       {/* Left sidebar */}
       <aside
-        className="w-80 flex flex-col gap-3 p-4 flex-shrink-0 overflow-hidden"
+        className="h-full overflow-y-auto flex-shrink-0 w-80 flex flex-col gap-3 p-4"
         style={{
           minWidth: '320px',
           width: '320px',
@@ -748,7 +798,7 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
               className="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full"
               style={{ background: 'rgba(46,134,171,0.12)', color: TEAL }}
             >
-              Stage {stage}
+              {formatStageDisplay(stage)}
             </span>
           </div>
 
@@ -758,7 +808,7 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
               background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
             }}
           >
-            <span style={{ color: theme.textSecondary }}>eGFR</span>
+            <span style={{ color: theme.textSecondary }}>Kidney Function Score</span>
             <span className="font-semibold" style={{ color: TEAL }}>
               {gfrRange} mL/min/1.73m²
             </span>
@@ -857,21 +907,13 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
         <div className="flex items-start gap-2 mt-auto pt-1">
           <BookOpen size={13} style={{ color: TEAL, flexShrink: 0, marginTop: 1 }} />
           <p className="text-[11px] leading-relaxed" style={{ color: theme.textSecondary }}>
-            Powered by{' '}
-            <span className="font-semibold" style={{ color: TEAL }}>
-              KDOQI 2020
-            </span>{' '}
-            and{' '}
-            <span className="font-semibold" style={{ color: TEAL }}>
-              KDIGO 2024
-            </span>{' '}
-            clinical guidelines
+            Based on international kidney health guidelines
           </p>
         </div>
       </aside>
 
       {/* Right chat area */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <main className="flex-1 flex flex-col h-full overflow-hidden min-h-0 min-w-0">
         {/* Header */}
         <div
           className="flex items-center justify-between px-6 py-3 flex-shrink-0"
@@ -886,11 +928,11 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
             </div>
             <div>
               <p className="font-semibold text-sm" style={{ color: theme.text }}>
-                GuidaPlate AI
+                Meal Suggestions
               </p>
               <p className="text-xs flex items-center gap-1.5" style={{ color: theme.textSecondary }}>
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                Online · CKD Dietary Assistant
+                Online · Kidney Diet Assistant
               </p>
             </div>
           </div>
@@ -910,9 +952,9 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-6">
+        <div className="flex-1 overflow-y-auto min-h-0 px-6 py-6 flex flex-col gap-6">
           {messages.length === 0 && !isTyping && (
-            <div className="flex-1 flex flex-col items-center justify-center text-center px-4 min-h-[320px]">
+            <div className="flex-1 flex flex-col items-center justify-center text-center px-4 min-h-0">
               <div
                 className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
                 style={{ background: 'rgba(46,134,171,0.12)' }}
@@ -920,10 +962,10 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
                 <ChefHat size={48} style={{ color: TEAL }} />
               </div>
               <p className="font-semibold text-lg mb-2" style={{ color: theme.text }}>
-                Ask me about your CKD meal plan
+                Ask me about safe meals for your kidneys
               </p>
               <p className="text-sm max-w-md leading-relaxed mb-4" style={{ color: theme.textSecondary }}>
-                Ask about safe foods, meal plans, or nutrient limits for your CKD stage.
+                Ask about safe foods, meal plans, or nutrient limits for your kidney condition.
               </p>
               <span
                 className="text-xs px-3 py-1 rounded-full"
@@ -933,7 +975,7 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
                   background: 'rgba(46,134,171,0.06)',
                 }}
               >
-                Powered by KDOQI 2020 and KDIGO 2024
+                Based on international kidney health guidelines
               </span>
             </div>
           )}
@@ -965,6 +1007,7 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
                       theme={theme}
                       token={token}
                       occasion={msg.occasion ?? 'Lunch'}
+                      ckdStage={stage}
                     />
                   )}
                   {msg.sources && msg.sources.length > 0 && (
@@ -1000,9 +1043,19 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
                     />
                   ))}
                 </div>
-                {slowLoad && (
+                {loadingStage === 'thinking' && (
+                  <p className="text-xs mt-1" style={{ color: theme.textSecondary }}>
+                    Looking up your guidelines...
+                  </p>
+                )}
+                {loadingStage === 'searching' && (
+                  <p className="text-xs mt-1" style={{ color: theme.textSecondary }}>
+                    Checking safe foods for your stage...
+                  </p>
+                )}
+                {loadingStage === 'slow' && (
                   <p className="text-xs mt-1 animate-pulse" style={{ color: theme.textSecondary }}>
-                    Loading AI model... this may take up to 30 seconds on first request
+                    AI is taking longer than usual — almost there...
                   </p>
                 )}
               </div>
@@ -1016,6 +1069,21 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
           className="px-6 py-4 flex-shrink-0"
           style={{ borderTop: `1px solid ${borderColor}` }}
         >
+          {messages.length === 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {SAMPLE_PROMPTS.map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  onClick={() => void sendMessage(prompt)}
+                  disabled={isTyping}
+                  className="border border-teal-200 text-teal-700 bg-teal-50 text-sm px-3 py-1.5 rounded-full hover:bg-teal-100 transition-colors disabled:opacity-50"
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          )}
           <div
             className="flex items-center gap-2 px-4 py-2 rounded-full"
             style={{
@@ -1031,15 +1099,20 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
               onChange={handleFileUpload}
             />
             {voiceSupported && (
-              <button
-                type="button"
-                onClick={toggleVoice}
-                className="p-1.5 rounded-lg shrink-0 transition-colors hover:opacity-70"
-                style={{ color: isListening ? '#ef4444' : theme.textSecondary }}
-                aria-label="Voice input"
-              >
-                {isListening ? <MicOff size={18} /> : <Mic size={18} />}
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {isListening && (
+                  <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                )}
+                <button
+                  type="button"
+                  onClick={toggleVoice}
+                  className="p-1.5 rounded-lg transition-colors hover:opacity-70"
+                  style={{ color: isListening ? '#ef4444' : theme.textSecondary }}
+                  aria-label="Voice input"
+                >
+                  {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                </button>
+              </div>
             )}
             <button
               type="button"
@@ -1054,7 +1127,7 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
               type="text"
               className="flex-1 bg-transparent outline-none border-none text-sm min-w-0"
               style={{ color: theme.text }}
-              placeholder="Message GuidaPlate AI..."
+              placeholder={isListening ? 'Listening... Speak now' : 'Message GuidaPlate AI...'}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -1082,11 +1155,11 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
             className="text-[11px] text-center mt-2 leading-relaxed"
             style={{ color: theme.textTertiary }}
           >
-            GuidaPlate AI can make mistakes. Always consult your healthcare provider before dietary
-            changes.
+            AI suggestions can be wrong. Always check with your doctor or dietitian.
           </p>
         </div>
       </main>
+      </div>
     </div>
   );
 }

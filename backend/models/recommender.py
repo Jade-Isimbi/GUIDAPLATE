@@ -1,17 +1,81 @@
 """
 recommender.py
-GuidaPlate — Food recommendation engine using Rwanda-specific food database
+GuidaPlate — Food recommendation engine backed by the SQLAlchemy foods table
 """
 
 from __future__ import annotations
 
-from pathlib import Path
+from sqlalchemy.orm import Session
 
-import pandas as pd
-
-from backend.config import DIETARY_RISK_THRESHOLDS, FOOD_DATABASE_CSV
+from backend.clinical_constants import CLINICAL_SEVERITY_WEIGHTS, KDOQI_DAILY_LIMITS, STAGE_NUMERIC
+from backend.database.db import Food
+from backend.database.food_queries import find_food_by_name
 
 _recommender: FoodRecommender | None = None
+
+# G5 not in STAGE_NUMERIC (app supports G2–G4); keep for food DB range checks.
+_FOOD_STAGE_NUMERIC = {**STAGE_NUMERIC, "G5": 5}
+
+EXCLUDE_CATEGORIES: frozenset[str] = frozenset({
+    "Fat/Oil",
+    "Beverage",
+    "Sugar/Sweetener",
+    "Condiment",
+    "Spice/Herb",
+})
+
+INAPPROPRIATE_SUBSTITUTE_KEYWORDS: tuple[str, ...] = (
+    # Oils and fats
+    "oil",
+    "butter",
+    "lard",
+    "shortening",
+    "margarine",
+    "ghee",
+    "fat",
+    # Pure sugars and sweeteners
+    "sugar",
+    "syrup",
+    "honey",
+    "sweetener",
+    "glucose",
+    "fructose",
+    "sucrose",
+    "molasses",
+    "candy",
+    "confection",
+    # Condiments and seasonings
+    "salt",
+    "sauce",
+    "vinegar",
+    "mustard",
+    "ketchup",
+    "mayonnaise",
+    "dressing",
+    "seasoning",
+    "spice",
+    "herb",
+    # Beverages
+    "juice",
+    "drink",
+    "beverage",
+    "soda",
+    "cola",
+    "coffee",
+    "tea",
+    "wine",
+    "beer",
+    "alcohol",
+    # Other non-meal items
+    "supplement",
+    "vitamin",
+    "powder",
+    "formula",
+    "infant",
+)
+
+DEFAULT_BODY_WEIGHT_KG = 65.0
+SUBSTITUTE_LIMIT = 3
 
 NUTRIENT_COLUMNS: dict[str, str] = {
     "potassium": "potassium_mg",
@@ -36,32 +100,23 @@ SUBSTITUTE_OUTPUT_KEYS = [
 ]
 
 
-class FoodRecommender:
-    """Food substitute and lookup engine backed by the GuidaPlate food database."""
+def _is_appropriate_substitute(food_name: str) -> bool:
+    name_lower = str(food_name).lower()
+    return not any(kw in name_lower for kw in INAPPROPRIATE_SUBSTITUTE_KEYWORDS)
 
-    def __init__(self) -> None:
-        try:
-            if not Path(FOOD_DATABASE_CSV).exists():
-                raise FileNotFoundError(
-                    f"Food database not found at {FOOD_DATABASE_CSV}. "
-                    "Ensure backend/data/food_database.csv exists."
-                )
-            self.foods = pd.read_csv(FOOD_DATABASE_CSV)
-            self.thresholds = DIETARY_RISK_THRESHOLDS
-        except FileNotFoundError as exc:
-            print(f"ERROR: {exc}")
-            raise
+
+class FoodRecommender:
+    """Food substitute and lookup engine backed by the GuidaPlate foods table."""
 
     @staticmethod
     def _stage_to_number(ckd_stage: str) -> int:
-        mapping = {"G2": 2, "G3a": 3, "G3b": 3, "G4": 4, "G5": 5}
-        if ckd_stage not in mapping:
+        if ckd_stage not in _FOOD_STAGE_NUMERIC:
             raise ValueError(f"Unknown CKD stage: {ckd_stage!r}")
-        return mapping[ckd_stage]
+        return _FOOD_STAGE_NUMERIC[ckd_stage]
 
     @staticmethod
-    def _parse_stage_safe(ckd_stage_safe: str, stage_number: int) -> bool:
-        if pd.isna(ckd_stage_safe) or not str(ckd_stage_safe).strip():
+    def _parse_stage_safe(ckd_stage_safe: str | None, stage_number: int) -> bool:
+        if ckd_stage_safe is None or not str(ckd_stage_safe).strip():
             return False
         text = str(ckd_stage_safe).strip()
         if "-" in text:
@@ -72,84 +127,73 @@ class FoodRecommender:
 
     @staticmethod
     def _sanitize_value(value: object) -> object:
-        if value is None or (isinstance(value, float) and pd.isna(value)):
+        if value is None:
             return ""
-        if isinstance(value, (pd.Int64Dtype,)) or (
-            hasattr(value, "dtype") and str(getattr(value, "dtype", "")) == "Int64"
-        ):
-            return int(value)
         if isinstance(value, (int,)) and not isinstance(value, bool):
             return int(value)
-        if isinstance(value, (float,)):
+        if isinstance(value, float):
             return float(value)
         return value
 
-    def _row_to_dict(self, row: pd.Series, extra: dict | None = None) -> dict:
-        result = {
-            col: self._sanitize_value(row[col]) for col in row.index
+    @staticmethod
+    def _food_to_dict(food: Food) -> dict:
+        return {
+            "food_id": int(food.food_id) if str(food.food_id).isdigit() else food.food_id,
+            "english": food.english,
+            "french": food.french or "",
+            "kinyarwanda": food.kinyarwanda or "",
+            "category": food.category,
+            "potassium_mg": food.potassium_mg,
+            "phosphorus_mg": food.phosphorus_mg,
+            "protein_g": food.protein_g,
+            "sodium_mg": food.sodium_mg,
+            "energy_kcal": food.energy_kcal or 0.0,
+            "ckd_stage_safe": food.stage_safe_range or "",
+            "notes": "",
         }
-        if extra:
-            result.update(extra)
-        return result
 
-    def _find_food_by_english(self, food_name: str) -> pd.Series | None:
-        name = food_name.strip().lower()
-        if not name:
-            return None
-
-        english = self.foods["english"].fillna("").str.lower()
-        exact = self.foods[english == name]
-        if not exact.empty:
-            return exact.iloc[0]
-
-        partial = self.foods[english.str.contains(name, regex=False, na=False)]
-        if not partial.empty:
-            return partial.iloc[0]
-        return None
+    @staticmethod
+    def _nutrient_value(food: Food, nutrient_col: str) -> float:
+        return float(getattr(food, nutrient_col))
 
     def _nutrient_column(self, nutrient: str) -> str | None:
         return NUTRIENT_COLUMNS.get(nutrient.lower())
 
+    @staticmethod
+    def _primary_exceeded_nutrient(exceeded_nutrients: list[str]) -> str:
+        return max(exceeded_nutrients, key=lambda n: CLINICAL_SEVERITY_WEIGHTS.get(n, 0))
+
+    @staticmethod
+    def _threshold_for_nutrient(nutrient: str, limits: dict[str, float]) -> float:
+        if nutrient == "potassium":
+            return limits["potassium"] * 0.15
+        if nutrient == "phosphorus":
+            return limits["phosphorus"] * 0.20
+        if nutrient == "protein":
+            return limits["protein_per_kg"] * 0.25 * DEFAULT_BODY_WEIGHT_KG
+        if nutrient == "sodium":
+            return limits["sodium"] * 0.10
+        raise ValueError(f"Unknown nutrient for substitute threshold: {nutrient!r}")
+
     def _build_reason(
         self,
-        queried: pd.Series,
-        candidate: pd.Series,
-        exceeded_nutrients: list[str],
-        category: str,
+        queried: Food | None,
+        candidate: Food,
+        primary: str,
     ) -> str:
-        parts: list[str] = []
-        for nutrient in exceeded_nutrients:
-            col = self._nutrient_column(nutrient)
-            if col is None:
-                continue
-            queried_val = float(queried[col])
-            candidate_val = float(candidate[col])
-            label = nutrient.replace("_", " ")
-            unit = "mg" if col.endswith("_mg") else "g"
-            parts.append(
-                f"Lower {label} ({candidate_val:g}{unit} vs {queried_val:g}{unit})"
+        col = self._nutrient_column(primary)
+        if col is None:
+            return "Safer alternative for your CKD stage"
+        candidate_val = self._nutrient_value(candidate, col)
+        label = primary.replace("_", " ")
+        unit = "mg" if col.endswith("_mg") else "g"
+        if queried is not None:
+            queried_val = self._nutrient_value(queried, col)
+            return (
+                f"Lower {label} ({candidate_val:g}{unit} vs "
+                f"{queried_val:g}{unit}) — safer alternative"
             )
-        improvements = ", ".join(parts)
-        return f"{improvements} — same category ({category})"
-
-    def _improvement_score(
-        self,
-        queried: pd.Series,
-        candidate: pd.Series,
-        exceeded_nutrients: list[str],
-    ) -> float:
-        total = 0.0
-        for nutrient in exceeded_nutrients:
-            col = self._nutrient_column(nutrient)
-            if col is None:
-                continue
-            queried_val = float(queried[col])
-            candidate_val = float(candidate[col])
-            if queried_val > 0:
-                total += (queried_val - candidate_val) / queried_val * 100.0
-            elif candidate_val < queried_val:
-                total += 100.0
-        return total
+        return f"Lower {label} ({candidate_val:g}{unit}) — within safe limit"
 
     def get_substitutes(
         self,
@@ -157,6 +201,8 @@ class FoodRecommender:
         ckd_stage: str,
         risk_label: str,
         exceeded_nutrients: list[str],
+        db: Session,
+        limit: int = SUBSTITUTE_LIMIT,
     ) -> list[dict]:
         if risk_label == "LOW":
             return []
@@ -164,51 +210,45 @@ class FoodRecommender:
         if not exceeded_nutrients:
             return []
 
-        queried = self._find_food_by_english(food_name)
-        if queried is None:
+        primary = self._primary_exceeded_nutrient(exceeded_nutrients)
+        nutrient_col = self._nutrient_column(primary)
+        if nutrient_col is None:
             return []
 
-        category = str(queried["category"]) if pd.notna(queried["category"]) else ""
-        if category == "Other":
-            return []
+        limits = KDOQI_DAILY_LIMITS.get(ckd_stage, KDOQI_DAILY_LIMITS["G3b"])
+        threshold = self._threshold_for_nutrient(primary, limits)
+        nutrient_attr = getattr(Food, nutrient_col)
 
-        stage_number = self._stage_to_number(ckd_stage)
-        queried_id = queried["food_id"]
+        queried = find_food_by_name(db, food_name)
+        queried_food_id = queried.food_id if queried is not None else None
 
-        candidates = self.foods[
-            (self.foods["category"] == category) & (self.foods["food_id"] != queried_id)
-        ].copy()
-
-        if candidates.empty:
-            return []
-
-        safe_mask = candidates["ckd_stage_safe"].apply(
-            lambda s: self._parse_stage_safe(s, stage_number)
+        candidates = (
+            db.query(Food)
+            .filter(
+                nutrient_attr <= threshold,
+                ~Food.category.in_(EXCLUDE_CATEGORIES),
+            )
+            .all()
         )
-        candidates = candidates[safe_mask]
 
-        for nutrient in exceeded_nutrients:
-            col = self._nutrient_column(nutrient)
-            if col is None:
-                return []
-            queried_val = float(queried[col])
-            candidates = candidates[candidates[col] < queried_val]
+        candidates = [
+            food
+            for food in candidates
+            if _is_appropriate_substitute(food.english)
+            and (queried_food_id is None or food.food_id != queried_food_id)
+        ]
 
-        if candidates.empty:
+        if not candidates:
             return []
 
-        candidates = candidates.copy()
-        candidates["_score"] = candidates.apply(
-            lambda row: self._improvement_score(queried, row, exceeded_nutrients),
-            axis=1,
-        )
-        candidates = candidates.sort_values("_score", ascending=False).head(3)
+        candidates.sort(key=lambda food: self._nutrient_value(food, nutrient_col))
+        candidates = candidates[:limit]
 
         results: list[dict] = []
-        for _, row in candidates.iterrows():
-            reason = self._build_reason(queried, row, exceeded_nutrients, category)
+        for food in candidates:
+            reason = self._build_reason(queried, food, primary)
             item = {
-                key: self._sanitize_value(row[key])
+                key: self._sanitize_value(self._food_to_dict(food).get(key, ""))
                 for key in SUBSTITUTE_OUTPUT_KEYS
                 if key != "reason"
             }
@@ -218,51 +258,50 @@ class FoodRecommender:
 
     def get_all_foods(
         self,
+        db: Session,
         stage: str | None = None,
         category: str | None = None,
         search: str | None = None,
     ) -> list[dict]:
-        df = self.foods.copy()
+        foods = db.query(Food).all()
 
         if stage is not None:
             stage_number = self._stage_to_number(stage)
-            df = df[
-                df["ckd_stage_safe"].apply(
-                    lambda s: self._parse_stage_safe(s, stage_number)
-                )
+            foods = [
+                food
+                for food in foods
+                if self._parse_stage_safe(food.stage_safe_range, stage_number)
             ]
 
         if category is not None:
-            df = df[df["category"] == category]
+            foods = [food for food in foods if food.category == category]
 
         if search is not None and search.strip():
             term = search.strip().lower()
-            english = df["english"].fillna("").str.lower()
-            french = df["french"].fillna("").str.lower()
-            kinyarwanda = df["kinyarwanda"].fillna("").str.lower()
-            mask = (
-                english.str.contains(term, regex=False, na=False)
-                | french.str.contains(term, regex=False, na=False)
-                | kinyarwanda.str.contains(term, regex=False, na=False)
-            )
-            df = df[mask]
+            foods = [
+                food
+                for food in foods
+                if term in (food.english or "").lower()
+                or term in (food.french or "").lower()
+                or term in (food.kinyarwanda or "").lower()
+            ]
 
-        return [self._row_to_dict(row) for _, row in df.iterrows()]
+        return [self._food_to_dict(food) for food in foods]
 
-    def get_food_by_name(self, name: str) -> dict | None:
+    def get_food_by_name(self, db: Session, name: str) -> dict | None:
         term = name.strip().lower()
         if not term:
             return None
 
-        for col in ("english", "french", "kinyarwanda"):
-            series = self.foods[col].fillna("").astype(str).str.lower()
-            matches = self.foods[series == term]
-            if not matches.empty:
-                return self._row_to_dict(matches.iloc[0])
+        for food in db.query(Food).all():
+            for col in (food.english, food.french, food.kinyarwanda):
+                if col and col.lower() == term:
+                    return self._food_to_dict(food)
 
-            contains = self.foods[series.str.contains(term, regex=False, na=False)]
-            if not contains.empty:
-                return self._row_to_dict(contains.iloc[0])
+        for food in db.query(Food).all():
+            for col in (food.english, food.french, food.kinyarwanda):
+                if col and term in col.lower():
+                    return self._food_to_dict(food)
 
         return None
 

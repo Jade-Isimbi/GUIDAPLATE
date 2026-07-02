@@ -41,6 +41,42 @@ class Patient(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class Food(Base):
+    __tablename__ = "foods"
+
+    id = Column(Integer, primary_key=True, index=True)
+    food_id = Column(String, unique=True, nullable=False, index=True)
+    english = Column(String, nullable=False, index=True)
+    french = Column(String, nullable=True)
+    kinyarwanda = Column(String, nullable=True)
+    category = Column(String, nullable=False, default="Other")
+    potassium_mg = Column(Float, nullable=False, default=0.0)
+    phosphorus_mg = Column(Float, nullable=False, default=0.0)
+    protein_g = Column(Float, nullable=False, default=0.0)
+    sodium_mg = Column(Float, nullable=False, default=0.0)
+    energy_kcal = Column(Float, nullable=True)
+    stage_safe_range = Column(String, nullable=True)
+    preparation_method = Column(String, nullable=True)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "food_id": self.food_id,
+            "english": self.english,
+            "french": self.french,
+            "kinyarwanda": self.kinyarwanda,
+            "category": self.category,
+            "potassium_mg": self.potassium_mg,
+            "phosphorus_mg": self.phosphorus_mg,
+            "protein_g": self.protein_g,
+            "sodium_mg": self.sodium_mg,
+            "energy_kcal": self.energy_kcal,
+            "stage_safe_range": self.stage_safe_range,
+            "ckd_stage_safe": self.stage_safe_range,
+            "preparation_method": self.preparation_method or "",
+        }
+
+
 class FoodLog(Base):
     __tablename__ = "food_logs"
 
@@ -68,6 +104,8 @@ class RiskAssessmentLog(Base):
     confidence = Column(Float)
     nutrient_totals = Column(JSON)
     shap_values = Column(JSON, nullable=True)
+    shap_explanation = Column(Text, nullable=True)
+    feature_values = Column(JSON, nullable=True)
     assessed_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -112,6 +150,34 @@ class ChatSession(Base):
 
 def create_tables() -> None:
     Base.metadata.create_all(bind=engine)
+    _migrate_risk_assessment_columns()
+
+
+def _migrate_risk_assessment_columns() -> None:
+    """Add risk_assessments columns introduced after initial schema."""
+    import sqlite3
+
+    db_path = ROOT / "guidaplate.db"
+    if not db_path.exists():
+        return
+
+    conn = sqlite3.connect(db_path)
+    try:
+        columns = {
+            row[1]
+            for row in conn.execute("PRAGMA table_info(risk_assessments)")
+        }
+        if "shap_explanation" not in columns:
+            conn.execute(
+                "ALTER TABLE risk_assessments ADD COLUMN shap_explanation TEXT"
+            )
+        if "feature_values" not in columns:
+            conn.execute(
+                "ALTER TABLE risk_assessments ADD COLUMN feature_values JSON"
+            )
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def get_db():

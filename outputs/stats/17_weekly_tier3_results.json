@@ -1,0 +1,18 @@
+{
+  "rule_accuracy": 0.6328358208955224,
+  "rule_f1_macro": 0.6460071348839661,
+  "rule_mod_recall": 0.35064935064935066,
+  "rf_accuracy": 0.8298507462686567,
+  "rf_f1_macro": 0.8318167277116805,
+  "rf_mod_recall": 0.7467532467532467,
+  "rf_cv_mean": 0.840599924725949,
+  "rf_cv_std": 0.015459337167137101,
+  "mcnemar_p": 6.072038960525106e-08,
+  "deployed": "rf",
+  "n_weekly": 1675,
+  "weekly_label_dist": {
+    "LOW": 299,
+    "MODERATE": 769,
+    "HIGH": 607
+  }
+}

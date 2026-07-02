@@ -8,8 +8,8 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import date, datetime, time
 
-from backend.database.db import FoodLog
-from backend.models.recommender import get_recommender
+from backend.database.db import Food, FoodLog, SessionLocal
+from backend.database.food_queries import find_food_by_name, get_food_nutrients
 
 MEAL_OCCASION_ORDER = ["Breakfast", "Lunch", "Dinner", "Snack"]
 
@@ -24,27 +24,35 @@ G2_MEAL_THRESHOLDS = {
 RISK_INDEX_TO_LABEL = {0: "LOW", 1: "MODERATE", 2: "HIGH"}
 
 
-def scaled_nutrients_from_food_row(row, portion_grams: float) -> dict[str, float]:
+def scaled_nutrients_from_food(food: Food, portion_grams: float) -> dict[str, float]:
     """Same scaling as RiskAssessment.tsx: nutrients per 100g × (grams / 100)."""
     scale = portion_grams / 100.0
     return {
-        "potassium_mg": float(row["potassium_mg"]) * scale,
-        "phosphorus_mg": float(row["phosphorus_mg"]) * scale,
-        "protein_g": float(row["protein_g"]) * scale,
-        "sodium_mg": float(row["sodium_mg"]) * scale,
+        "potassium_mg": float(food.potassium_mg) * scale,
+        "phosphorus_mg": float(food.phosphorus_mg) * scale,
+        "protein_g": float(food.protein_g) * scale,
+        "sodium_mg": float(food.sodium_mg) * scale,
     }
 
 
 def nutrients_for_food_name(food_name: str, portion_grams: float) -> dict[str, float]:
-    recommender = get_recommender()
-    row = recommender._find_food_by_english(food_name)
-    if row is None:
-        raise ValueError(f"Food not found in database: {food_name!r}")
-    return scaled_nutrients_from_food_row(row, portion_grams)
+    db = SessionLocal()
+    try:
+        nutrients = get_food_nutrients(food_name, portion_grams, db)
+        if nutrients is None:
+            raise ValueError(f"Food not found in database: {food_name!r}")
+        return {
+            "potassium_mg": nutrients["potassium_mg"],
+            "phosphorus_mg": nutrients["phosphorus_mg"],
+            "protein_g": nutrients["protein_g"],
+            "sodium_mg": nutrients["sodium_mg"],
+        }
+    finally:
+        db.close()
 
 
 def nutrients_for_food_log(log: FoodLog) -> dict[str, float]:
-    """Return stored nutrients or compute from food database lookup."""
+    """Return stored nutrients or compute from foods table lookup."""
     has_stored = any(
         getattr(log, col) not in (None, 0)
         for col in ("potassium_mg", "phosphorus_mg", "protein_g", "sodium_mg")
@@ -146,12 +154,15 @@ def fetch_food_logs_for_date(db, patient_id: str, target: date) -> list[FoodLog]
 
 
 def energy_for_food_name(food_name: str, portion_grams: float) -> float:
-    recommender = get_recommender()
-    row = recommender._find_food_by_english(food_name)
-    if row is None:
-        return 0.0
-    scale = portion_grams / 100.0
-    return float(row.get("energy_kcal", 0) or 0) * scale
+    db = SessionLocal()
+    try:
+        food = find_food_by_name(db, food_name)
+        if food is None:
+            return 0.0
+        scale = portion_grams / 100.0
+        return float(food.energy_kcal or 0) * scale
+    finally:
+        db.close()
 
 
 def energy_for_food_log(log: FoodLog) -> float:

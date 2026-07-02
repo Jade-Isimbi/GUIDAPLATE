@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { Activity, Eye, EyeOff, ChevronDown } from 'lucide-react';
+import { stageOptionLabel } from '../../utils/riskDisplay';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 interface SignupPageProps {
   isDark: boolean;
@@ -18,10 +21,10 @@ interface SignupPageProps {
 }
 
 const CKD_STAGES = [
-  { value: 'G2',  label: 'G2',  gfr: '60–89',  desc: 'Mildly decreased' },
-  { value: 'G3a', label: 'G3a', gfr: '45–59',  desc: 'Mild to moderate decrease' },
-  { value: 'G3b', label: 'G3b', gfr: '30–44',  desc: 'Moderate to severe decrease' },
-  { value: 'G4',  label: 'G4',  gfr: '15–29',  desc: 'Severe decrease' },
+  { value: 'G2',  label: 'Stage 2',  gfr: '60–89',  desc: 'Mildly decreased' },
+  { value: 'G3a', label: 'Stage 3a', gfr: '45–59',  desc: 'Mild to moderate decrease' },
+  { value: 'G3b', label: 'Stage 3b', gfr: '30–44',  desc: 'Moderate to severe decrease' },
+  { value: 'G4',  label: 'Stage 4',  gfr: '15–29',  desc: 'Severe decrease' },
 ];
 
 const COUNTRY_CODES = [
@@ -100,7 +103,7 @@ export function SignupPage({ isDark, theme, onSignup, onGoToLogin }: SignupPageP
     if (!password)            e.password    = 'Password is required';
     if (password.length < 8)  e.password    = 'Password must be at least 8 characters';
     if (password !== confirmPass) e.confirmPass = 'Passwords do not match';
-    if (!ckdStage)            e.ckdStage    = 'Please select your CKD stage';
+    if (!ckdStage)            e.ckdStage    = 'Please select your kidney disease stage';
     if (!weight)              e.weight      = 'Body weight is required';
     if (!dob)                 e.dob         = 'Date of birth is required';
     if (!sex)                 e.sex         = 'Please select your sex';
@@ -119,7 +122,7 @@ export function SignupPage({ isDark, theme, onSignup, onGoToLogin }: SignupPageP
     const fullPhone = `${countryCode} ${phone.trim()}`;
 
     try {
-      const response = await fetch('http://localhost:8000/api/auth/register', {
+      const response = await fetch(`${API_BASE}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -143,6 +146,7 @@ export function SignupPage({ isDark, theme, onSignup, onGoToLogin }: SignupPageP
       const data = await response.json();
 
       localStorage.setItem('guidaplate_token', data.access_token);
+      localStorage.setItem('token', data.access_token);
       localStorage.setItem('guidaplate_user_id', data.user_id);
 
       onSignup({
@@ -199,7 +203,7 @@ export function SignupPage({ isDark, theme, onSignup, onGoToLogin }: SignupPageP
           Create your account
         </h1>
         <p style={{ color: isDark ? '#8a9ab0' : '#5a6a80', fontSize: '0.875rem', marginBottom: 32 }}>
-          Set up your profile for personalised CKD dietary guidance
+          Set up your profile for personalised kidney health dietary guidance
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -325,9 +329,9 @@ export function SignupPage({ isDark, theme, onSignup, onGoToLogin }: SignupPageP
             {sectionHeading('Health Profile')}
           </div>
 
-          {/* CKD Stage */}
+          {/* Kidney disease stage */}
           <div>
-            <label style={labelStyle}>CKD Stage</label>
+            <label style={labelStyle}>Kidney Disease Stage</label>
             <div className="grid grid-cols-4 gap-2">
               {CKD_STAGES.map((s) => (
                 <button
@@ -343,13 +347,13 @@ export function SignupPage({ isDark, theme, onSignup, onGoToLogin }: SignupPageP
                     fontSize: '0.875rem',
                   }}
                 >
-                  {s.label}
+                  {stageOptionLabel(s.value)}
                 </button>
               ))}
             </div>
             {selectedStage && (
               <p style={{ ...helperStyle, color: '#2E86AB', fontWeight: 500, marginTop: 8 }}>
-                Stage {selectedStage.label} — eGFR {selectedStage.gfr} mL/min/1.73m² · {selectedStage.desc}
+                {selectedStage.label} — Kidney Function Score {selectedStage.gfr} mL/min/1.73m² · {selectedStage.desc}
               </p>
             )}
             {errText('ckdStage')}

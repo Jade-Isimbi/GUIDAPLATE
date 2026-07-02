@@ -1,8 +1,8 @@
 export interface Food {
   id: number;
   english: string;
-  french: string;
-  kinyarwanda: string;
+  french: string | null;
+  kinyarwanda: string | null;
   category: string;
   meal_type: string;
   protein_g: number;
