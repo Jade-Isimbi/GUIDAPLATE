@@ -8,8 +8,9 @@ African Leadership University · July 2026
 ## Links
 | | |
 |---|---|
-| 🎥 Demo Video | [Watch on YouTube](#) |
-| 🌐 Live App | [guidaplate.vercel.app](#) |
+| 🎥 Demo Video | |
+| 🌐 Live App | [guidaplate.vercel.app](https://guidaplate.vercel.app) |
+| 🔌 Backend API | [guidaplate-production.up.railway.app](https://guidaplate-production.up.railway.app) |
 | 📁 Repository | https://github.com/Jade-Isimbi/GUIDAPLATE |
 
 ## Key Results
@@ -87,6 +88,12 @@ SENDGRID_FROM_EMAIL=noreply@yourdomain.com
 RESET_BASE_URL=http://localhost:5173
 ALLOWED_ORIGINS=http://localhost:5173
 ```
+
+### Production deployment
+
+- Backend: [Railway](https://railway.com) — `railway.toml` / `Procfile` in repo root, `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
+- Frontend: [Vercel](https://vercel.com) — root directory `frontend/`, framework Vite, `VITE_API_URL` set to the Railway backend URL
+- In production, `RESET_BASE_URL` and `ALLOWED_ORIGINS` are set to the live Vercel URL (`https://guidaplate.vercel.app`) rather than `localhost`
 
 ## Notebooks (run in order)
 Production pipeline (v3):
