@@ -30,3 +30,4 @@ plotly
 pypdf
 sentence-transformers
 huggingface_hub
+groq

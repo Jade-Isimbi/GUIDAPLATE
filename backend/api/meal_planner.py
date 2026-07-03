@@ -8,7 +8,7 @@ from typing import Any
 
 import pandas as pd
 from fastapi import APIRouter, Depends
-from huggingface_hub import InferenceClient
+from groq import Groq
 from pydantic import BaseModel, Field
 
 from backend.auth.security import get_current_user_id
@@ -104,7 +104,7 @@ def get_rwanda_food_context(ckd_stage: str) -> str:
         "papaya, sugarcane, "
         "ikivuguto (small portions), "
         "eggs, tea, bread, oats, "
-        "maize porridge (uji), "
+        "igikoma (maize porridge), "
         "tilapia (small portions), "
         "chicken (small portions)"
     )
@@ -248,6 +248,17 @@ def _load_food_db() -> pd.DataFrame:
                 for c in required_cols:
                     if c not in df.columns:
                         df[c] = None
+                csv_path = Path(__file__).resolve().parent.parent / "data" / "food_database.csv"
+                csv_df = pd.read_csv(csv_path)
+                if "is_rwandan" in csv_df.columns and "food_id" in df.columns:
+                    df["food_id"] = df["food_id"].astype(str).str.strip()
+                    csv_df["food_id"] = csv_df["food_id"].astype(str).str.strip()
+                    df = df.merge(
+                        csv_df[["food_id", "is_rwandan"]],
+                        on="food_id",
+                        how="left",
+                    )
+                    df["is_rwandan"] = df["is_rwandan"].fillna(0).astype(int)
                 return df
         finally:
             db.close()
@@ -259,6 +270,8 @@ def _load_food_db() -> pd.DataFrame:
     for c in required_cols:
         if c not in df.columns:
             df[c] = None
+    if "is_rwandan" not in df.columns:
+        df["is_rwandan"] = 0
     return df
 
 
@@ -272,15 +285,16 @@ def _contains_nutrient_values(text: str) -> bool:
 
 
 def query_llm(prompt: str, history: list[dict] | None = None) -> str | None:
-    token = os.getenv("HF_TOKEN")
+    token = os.getenv("GROQ_API_KEY")
     if not token:
+        _mp_logger.warning(
+            "GROQ_API_KEY not set — "
+            "LLM unavailable"
+        )
         return None
 
     try:
-        client = InferenceClient(
-            provider="auto",
-            api_key=token,
-        )
+        client = Groq(api_key=token)
 
         messages: list[dict[str, str]] = [
             {
@@ -307,7 +321,7 @@ def query_llm(prompt: str, history: list[dict] | None = None) -> str | None:
         messages.append({"role": "user", "content": prompt})
 
         response = client.chat.completions.create(
-            model="meta-llama/Llama-3.1-8B-Instruct",
+            model="llama-3.1-8b-instant",
             messages=messages,
             max_tokens=600,
             temperature=0.3,
@@ -471,72 +485,145 @@ def build_meal_plan(
     limits: dict[str, float],
     protein_limit_g: float,
 ) -> dict[str, list[dict[str, Any]]]:
-    occasions = {
-        "Breakfast": {
-            "categories": ["Grain", "Egg", "Dairy"],
-            "k_budget": limits["potassium"] * 0.2,
-            "protein_budget": protein_limit_g * 0.25,
-            "portion": 150,
-        },
-        "Lunch": {
-            "categories": ["Starch", "Meat", "Fish", "Vegetable", "Legume"],
-            "k_budget": limits["potassium"] * 0.35,
-            "protein_budget": protein_limit_g * 0.35,
-            "portion": 200,
-        },
-        "Dinner": {
-            "categories": ["Starch", "Meat", "Fish", "Vegetable", "Legume"],
-            "k_budget": limits["potassium"] * 0.35,
-            "protein_budget": protein_limit_g * 0.35,
-            "portion": 200,
-        },
-        "Snack": {
-            "categories": ["Fruit", "Grain", "Dairy"],
-            "k_budget": limits["potassium"] * 0.1,
-            "protein_budget": protein_limit_g * 0.05,
-            "portion": 100,
-        },
+    """
+    Build a balanced meal plan from Rwandan safe foods.
+
+    Priority order per occasion:
+    Breakfast: protein first (Egg/Dairy) then grain
+    Lunch/Dinner: protein first (Meat/Fish), then starch, then vegetable
+    Snack: fruit first, then grain
+    """
+    import random
+
+    PORTION = {
+        "Breakfast": 150,
+        "Lunch": 200,
+        "Dinner": 200,
+        "Snack": 100,
     }
 
+    K_BUDGET = {
+        "Breakfast": limits["potassium"] * 0.20,
+        "Lunch": limits["potassium"] * 0.35,
+        "Dinner": limits["potassium"] * 0.35,
+        "Snack": limits["potassium"] * 0.10,
+    }
+
+    P_BUDGET = {
+        "Breakfast": protein_limit_g * 0.25,
+        "Lunch": protein_limit_g * 0.35,
+        "Dinner": protein_limit_g * 0.35,
+        "Snack": protein_limit_g * 0.05,
+    }
+
+    # Priority groups per occasion — picked in order so protein is always included
+    GROUPS = {
+        "Breakfast": [
+            ["Egg", "Dairy"],
+            ["Grain"],
+        ],
+        "Lunch": [
+            ["Meat", "Fish"],
+            ["Starch"],
+            ["Vegetable"],
+        ],
+        "Dinner": [
+            ["Meat", "Fish"],
+            ["Starch"],
+            ["Vegetable"],
+        ],
+        "Snack": [
+            ["Fruit"],
+            ["Grain", "Dairy"],
+        ],
+    }
+
+    def pick_one(
+        foods_df: pd.DataFrame,
+        categories: list[str],
+        k_remaining: float,
+        p_remaining: float,
+        portion: float,
+        exclude_names: list[str],
+    ) -> dict | None:
+        """Pick one food from categories that fits within budget."""
+        candidates = foods_df[
+            foods_df["category"].isin(categories)
+            & ~foods_df["english"].isin(exclude_names)
+        ].copy()
+
+        if candidates.empty:
+            return None
+
+        candidates = candidates.sample(frac=1, random_state=random.randint(0, 9999))
+
+        protein_categories = {"Meat", "Fish", "Egg", "Dairy"}
+        is_protein_pick = bool(set(categories) & protein_categories)
+        p_allowance = p_remaining * (0.65 if is_protein_pick else 1.0)
+
+        for _, food in candidates.iterrows():
+            k_per_100 = float(food.get("potassium_mg", 0) or 0)
+            p_per_100 = float(food.get("protein_g", 0) or 0)
+            ph_per_100 = float(food.get("phosphorus_mg", 0) or 0)
+            na_per_100 = float(food.get("sodium_mg", 0) or 0)
+
+            fit_portion = portion
+            if k_per_100 > 0:
+                fit_portion = min(fit_portion, k_remaining / k_per_100 * 100)
+            if p_per_100 > 0:
+                fit_portion = min(fit_portion, p_allowance / p_per_100 * 100)
+            if fit_portion < 25:
+                continue
+
+            food_k = k_per_100 * fit_portion / 100
+            food_p = p_per_100 * fit_portion / 100
+            food_ph = ph_per_100 * fit_portion / 100
+            food_na = na_per_100 * fit_portion / 100
+
+            if food_p > p_remaining:
+                continue
+
+            return {
+                "english": str(food.get("english") or "").strip(),
+                "kinyarwanda": str(food.get("kinyarwanda") or "").strip(),
+                "preparation_method": str(food.get("preparation_method") or "").strip(),
+                "portion_grams": round(fit_portion, 1),
+                "meal_occasion": "",
+                "potassium_mg": round(food_k, 1),
+                "phosphorus_mg": round(food_ph, 1),
+                "protein_g": round(food_p, 1),
+                "sodium_mg": round(food_na, 1),
+                "category": str(food.get("category") or "Other"),
+            }
+        return None
+
     plan: dict[str, list[dict[str, Any]]] = {}
-    for occasion, cfg in occasions.items():
-        foods = safe_foods[safe_foods["category"].isin(cfg["categories"])].copy()
-        if foods.empty:
-            plan[occasion] = []
-            continue
 
-        foods = foods.sort_values("potassium_mg")
-        picked: list[dict[str, Any]] = []
+    for occasion in ["Breakfast", "Lunch", "Dinner", "Snack"]:
+        portion = float(PORTION[occasion])
+        k_budget = float(K_BUDGET[occasion])
+        p_budget = float(P_BUDGET[occasion])
+        groups = GROUPS[occasion]
+        picked: list[dict] = []
         k_used = 0.0
-        protein_used = 0.0
-        for _, food in foods.iterrows():
-            if len(picked) >= 3:
-                break
-            portion = float(cfg["portion"])
-            food_k = float(food.get("potassium_mg", 0) or 0) * portion / 100
-            food_p = float(food.get("phosphorus_mg", 0) or 0) * portion / 100
-            food_protein = float(food.get("protein_g", 0) or 0) * portion / 100
-            food_na = float(food.get("sodium_mg", 0) or 0) * portion / 100
+        p_used = 0.0
+        used_names: list[str] = []
 
-            if k_used + food_k > float(cfg["k_budget"]):
-                continue
-            if protein_used + food_protein > float(cfg["protein_budget"]):
-                continue
-
-            picked.append(
-                {
-                    "english": str(food.get("english") or "").strip(),
-                    "portion_grams": portion,
-                    "meal_occasion": occasion,
-                    "potassium_mg": round(food_k, 1),
-                    "phosphorus_mg": round(food_p, 1),
-                    "protein_g": round(food_protein, 1),
-                    "sodium_mg": round(food_na, 1),
-                    "category": str(food.get("category") or "Other"),
-                }
+        for group_categories in groups:
+            food = pick_one(
+                safe_foods,
+                group_categories,
+                k_budget - k_used,
+                p_budget - p_used,
+                portion,
+                used_names,
             )
-            k_used += food_k
-            protein_used += food_protein
+            if food:
+                food["meal_occasion"] = occasion
+                picked.append(food)
+                k_used += food["potassium_mg"]
+                p_used += food["protein_g"]
+                used_names.append(food["english"])
 
         plan[occasion] = picked
 
@@ -821,6 +908,18 @@ def generate_meal_recommendation(
     suggested_foods: list[dict[str, Any]] = []
     meal_plan: dict[str, list[dict[str, Any]]] | None = None
 
+    # Use only Rwandan foods for meal plan suggestions
+    rwandan_foods = safe_foods[
+        safe_foods.get(
+            "is_rwandan",
+            pd.Series(
+                [1] * len(safe_foods),
+                index=safe_foods.index,
+            ),
+        )
+        == 1
+    ] if "is_rwandan" in safe_foods.columns else safe_foods
+
     wants_food_suggestions = (
         wants_meal_plan
         or wants_breakfast
@@ -831,7 +930,7 @@ def generate_meal_recommendation(
     )
 
     if wants_food_suggestions and not wants_avoid:
-        meal_plan = build_meal_plan(safe_foods, limits, protein_limit_g)
+        meal_plan = build_meal_plan(rwandan_foods, limits, protein_limit_g)
         for foods in meal_plan.values():
             for food in foods:
                 suggested_foods.append(food)
@@ -886,7 +985,7 @@ def generate_meal_recommendation(
                 "\n**Analysis of your uploaded list:**\n"
                 "I reviewed the text you provided and pulled CKD-safe options from the local food database."
             )
-            for alt in get_safe_alternatives(safe_foods, limits)[:5]:
+            for alt in get_safe_alternatives(rwandan_foods, limits)[:5]:
                 answer_parts.append(
                     f"- {alt['english']} ({alt['portion_grams']}g): safe candidate for Stage {ckd_stage}"
                 )
@@ -940,6 +1039,38 @@ async def meal_planner_chat(
     stage_number = _stage_num(request.ckd_stage)
     safe_foods = food_db[food_db["ckd_stage_safe"].apply(lambda x: _is_stage_safe(str(x), stage_number))]
 
+    # Clinical forbidden foods per stage — removes foods that pass the stage_safe
+    # range check but are clinically restricted due to high potassium/phosphorus
+    _FORBIDDEN_BY_STAGE: dict[str, list[str]] = {
+        "G3A": [
+            "groundnuts", "soybeans", "soya",
+            "spinach", "cassava leaves", "isombe",
+        ],
+        "G3B": [
+            "beans", "peas", "banana", "matoke", "plantains",
+            "avocado", "avocados", "irish potatoes",
+            "cassava leaves", "isombe", "groundnuts", "soybeans",
+            "soya", "spinach", "oranges", "passion fruit",
+        ],
+        "G4": [
+            "beans", "peas", "banana", "matoke", "plantains",
+            "avocado", "avocados", "irish potatoes",
+            "cassava leaves", "isombe", "groundnuts", "soybeans",
+            "soya", "spinach", "sweet potatoes", "yams",
+            "oranges", "passion fruit", "milk", "pumpkin",
+        ],
+    }
+
+    _stage_key = request.ckd_stage.upper()
+    _forbidden = _FORBIDDEN_BY_STAGE.get(_stage_key, [])
+
+    if _forbidden:
+        safe_foods = safe_foods[
+            ~safe_foods["english"]
+            .str.lower()
+            .str.contains("|".join(_forbidden), na=False)
+        ]
+
     result = generate_meal_recommendation(
         message=request.message,
         ckd_stage=request.ckd_stage,
@@ -952,7 +1083,7 @@ async def meal_planner_chat(
         weight_kg=request.weight_kg,
     )
 
-    # HuggingFace LLM is called only on user chat requests — never at startup.
+    # Groq LLM is called only on user chat requests — never at startup.
     template_answer = result.get("answer", "")
     flan_prompt = build_flan_prompt(
         message=request.message,
