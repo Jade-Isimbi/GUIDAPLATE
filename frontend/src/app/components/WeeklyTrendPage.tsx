@@ -21,7 +21,7 @@ import {
   ReferenceArea,
 } from 'recharts';
 import { authFetch, getAuthToken } from '../../utils/auth';
-import { formatStageDisplay, getRiskDisplay, getWeeklyRiskLabel } from '../../utils/riskDisplay';
+import { formatStageDisplay, getRiskDisplay } from '../../utils/riskDisplay';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const TEAL = '#2E86AB';
@@ -67,19 +67,9 @@ interface LstmPattern {
   days_analyzed: number;
 }
 
-interface WeeklySummary {
-  risk_label: string;
-  confidence: number;
-  method: string;
-  days_analyzed: number;
-  model_name: string;
-  mod_recall: number;
-}
-
 interface WeeklyTrendResponse {
   days: BackendDay[];
   lstm_pattern: LstmPattern | null;
-  weekly_summary: WeeklySummary | null;
   ckd_stage: string;
   weight_kg: number;
 }
@@ -363,7 +353,6 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
   const [confidence, setConfidence] = useState(0);
   const [, setPatternStable] = useState(true);
   const [lstmTrend, setLstmTrend] = useState<string>('stable');
-  const [weeklySummary, setWeeklySummary] = useState<WeeklySummary | null>(null);
   const [lstmDaysAnalyzed, setLstmDaysAnalyzed] = useState(0);
 
   useEffect(() => {
@@ -408,7 +397,6 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
         setPatternStable(trendData.lstm_pattern?.trend !== 'escalating');
         setLstmTrend(trendData.lstm_pattern?.trend ?? 'stable');
         setLstmDaysAnalyzed(trendData.lstm_pattern?.days_analyzed ?? 0);
-        setWeeklySummary(trendData.weekly_summary ?? null);
         setLoading(false);
       })
       .catch((err) => {
@@ -437,12 +425,9 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
   const weekRange =
     days.length > 0 ? `${days[0].shortDate} – ${days[days.length - 1].shortDate}` : 'This week';
 
-  const statusRiskKey = weeklySummary?.risk_label
-    ?? (lstmRisk === 'High' ? 'HIGH' : lstmRisk === 'Moderate' ? 'MODERATE' : 'LOW');
+  const statusRiskKey =
+    lstmRisk === 'High' ? 'HIGH' : lstmRisk === 'Moderate' ? 'MODERATE' : 'LOW';
   const statusRisk = getRiskDisplay(statusRiskKey);
-  const statusLabel = weeklySummary
-    ? getRiskDisplay(weeklySummary.risk_label).label
-    : getWeeklyRiskLabel(statusRiskKey);
 
   const trendKey = (lstmTrend in trendConfig ? lstmTrend : 'stable') as keyof typeof trendConfig;
   const trendCfg =
@@ -472,53 +457,47 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
 
   return (
     <div className="max-w-[1600px] mx-auto w-full min-w-0 px-4 py-6 space-y-5">
-      {/* ROW 1 — header + weekly risk summary */}
+      {/* ROW 1 — page header */}
       <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
         <div className="space-y-1">
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-            <div className="min-w-0">
-              <h1 className="text-2xl font-semibold text-foreground">Your Dietary Pattern</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                AI-powered analysis of whether your risk is escalating, stable, or improving
-              </p>
-            </div>
-            <span className="text-muted-foreground hidden sm:inline">·</span>
-            <span className={`text-lg font-semibold ${statusRisk.color}`}>
-              {statusRisk.icon} {statusLabel}
-            </span>
-            {weeklySummary && (
-              <span className="text-xs bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300 px-2 py-0.5 rounded-full font-medium">
-                AI Pattern Analysis
-              </span>
-            )}
-          </div>
+          <h1 className="text-2xl font-semibold text-foreground">Your Dietary Pattern</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            AI-powered analysis of whether your risk is escalating, stable, or improving
+          </p>
           <p className="text-sm text-muted-foreground">
             {weekRange} · {formatStageDisplay(profile?.ckd_stage || 'G3b')} · {profile?.name || 'Patient'}
           </p>
         </div>
-
-        {loggedDaysCount > 0 && (
-          <div className="mt-4 pt-4 border-t border-border">
-            <p className="text-sm font-semibold text-foreground">Recent Meal Pattern</p>
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              <span
-                className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${lstmRiskStyle.bg} ${lstmRiskStyle.text} ${lstmRiskStyle.border}`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${lstmRiskStyle.dot}`} />
-                {lstmRisk} risk · {confidence}% confidence
-              </span>
-              <span
-                className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${trendCfg.bg} ${trendCfg.color}`}
-              >
-                {trendCfg.icon} {trendCfg.label}
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Based on your last {lstmDaysAnalyzed} meals
-            </p>
-          </div>
-        )}
       </div>
+
+      {/* ROW 1b — LSTM dietary pattern (primary AI insight) */}
+      {loggedDaysCount > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-5 py-6 shadow-sm">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mb-3">
+            <p className="text-sm font-semibold text-foreground">Your Dietary Pattern</p>
+            <span className="text-muted-foreground hidden sm:inline">·</span>
+            <span className={`text-lg font-semibold ${statusRisk.color}`}>
+              {statusRisk.icon} {statusRisk.label}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${lstmRiskStyle.bg} ${lstmRiskStyle.text} ${lstmRiskStyle.border}`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${lstmRiskStyle.dot}`} />
+              {lstmRisk} risk · {confidence}% confidence
+            </span>
+            <span
+              className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${trendCfg.bg} ${trendCfg.color}`}
+            >
+              {trendCfg.icon} {trendCfg.label}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Based on your last {lstmDaysAnalyzed} logged meals · LSTM pattern analysis
+          </p>
+        </div>
+      )}
 
       <hr className="border-border" />
 

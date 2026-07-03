@@ -7,11 +7,8 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import date, datetime, time, timedelta
-import json
 import logging
 
-import joblib
-import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -23,102 +20,13 @@ from backend.clinical_constants import (
     KDOQI_DAILY_LIMITS,
     SEVERITY_THRESHOLDS,
 )
-from backend.config import MODELS_DIR
 from backend.database.db import FoodLog, Patient, get_db
 from backend.models.lstm_model import get_analyzer
-from backend.models.xgboost_model import get_predictor
 
 router = APIRouter(tags=["Weekly Trend"])
 logger = logging.getLogger(__name__)
 
 MAX_LSTM_STEPS = 6
-
-# ── Tier 3: Weekly RF ──────────────────
-_weekly_rf: object | None = None
-_weekly_config: dict | None = None
-_RF_PATH = MODELS_DIR / "weekly_rf.pkl"
-_CFG_PATH = MODELS_DIR / "weekly_rf_config.json"
-WEEKLY_NEUTRAL = [1 / 3, 1 / 3, 1 / 3]
-WEEKLY_LABEL_MAP = {0: "LOW", 1: "MODERATE", 2: "HIGH"}
-
-
-def _get_weekly_rf():
-    global _weekly_rf, _weekly_config
-    if _weekly_rf is None:
-        if _RF_PATH.exists():
-            _weekly_rf = joblib.load(_RF_PATH)
-            if _CFG_PATH.exists():
-                with open(_CFG_PATH) as f:
-                    _weekly_config = json.load(f)
-            logger.info("Weekly RF loaded ✓")
-        else:
-            logger.warning("weekly_rf.pkl not found — rule fallback active")
-    return _weekly_rf
-
-
-def _rule_fallback(sequence: list[list[float]]) -> str:
-    """
-    Conservative rule fallback if RF unavailable.
-    HIGH if any real day P(HIGH) > 0.5
-    MODERATE if any real day P(MOD) > 0.5
-    LOW otherwise
-    """
-    for day in sequence:
-        if abs(day[0] - 1 / 3) < 0.01:
-            continue
-        if day[2] > 0.5:
-            return "HIGH"
-    for day in sequence:
-        if abs(day[0] - 1 / 3) < 0.01:
-            continue
-        if day[1] > 0.5:
-            return "MODERATE"
-    return "LOW"
-
-
-def _predict_weekly_tier3(daily_probas: list[list[float]]) -> dict:
-    """
-    Predict weekly risk from 7-day XGBoost probability sequences.
-
-    daily_probas: list of [P(LOW), P(MOD), P(HIGH)] per logged day.
-    Missing days padded with neutral prior [0.33, 0.33, 0.33].
-    """
-    rf = _get_weekly_rf()
-
-    sequence = list(daily_probas)
-    while len(sequence) < 7:
-        sequence.append(WEEKLY_NEUTRAL.copy())
-    sequence = sequence[:7]
-
-    X = np.array(sequence).flatten().reshape(1, -1)
-
-    if rf is not None:
-        pred = rf.predict(X)[0]
-        proba = rf.predict_proba(X)[0]
-        label = WEEKLY_LABEL_MAP[int(pred)]
-        conf = float(proba[int(pred)])
-        method = "random_forest"
-        model_name = (
-            _weekly_config.get("winner", "RF + CW MOD=3") if _weekly_config else "RF + CW MOD=3"
-        )
-        mod_recall = _weekly_config.get("mod_recall", 0.9026) if _weekly_config else 0.9026
-    else:
-        label = _rule_fallback(sequence)
-        conf = 0.70
-        method = "rule_fallback"
-        model_name = "Rule baseline"
-        mod_recall = 0.351
-
-    days_with_data = sum(1 for d in daily_probas if abs(d[0] - 1 / 3) > 0.01)
-
-    return {
-        "risk_label": label,
-        "confidence": round(conf, 4),
-        "method": method,
-        "days_analyzed": days_with_data,
-        "model_name": model_name,
-        "mod_recall": mod_recall,
-    }
 
 
 class DayNutrients(BaseModel):
@@ -150,19 +58,9 @@ class LstmPatternSummary(BaseModel):
     days_analyzed: int
 
 
-class WeeklySummary(BaseModel):
-    risk_label: str
-    confidence: float
-    method: str
-    days_analyzed: int
-    model_name: str
-    mod_recall: float
-
-
 class WeeklyTrendResponse(BaseModel):
     days: list[WeeklyDaySummary]
     lstm_pattern: LstmPatternSummary | None
-    weekly_summary: WeeklySummary | None
     ckd_stage: str
     weight_kg: float
 
@@ -291,31 +189,11 @@ def get_weekly_trend(
 
     day_summaries: list[WeeklyDaySummary] = []
     meal_sequence: list[list[float]] = []
-    daily_probas: list[list[float]] = []
 
     for day in sorted_days:
         day_logs = grouped[day]
         totals = _aggregate_day(day_logs)
         protein_per_kg = totals["protein_g"] / weight_kg if weight_kg > 0 else 0.0
-
-        try:
-            predictor = get_predictor()
-            feature_vector, _ = predictor._build_features(
-                potassium=totals["potassium"],
-                phosphorus=totals["phosphorus"],
-                protein_per_kg=protein_per_kg,
-                sodium=totals["sodium"],
-                ckd_stage=ckd_stage,
-            )
-            day_proba = predictor.model.predict_proba(feature_vector)[0].tolist()
-            daily_probas.append(day_proba)
-        except Exception:
-            logger.warning(
-                "XGBoost per-day prediction failed for day %s — using "
-                "neutral prior. Weekly RF result may understate risk.",
-                day,
-            )
-            daily_probas.append(WEEKLY_NEUTRAL.copy())
 
         day_summaries.append(
             WeeklyDaySummary(
@@ -358,25 +236,9 @@ def get_weekly_trend(
             )
             lstm_pattern = None
 
-    weekly_summary: WeeklySummary | None = None
-    try:
-        tier3 = _predict_weekly_tier3(daily_probas)
-        weekly_summary = WeeklySummary(
-            risk_label=tier3["risk_label"],
-            confidence=tier3["confidence"],
-            method=tier3["method"],
-            days_analyzed=tier3["days_analyzed"],
-            model_name=tier3["model_name"],
-            mod_recall=tier3["mod_recall"],
-        )
-    except Exception as exc:
-        logger.warning("Tier 3 weekly summary failed: %s", exc)
-        weekly_summary = None
-
     return WeeklyTrendResponse(
         days=day_summaries,
         lstm_pattern=lstm_pattern,
-        weekly_summary=weekly_summary,
         ckd_stage=ckd_stage,
         weight_kg=weight_kg,
     )

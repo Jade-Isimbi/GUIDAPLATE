@@ -23,14 +23,10 @@ African Leadership University · July 2026
 | XGBoost v3 (production) | 99.0% | 0.985 | 0.969 |
 | LSTM v1 (original) | 81.4% | 0.765 | 0.357 |
 | LSTM v3 (production) | 91.8% | 0.915 | 0.908 |
-| Weekly RF Baseline (rule) | — | 0.646 | 0.351 |
-| Weekly RF + CW MOD=3 (production) | 0.836 | 0.822 | 0.903 |
 | HMM Supervised | 67.8% | 0.670 | 0.602 |
 
 McNemar (Baseline vs XGBoost v3): p<0.0001  
-McNemar (Baseline vs LSTM v3): p<0.000001  
-McNemar (Rule vs Weekly RF): p=6.07e-08  
-Weekly RF AUC: 0.947 · CV F1: 0.808 ± 0.028
+McNemar (Baseline vs LSTM v3): p<0.000001
 
 ## Analysis of Results
 
@@ -38,35 +34,35 @@ The original project proposal set two clear technical targets for the machine le
 
 **What was achieved**
 
-- All three tiers beat both technical targets. XGBoost v3: AUC 0.997, 100% HIGH sensitivity. LSTM v3: AUC 0.984, 88.4% HIGH sensitivity. Weekly RF: AUC 0.947, 86.0% HIGH sensitivity.
-- Improvements over the rule-based baseline are statistically significant (McNemar p < 0.0001 for all three comparisons).
+- Both production tiers beat both technical targets. XGBoost v3: AUC 0.997, 100% HIGH sensitivity. LSTM v3: AUC 0.984, 88.4% HIGH sensitivity.
+- Improvements over the rule-based baseline are statistically significant (McNemar p < 0.0001 for both comparisons).
 - **RQ1** — XGBoost accuracy rose from 75.0% to 99.0%; HIGH sensitivity maxed at 100% on the test set.
 - **RQ2** — LSTM reads the last six meals and classifies trend as escalating, stable, or improving.
 - **RQ3** — SHAP explanations run live in the app for every risk check.
 - **RQ4** — Stage-specific advice enforced: G3b patients never see clinically forbidden foods (e.g. beans, banana); meal plans prioritize protein at Lunch/Dinner with Rwandan foods only.
 
-**Where it fell short
+**Where it fell short**
 
 - Models are trained on NHANES (US data); Rwandan food thresholds are applied at entry. Local patient validation remains future work.
 
-**Bottom line:** both proposal targets (AUC > 0.90, HIGH sensitivity ≥ 0.85) were met at every tier. The weekly layer is the main open item.
+**Bottom line:** both proposal targets (AUC > 0.90, HIGH sensitivity ≥ 0.85) were met by the two production models.
 
 ## Discussion
 
-The three-tier design mirrors clinical workflow: assess each meal (Tier 1), detect short-term patterns across six meals (Tier 2), then evaluate weekly dietary risk (Tier 3). Class-weighting MOD=3 on the weekly model reflects a safety-first approach — missing a moderate-risk week is clinically costlier than a false alarm.
+The two-tier design mirrors clinical workflow: assess each meal (Tier 1), then detect short-term patterns and trend direction across recent meals (Tier 2) on the Diet Pattern page.
 
 The RAG meal planner grounds LLM responses in KDOQI/KDIGO guidelines rather than generating nutrient values from memory. Stage-aware forbidden-food filters add a clinical safety layer on top of the database's `ckd_stage_safe` range check.
 
 ## Recommendations
 
 - **Community:** Deploy in low-bandwidth environments; partner with Rwandan nephrology clinics for food-database validation and clinician review of meal plans.
-- **Future work:** Collect local Rwandan patient dietary data; improve weekly-tier edge cases; add Kinyarwanda UI; offline mode for rural connectivity gaps.
+- **Future work:** Collect local Rwandan patient dietary data; add Kinyarwanda UI; offline mode for rural connectivity gaps.
 
 ## Stack
 
 - Frontend: React + TypeScript (Vite)
 - Backend: FastAPI + SQLite
-- ML: XGBoost v3, LSTM v3, Weekly RF
+- ML: XGBoost v3, LSTM v3
 - RAG: KDOQI 2020 + KDIGO 2024 (5,874 chunks)
 - LLM: Llama-3.1-8B via Groq
 - Training data: NHANES 2017–2018 (1,862 CKD patients)
@@ -78,7 +74,7 @@ The RAG meal planner grounds LLM responses in KDOQI/KDIGO guidelines rather than
 GUIDAPLATE/
 ├── backend/           # FastAPI API, ML inference, RAG meal planner
 ├── frontend/          # React + Vite UI
-├── models/            # Production artifacts (xgboost, LSTM, weekly RF)
+├── models/            # Production artifacts (xgboost, LSTM)
 ├── notebooks/         # Training & evaluation pipeline (v3)
 ├── docs/testing/      # Testing evidence screenshots (10 strategies)
 ├── scripts/           # Evidence generation & utilities
@@ -165,21 +161,19 @@ Production pipeline (v3):
 3. `04c_xgboost_v3_raw_features.ipynb`
 4. `05c_lstm_v3_improved.ipynb`
 5. `06_model_comparison.ipynb`
-6. `11_weekly_tier3.ipynb`
 
 Supporting research: `03_statistical_analysis.ipynb`, `03b_labels_v2_sequence_aware.ipynb`, `04_xgboost_training.ipynb`, `04b_xgboost_v2_improved.ipynb`, `05_lstm_training.ipynb`, `05b_lstm_v2_improved.ipynb`
 
-Archived (superseded): `notebooks/archive/`
+Archived (superseded): `notebooks/archive/` (includes `11_weekly_tier3.ipynb`)
 
 ## Architecture
 
-### Three-Tier ML System
+### Two-Tier ML System
 
 | Tier | Model | Input | Output | MOD Recall |
 |---|---|---|---|---|
 | Tier 1 | XGBoost v3 | Single meal nutrients | LOW/MODERATE/HIGH | 0.969 |
 | Tier 2 | LSTM v3 | Last 6 meals (hidden state) | Pattern + trend direction | 0.908 |
-| Tier 3 | Random Forest + CW MOD=3 | 7-day XGBoost probability sequence | Weekly risk | 0.903 |
 
 ### LSTM Trend Detection
 
@@ -191,7 +185,7 @@ LSTM v3 extracts 64-dimensional hidden states from layer 1 (`return_sequences=Tr
 
 ## Testing
 
-Tested on two environments: **local development** (Mac, CPU-only inference) and **production** (Railway, CPU-only — no GPU). Warm-server response times (Jul 2026): `/api/health` ~**60 ms** local vs ~**1.1 s** production; Tier 1 meal check (`POST /api/predict/risk`, XGBoost + SHAP) ~**0.1 s** local vs ~**1.2 s** production. Production figures include network round-trip to Railway; both environments load the same model artifacts (XGBoost v3, LSTM v3, Weekly RF).
+Tested on two environments: **local development** (Mac, CPU-only inference) and **production** (Railway, CPU-only — no GPU). Warm-server response times (Jul 2026): `/api/health` ~**60 ms** local vs ~**1.1 s** production; Tier 1 meal check (`POST /api/predict/risk`, XGBoost + SHAP) ~**0.1 s** local vs ~**1.2 s** production. Production figures include network round-trip to Railway; both environments load XGBoost v3 and LSTM v3.
 
 | Strategy | Description | Evidence |
 |---|---|---|
@@ -218,7 +212,7 @@ python verify_tier3.py   # expect 9/9 passed
 
 - Meal risk assessment with SHAP explanation
 - Daily nutrient budget (KDOQI limits)
-- Weekly dietary trend analysis (Tier 3)
+- LSTM dietary pattern analysis (Diet Pattern page)
 - AI meal planner — RAG + Groq, Rwandan foods, stage forbidden lists
 - Forgot password (SendGrid)
 - Voice food input (Web Speech API)

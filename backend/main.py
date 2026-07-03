@@ -146,26 +146,6 @@ def api_health(db: Session = Depends(get_db)) -> dict:
         }
         overall = "degraded"
 
-    # Check Weekly RF
-    try:
-        import joblib
-        import numpy as np
-
-        rf = joblib.load("models/weekly_rf.pkl")
-        X = np.array([[0.2, 0.3, 0.5]] * 7).flatten().reshape(1, -1)
-        pred = rf.predict(X)[0]
-        labels = {0: "LOW", 1: "MODERATE", 2: "HIGH"}
-        model_status["weekly_rf"] = {
-            "status": "loaded",
-            "test_prediction": labels[int(pred)],
-        }
-    except Exception as e:
-        model_status["weekly_rf"] = {
-            "status": "failed",
-            "error": str(e),
-        }
-        overall = "degraded"
-
     # Check database
     try:
         from sqlalchemy import text
