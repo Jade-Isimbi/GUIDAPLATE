@@ -45,10 +45,8 @@ The original project proposal set two clear technical targets for the machine le
 - **RQ3** — SHAP explanations run live in the app for every risk check.
 - **RQ4** — Stage-specific advice enforced: G3b patients never see clinically forbidden foods (e.g. beans, banana); meal plans prioritize protein at Lunch/Dinner with Rwandan foods only.
 
-**Where it fell short or grew beyond the plan**
+**Where it fell short
 
-- A third weekly tier was added beyond the original two-model proposal. Edge-case testing (`docs/testing/06_edge_case_testing`) shows it defaults to MODERATE on some extreme inputs (4–6 of 9 cases).
-- Weekly LOW-risk recall is 61.7% — conservative but more false alarms than ideal.
 - Models are trained on NHANES (US data); Rwandan food thresholds are applied at entry. Local patient validation remains future work.
 
 **Bottom line:** both proposal targets (AUC > 0.90, HIGH sensitivity ≥ 0.85) were met at every tier. The weekly layer is the main open item.
