@@ -193,6 +193,8 @@ LSTM v3 extracts 64-dimensional hidden states from layer 1 (`return_sequences=Tr
 
 ## Testing
 
+Tested on two environments: **local development** (Mac, CPU-only inference) and **production** (Railway, CPU-only — no GPU). Warm-server response times (Jul 2026): `/api/health` ~**60 ms** local vs ~**1.1 s** production; Tier 1 meal check (`POST /api/predict/risk`, XGBoost + SHAP) ~**0.1 s** local vs ~**1.2 s** production. Production figures include network round-trip to Railway; both environments load the same model artifacts (XGBoost v3, LSTM v3, Weekly RF).
+
 | Strategy | Description | Evidence |
 |---|---|---|
 | McNemar tests | Statistical significance across model comparisons | `docs/testing/01_mcnemar_tests/` |
