@@ -9,7 +9,7 @@ African Leadership University · July 2026
 
 | | |
 |---|---|
-| 🎥 Demo Video | *(add YouTube link before submission)* |
+| 🎥 Demo Video | https://drive.google.com/file/d/15q87bSM_awKisH1EOSr-2JRhU-ZiOJRR/view?usp=drive_link|
 | 🌐 Live App | [guidaplate.vercel.app](https://guidaplate.vercel.app) |
 | 🔌 Backend API | [guidaplate-production.up.railway.app](https://guidaplate-production.up.railway.app) |
 | 📁 Repository | https://github.com/Jade-Isimbi/GUIDAPLATE |
