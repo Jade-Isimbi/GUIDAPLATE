@@ -1,0 +1,18 @@
+# Training / notebook / EDA dependencies only.
+# Not required by the FastAPI backend (backend/) — do not install on
+# deployment targets (Railway etc.). See requirements.txt for the
+# runtime-only dependency set.
+-r requirements.txt
+scipy
+scikit-posthocs
+hmmlearn
+pyreadstat
+imbalanced-learn
+thefuzz==0.22.1
+requests
+matplotlib
+seaborn
+streamlit
+plotly
+sentence-transformers
+huggingface_hub
