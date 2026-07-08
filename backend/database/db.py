@@ -26,6 +26,7 @@ from backend.config import ROOT
 
 _DB_FILE = Path(os.environ["DATABASE_PATH"]) if os.environ.get("DATABASE_PATH") else ROOT / "guidaplate.db"
 DATABASE_URL = f"sqlite:///{_DB_FILE}"
+print(f"[DB] Using database at: {DATABASE_URL}")
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 Base = declarative_base()
