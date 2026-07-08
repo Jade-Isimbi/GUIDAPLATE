@@ -67,10 +67,6 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
         sex=request.sex,
         language=request.language,
     )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
     patient = Patient(
         patient_id=user.user_id,
         ckd_stage=user.ckd_stage,
@@ -78,8 +74,16 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
         age=_age_from_dob(user.dob),
         sex=user.sex,
     )
-    db.add(patient)
-    db.commit()
+    try:
+        db.add(user)
+        db.add(patient)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Registration failed. Please try again.",
+        ) from None
 
     token = create_access_token({"sub": user.user_id, "email": user.email})
     return AuthResponse(
