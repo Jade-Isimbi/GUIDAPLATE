@@ -3,6 +3,7 @@ db.py
 GuidaPlate — SQLite database connection and session management
 """
 
+import os
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -23,7 +24,8 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 from backend.config import ROOT
 
-DATABASE_URL = f"sqlite:///{ROOT}/guidaplate.db"
+_DB_FILE = Path(os.environ["DATABASE_PATH"]) if os.environ.get("DATABASE_PATH") else ROOT / "guidaplate.db"
+DATABASE_URL = f"sqlite:///{_DB_FILE}"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 Base = declarative_base()
@@ -157,7 +159,7 @@ def _migrate_risk_assessment_columns() -> None:
     """Add risk_assessments columns introduced after initial schema."""
     import sqlite3
 
-    db_path = ROOT / "guidaplate.db"
+    db_path = _DB_FILE
     if not db_path.exists():
         return
 
