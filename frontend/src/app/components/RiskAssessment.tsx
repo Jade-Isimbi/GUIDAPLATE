@@ -121,8 +121,31 @@ const MEAL_OCCASION_ICONS: Record<MealOccasion, string> = {
   Snack: '🍎',
 };
 
-const RESULTS_STORAGE_KEY = 'results_by_occasion';
-const RESULTS_DATE_KEY = 'results_by_occasion_date';
+const RESULTS_STORAGE_PREFIX = 'results_by_occasion';
+const RESULTS_DATE_PREFIX = 'results_by_occasion_date';
+const MEAL_OCCASION_PREFIX = 'guidaplate_meal_occasion';
+
+function currentCacheUserId(): string | null {
+  return localStorage.getItem('guidaplate_user_id');
+}
+
+function resultsStorageKey(userId: string): string {
+  return `${RESULTS_STORAGE_PREFIX}:${userId}`;
+}
+
+function resultsDateKey(userId: string): string {
+  return `${RESULTS_DATE_PREFIX}:${userId}`;
+}
+
+function mealOccasionStorageKey(userId: string): string {
+  return `${MEAL_OCCASION_PREFIX}:${userId}`;
+}
+
+function clearLegacyUnscopedMealKeys(): void {
+  localStorage.removeItem(RESULTS_STORAGE_PREFIX);
+  localStorage.removeItem(RESULTS_DATE_PREFIX);
+  localStorage.removeItem(MEAL_OCCASION_PREFIX);
+}
 
 const saveFoodLog = async (food: Food, portionGrams: number, mealOccasion: string): Promise<boolean> => {
   if (!getAuthToken()) return false;
@@ -800,7 +823,10 @@ const EMPTY_RESULTS_BY_OCCASION: Record<MealOccasion, OccasionAssessment | null>
 };
 
 function readInitialMealOccasion(): MealOccasion {
-  const stored = localStorage.getItem('guidaplate_meal_occasion');
+  const userId = currentCacheUserId();
+  if (!userId) return 'Breakfast';
+  clearLegacyUnscopedMealKeys();
+  const stored = localStorage.getItem(mealOccasionStorageKey(userId));
   if (stored === 'Breakfast' || stored === 'Lunch' || stored === 'Dinner' || stored === 'Snack') {
     return stored;
   }
@@ -809,14 +835,20 @@ function readInitialMealOccasion(): MealOccasion {
 
 function loadStoredResultsByOccasion(): Record<MealOccasion, OccasionAssessment | null> {
   try {
+    const userId = currentCacheUserId();
+    if (!userId) return { ...EMPTY_RESULTS_BY_OCCASION };
+    clearLegacyUnscopedMealKeys();
+
     const today = new Date().toISOString().slice(0, 10);
-    const storedDate = localStorage.getItem(RESULTS_DATE_KEY);
+    const storageKey = resultsStorageKey(userId);
+    const dateKey = resultsDateKey(userId);
+    const storedDate = localStorage.getItem(dateKey);
     if (storedDate !== today) {
-      localStorage.removeItem(RESULTS_STORAGE_KEY);
-      localStorage.removeItem(RESULTS_DATE_KEY);
+      localStorage.removeItem(storageKey);
+      localStorage.removeItem(dateKey);
       return { ...EMPTY_RESULTS_BY_OCCASION };
     }
-    const saved = localStorage.getItem(RESULTS_STORAGE_KEY);
+    const saved = localStorage.getItem(storageKey);
     if (!saved) return { ...EMPTY_RESULTS_BY_OCCASION };
     const parsed = JSON.parse(saved) as Record<string, OccasionAssessment | null>;
     return {
@@ -831,8 +863,11 @@ function loadStoredResultsByOccasion(): Record<MealOccasion, OccasionAssessment 
 }
 
 function persistResultsByOccasion(data: Record<MealOccasion, OccasionAssessment | null>) {
-  localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(data));
-  localStorage.setItem(RESULTS_DATE_KEY, new Date().toISOString().slice(0, 10));
+  const userId = currentCacheUserId();
+  if (!userId) return;
+  clearLegacyUnscopedMealKeys();
+  localStorage.setItem(resultsStorageKey(userId), JSON.stringify(data));
+  localStorage.setItem(resultsDateKey(userId), new Date().toISOString().slice(0, 10));
 }
 
 function occasionRiskBadgeLabel(level: RiskLevel): { text: string; color: string } {
@@ -1118,14 +1153,22 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
 
   const clearAllOccasionAssessments = () => {
     setResultsByOccasion({ ...EMPTY_RESULTS_BY_OCCASION });
-    localStorage.removeItem(RESULTS_STORAGE_KEY);
-    localStorage.removeItem(RESULTS_DATE_KEY);
+    const userId = currentCacheUserId();
+    if (userId) {
+      localStorage.removeItem(resultsStorageKey(userId));
+      localStorage.removeItem(resultsDateKey(userId));
+    }
+    clearLegacyUnscopedMealKeys();
     applyAssessmentToDisplay(null);
   };
 
   const selectMealType = (type: MealOccasion) => {
     setCurrentMealType(type);
-    localStorage.setItem('guidaplate_meal_occasion', type);
+    const userId = currentCacheUserId();
+    if (userId) {
+      clearLegacyUnscopedMealKeys();
+      localStorage.setItem(mealOccasionStorageKey(userId), type);
+    }
     setOccasionAddMode(false);
     setEntries([]);
     setError('');

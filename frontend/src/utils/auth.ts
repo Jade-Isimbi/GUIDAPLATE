@@ -2,6 +2,10 @@ const TOKEN_KEY = 'guidaplate_token';
 const LEGACY_TOKEN_KEY = 'token';
 const UNAUTHORIZED_EVENT = 'guidaplate:unauthorized';
 
+const MEAL_RESULTS_PREFIX = 'results_by_occasion';
+const MEAL_RESULTS_DATE_PREFIX = 'results_by_occasion_date';
+const MEAL_OCCASION_PREFIX = 'guidaplate_meal_occasion';
+
 export function getAuthToken(): string | null {
   const token = localStorage.getItem(TOKEN_KEY);
   if (token) return token;
@@ -15,9 +19,38 @@ export function getAuthToken(): string | null {
 }
 
 export function clearAuthSession(notify = true): void {
+  const userId = localStorage.getItem('guidaplate_user_id');
+
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(LEGACY_TOKEN_KEY);
   localStorage.removeItem('guidaplate_user_id');
+
+  localStorage.removeItem('ckd_stage');
+  localStorage.removeItem('weight_kg');
+  localStorage.removeItem('guidaplate_user_name');
+
+  localStorage.removeItem(MEAL_RESULTS_PREFIX);
+  localStorage.removeItem(MEAL_RESULTS_DATE_PREFIX);
+  localStorage.removeItem(MEAL_OCCASION_PREFIX);
+
+  if (userId) {
+    localStorage.removeItem(`${MEAL_RESULTS_PREFIX}:${userId}`);
+    localStorage.removeItem(`${MEAL_RESULTS_DATE_PREFIX}:${userId}`);
+    localStorage.removeItem(`${MEAL_OCCASION_PREFIX}:${userId}`);
+  }
+
+  for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+    const key = localStorage.key(i);
+    if (!key) continue;
+    if (
+      key.startsWith(`${MEAL_RESULTS_PREFIX}:`) ||
+      key.startsWith(`${MEAL_RESULTS_DATE_PREFIX}:`) ||
+      key.startsWith(`${MEAL_OCCASION_PREFIX}:`)
+    ) {
+      localStorage.removeItem(key);
+    }
+  }
+
   if (notify) {
     window.dispatchEvent(new CustomEvent(UNAUTHORIZED_EVENT));
   }
