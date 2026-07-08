@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from backend.auth.security import get_current_user_id
 from backend.clinical_constants import KDOQI_DAILY_LIMITS
-from backend.database.db import Food, FoodLog, Patient, get_db
+from backend.database.db import Food, FoodLog, Patient, User, get_db
 from backend.models.recommender import get_recommender
 from backend.utils.meal_aggregation import (
     energy_for_food_log,
@@ -777,11 +777,20 @@ def get_daily_budget(
     target = _parse_target_date(log_date)
     logs = fetch_food_logs_for_date(db, user_id, target)
 
+    user = db.query(User).filter(User.user_id == user_id).first()
     patient = db.query(Patient).filter(Patient.patient_id == user_id).first()
-    if not patient or not patient.ckd_stage:
+    raw_stage = (
+        patient.ckd_stage if patient and patient.ckd_stage else (user.ckd_stage if user else None)
+    )
+    if not raw_stage:
         raise HTTPException(status_code=400, detail="Patient profile or CKD stage not set.")
 
-    ckd_stage = normalize_ckd_stage(patient.ckd_stage)
-    weight_kg = float(patient.body_weight_kg or 70.0)
+    ckd_stage = normalize_ckd_stage(raw_stage)
+    weight_source = (
+        patient.body_weight_kg
+        if patient and patient.body_weight_kg is not None
+        else (user.weight_kg if user else None)
+    )
+    weight_kg = float(weight_source or 70.0)
     result = compute_daily_budget(logs, ckd_stage, weight_kg, db)
     return DailyBudgetResponse(date=target.isoformat(), **result)

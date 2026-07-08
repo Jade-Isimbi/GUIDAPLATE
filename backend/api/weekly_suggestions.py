@@ -27,7 +27,7 @@ from sqlalchemy.orm import Session
 from backend.api.daily_budget import normalize_ckd_stage
 from backend.auth.security import get_current_user_id
 from backend.clinical_constants import KDOQI_DAILY_LIMITS
-from backend.database.db import Food, FoodLog, Patient, get_db
+from backend.database.db import Food, FoodLog, Patient, User, get_db
 from backend.models.lstm_model import get_analyzer
 from backend.models.recommender import EXCLUDE_CATEGORIES, get_recommender
 from backend.utils.meal_aggregation import (
@@ -242,15 +242,24 @@ def get_weekly_suggestions(
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ) -> WeeklySuggestionsResponse:
+    user = db.query(User).filter(User.user_id == user_id).first()
     patient = db.query(Patient).filter(Patient.patient_id == user_id).first()
-    if not patient or not patient.ckd_stage:
+    raw_stage = (
+        patient.ckd_stage if patient and patient.ckd_stage else (user.ckd_stage if user else None)
+    )
+    if not raw_stage:
         raise HTTPException(status_code=404, detail="Patient not found")
 
-    ckd_stage = normalize_ckd_stage(patient.ckd_stage)
+    ckd_stage = normalize_ckd_stage(raw_stage)
     if ckd_stage not in KDOQI_DAILY_LIMITS:
         raise HTTPException(status_code=400, detail=f"Unsupported CKD stage: {ckd_stage!r}")
 
-    body_weight = float(patient.body_weight_kg or 70.0)
+    weight_source = (
+        patient.body_weight_kg
+        if patient and patient.body_weight_kg is not None
+        else (user.weight_kg if user else None)
+    )
+    body_weight = float(weight_source or 70.0)
     meal_sequence = _get_recent_meal_sequence(db, user_id, body_weight)
 
     if meal_sequence:
