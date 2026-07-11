@@ -946,6 +946,8 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
     initialAssessment?.lstmPattern ?? null,
   );
   const [dailyBudget,     setDailyBudget]     = useState<DailyBudgetData | null>(null);
+  const [dailyBudgetLoading, setDailyBudgetLoading] = useState(true);
+  const [dailyBudgetError, setDailyBudgetError] = useState<string | null>(null);
   const [resettingDay,    setResettingDay]    = useState(false);
   const [suggestions, setSuggestions] = useState<WeeklySuggestionsResponse | null>(null);
   const [suggestionTab, setSuggestionTab] = useState<string>('breakfast');
@@ -1052,16 +1054,30 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
   const fetchDailyBudget = async () => {
     if (!getAuthToken()) return;
 
+    setDailyBudgetLoading(true);
+    setDailyBudgetError(null);
+
     try {
       const response = await authFetch(`${API_BASE}/api/patient/daily-budget`);
       if (response.status === 401) return;
       if (!response.ok) {
         console.warn('daily-budget request failed:', response.status, await response.text());
+        setDailyBudget(null);
+        setDailyBudgetError(
+          response.status === 400 || response.status === 404
+            ? 'Complete your profile to see your daily budget'
+            : "Couldn't load your budget — try refreshing",
+        );
         return;
       }
       setDailyBudget(await response.json());
+      setDailyBudgetError(null);
     } catch (err) {
       console.warn('daily-budget request error:', err);
+      setDailyBudget(null);
+      setDailyBudgetError("Couldn't load your budget — try refreshing");
+    } finally {
+      setDailyBudgetLoading(false);
     }
   };
 
@@ -2743,7 +2759,15 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                 })()}
 
                 {/* Card 3 — Today's Budget */}
-                {dailyBudget ? (
+                {dailyBudgetLoading ? (
+                  <div className="rounded-lg border p-3 flex flex-col bg-white dark:bg-card">
+                    <p style={{ color: theme.textTertiary, fontSize: '0.8rem' }}>Loading…</p>
+                  </div>
+                ) : dailyBudgetError ? (
+                  <div className="rounded-lg border p-3 flex flex-col bg-white dark:bg-card">
+                    <p style={{ color: theme.textTertiary, fontSize: '0.8rem' }}>{dailyBudgetError}</p>
+                  </div>
+                ) : dailyBudget ? (
                   <div className="rounded-lg border p-3 flex flex-col bg-white dark:bg-card">
                     {suggestions && !loadingSuggestions && (
                       <>
@@ -2762,11 +2786,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                       </p>
                     )}
                   </div>
-                ) : (
-                  <div className="rounded-lg border p-3 flex flex-col bg-white dark:bg-card">
-                    <p style={{ color: theme.textTertiary, fontSize: '0.8rem' }}>Loading…</p>
-                  </div>
-                )}
+                ) : null}
               </div>
 
               <div className="flex justify-end">
