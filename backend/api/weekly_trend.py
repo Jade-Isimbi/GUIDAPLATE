@@ -22,11 +22,10 @@ from backend.clinical_constants import (
 )
 from backend.database.db import FoodLog, Patient, get_db
 from backend.models.lstm_model import get_analyzer
+from backend.utils.lstm_sequence import build_lstm_sequence
 
 router = APIRouter(tags=["Weekly Trend"])
 logger = logging.getLogger(__name__)
-
-MAX_LSTM_STEPS = 6
 
 
 class DayNutrients(BaseModel):
@@ -55,7 +54,7 @@ class LstmPatternSummary(BaseModel):
     risk_label: str
     confidence: float
     trend: str
-    days_analyzed: int
+    meals_analyzed: int
 
 
 class WeeklyTrendResponse(BaseModel):
@@ -188,7 +187,6 @@ def get_weekly_trend(
     sorted_days = sorted(grouped.keys())[:days]
 
     day_summaries: list[WeeklyDaySummary] = []
-    meal_sequence: list[list[float]] = []
 
     for day in sorted_days:
         day_logs = grouped[day]
@@ -209,24 +207,17 @@ def get_weekly_trend(
                 percent_used=_percent_used(totals, limits, weight_kg),
             )
         )
-        meal_sequence.append([
-            totals["potassium"],
-            totals["phosphorus"],
-            protein_per_kg,
-            totals["sodium"],
-            0.5,  # neutral occasion for daily aggregate
-        ])
 
-    lstm_sequence = meal_sequence[-MAX_LSTM_STEPS:] if len(meal_sequence) > MAX_LSTM_STEPS else meal_sequence
+    meal_sequence = build_lstm_sequence(db, user_id, weight_kg)
     lstm_pattern: LstmPatternSummary | None = None
-    if lstm_sequence:
+    if meal_sequence:
         try:
-            lstm_result = get_analyzer().analyze(lstm_sequence)
+            lstm_result = get_analyzer().analyze(meal_sequence)
             lstm_pattern = LstmPatternSummary(
                 risk_label=lstm_result["risk_label"],
                 confidence=lstm_result["confidence"],
                 trend=lstm_result["trend"],
-                days_analyzed=len(lstm_sequence),
+                meals_analyzed=len(meal_sequence),
             )
         except Exception as e:
             logger.error(

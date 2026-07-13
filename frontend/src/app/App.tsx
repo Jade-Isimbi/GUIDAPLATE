@@ -24,6 +24,8 @@ type Page = 'dashboard' | 'explorer' | 'assessment' | 'weekly' | 'model-comparis
 type AuthScreen = 'login' | 'signup' | 'app';
 
 function getPageFromPathname(pathname: string): Page {
+  if (pathname === '/food-explorer') return 'explorer';
+  if (pathname === '/meal-check') return 'assessment';
   if (pathname === '/weekly-trend') return 'weekly';
   if (pathname === '/model-comparison') return 'model-comparison';
   if (pathname === '/meal-planner') return 'meal-planner';
@@ -31,6 +33,8 @@ function getPageFromPathname(pathname: string): Page {
 }
 
 function pathForPage(page: Page): string {
+  if (page === 'explorer') return '/food-explorer';
+  if (page === 'assessment') return '/meal-check';
   if (page === 'weekly') return '/weekly-trend';
   if (page === 'model-comparison') return '/model-comparison';
   if (page === 'meal-planner') return '/meal-planner';
@@ -123,7 +127,7 @@ export default function App() {
       window.history.replaceState({}, '', '/');
     }
   };
-  const handleSignup = (data: { name: string; ckdStage: string; weightKg: number; dob: string; sex: string; language: string; email: string; phone: string }) => {
+  const handleSignup = (data: { name: string; ckdStage: string; weightKg: number; dob: string; sex: string; email: string; phone: string }) => {
     setUserName(data.name);
     setUserStage(data.ckdStage);
     setUserWeight(data.weightKg);
@@ -245,7 +249,7 @@ export default function App() {
       className={
         page === 'meal-planner'
           ? 'h-screen min-w-0 overflow-hidden flex flex-col'
-          : 'min-h-screen min-w-0 overflow-x-hidden'
+          : 'min-h-screen min-w-0 overflow-x-hidden flex flex-col'
       }
       style={{ background: theme.bg }}
     >
@@ -472,7 +476,7 @@ export default function App() {
         className={
           page === 'meal-planner'
             ? 'flex-1 overflow-hidden min-h-0 w-full'
-            : 'mx-auto px-4 sm:px-8 py-5 sm:py-6 lg:py-5 max-w-[1600px] w-full min-w-0 overflow-x-hidden'
+            : 'flex-1 mx-auto px-4 sm:px-8 py-5 sm:py-6 lg:py-5 max-w-[1600px] w-full min-w-0 overflow-x-hidden'
         }
       >
         {page === 'dashboard' && (
@@ -504,7 +508,7 @@ export default function App() {
       {/* Footer */}
       {page !== 'meal-planner' && (
       <footer
-        className="mt-12 sm:mt-16 py-5 sm:py-6"
+        className="shrink-0 mt-auto py-5 sm:py-6"
         style={{ borderTop: `1px solid ${theme.navBorder}` }}
       >
         <div className="max-w-[1600px] mx-auto px-4 sm:px-8 flex items-center justify-center">

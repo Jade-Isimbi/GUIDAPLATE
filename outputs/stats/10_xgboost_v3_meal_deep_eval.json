@@ -1,0 +1,729 @@
+{
+  "composition": {
+    "n_total": 10765,
+    "n_train": 8612,
+    "n_test": 2153,
+    "occasion": {
+      "Snack": 2924,
+      "Dinner": 2875,
+      "Breakfast": 2761,
+      "Lunch": 2205
+    },
+    "labels": {
+      "LOW": 3891,
+      "MODERATE": 2077,
+      "HIGH": 4797
+    },
+    "labels_pct": {
+      "LOW": 36.1,
+      "MODERATE": 19.3,
+      "HIGH": 44.6
+    },
+    "stage": {
+      "G2": 8416,
+      "G3a": 1591,
+      "G3b": 583,
+      "G4": 175
+    }
+  },
+  "occasion_x_label": {
+    "Breakfast": {
+      "LOW": 1012,
+      "MODERATE": 540,
+      "HIGH": 1209
+    },
+    "Dinner": {
+      "LOW": 705,
+      "MODERATE": 680,
+      "HIGH": 1490
+    },
+    "Lunch": {
+      "LOW": 892,
+      "MODERATE": 549,
+      "HIGH": 764
+    },
+    "Snack": {
+      "LOW": 1282,
+      "MODERATE": 308,
+      "HIGH": 1334
+    }
+  },
+  "meal_model": {
+    "name": "meal_xgb",
+    "accuracy": 0.9986065954482118,
+    "f1_macro": 0.9981543698077159,
+    "f1_weighted": 0.9986062045225198,
+    "per_class": {
+      "LOW": {
+        "precision": 0.9974326059050064,
+        "recall": 0.9987146529562982,
+        "f1": 0.9980732177263969,
+        "support": 778
+      },
+      "MODERATE": {
+        "precision": 0.9975903614457832,
+        "recall": 0.9951923076923077,
+        "f1": 0.9963898916967509,
+        "support": 416
+      },
+      "HIGH": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 959
+      }
+    },
+    "confusion": [
+      [
+        777,
+        1,
+        0
+      ],
+      [
+        2,
+        414,
+        0
+      ],
+      [
+        0,
+        0,
+        959
+      ]
+    ],
+    "auc_weighted": 0.9999951584655228,
+    "auc_macro": 0.9999938167875353,
+    "auc_per_class": {
+      "LOW": 0.9999925216172003,
+      "MODERATE": 0.9999889287454055,
+      "HIGH": 1.0
+    }
+  },
+  "day_model_on_meal_test": {
+    "name": "day_xgb_on_meal",
+    "accuracy": 0.9944263817928471,
+    "f1_macro": 0.9928166353500937,
+    "f1_weighted": 0.9944239121752279,
+    "per_class": {
+      "LOW": {
+        "precision": 0.9910828025477707,
+        "recall": 1.0,
+        "f1": 0.9955214331413947,
+        "support": 778
+      },
+      "MODERATE": {
+        "precision": 0.9879227053140096,
+        "recall": 0.9831730769230769,
+        "f1": 0.9855421686746988,
+        "support": 416
+      },
+      "HIGH": {
+        "precision": 1.0,
+        "recall": 0.9947862356621481,
+        "f1": 0.9973863042341872,
+        "support": 959
+      }
+    },
+    "confusion": [
+      [
+        778,
+        0,
+        0
+      ],
+      [
+        7,
+        409,
+        0
+      ],
+      [
+        0,
+        5,
+        954
+      ]
+    ],
+    "auc_weighted": 0.9967910003777343,
+    "auc_macro": 0.9952023063771769,
+    "auc_per_class": {
+      "LOW": 0.9974545454545455,
+      "MODERATE": 0.988152373676985,
+      "HIGH": 1.0
+    }
+  },
+  "rule_baseline": {
+    "name": "rule_baseline",
+    "accuracy": 0.8341848583372039,
+    "f1_macro": 0.7746376285740433,
+    "f1_weighted": 0.8267246328670079,
+    "per_class": {
+      "LOW": {
+        "precision": 0.958273381294964,
+        "recall": 0.8560411311053985,
+        "f1": 0.9042769857433809,
+        "support": 778
+      },
+      "MODERATE": {
+        "precision": 0.5963302752293578,
+        "recall": 0.46875,
+        "f1": 0.5248990578734859,
+        "support": 416
+      },
+      "HIGH": {
+        "precision": 0.8267020335985853,
+        "recall": 0.9749739311783108,
+        "f1": 0.8947368421052632,
+        "support": 959
+      }
+    },
+    "confusion": [
+      [
+        666,
+        108,
+        4
+      ],
+      [
+        29,
+        195,
+        192
+      ],
+      [
+        0,
+        24,
+        935
+      ]
+    ]
+  },
+  "clinical_score_oracle": {
+    "name": "clinical_score_threshold_oracle",
+    "accuracy": 1.0,
+    "f1_macro": 1.0,
+    "f1_weighted": 1.0,
+    "per_class": {
+      "LOW": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 778
+      },
+      "MODERATE": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 416
+      },
+      "HIGH": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 959
+      }
+    },
+    "confusion": [
+      [
+        778,
+        0,
+        0
+      ],
+      [
+        0,
+        416,
+        0
+      ],
+      [
+        0,
+        0,
+        959
+      ]
+    ]
+  },
+  "ablation_no_clinical_score": {
+    "name": "meal_xgb_no_clinical_score",
+    "accuracy": 0.77519739897817,
+    "f1_macro": 0.7602394471210637,
+    "f1_weighted": 0.7916183890289491,
+    "per_class": {
+      "LOW": {
+        "precision": 0.8890577507598785,
+        "recall": 0.7519280205655527,
+        "f1": 0.8147632311977716,
+        "support": 778
+      },
+      "MODERATE": {
+        "precision": 0.48243243243243245,
+        "recall": 0.8581730769230769,
+        "f1": 0.6176470588235294,
+        "support": 416
+      },
+      "HIGH": {
+        "precision": 0.9629139072847682,
+        "recall": 0.7580813347236705,
+        "f1": 0.8483080513418904,
+        "support": 959
+      }
+    },
+    "confusion": [
+      [
+        585,
+        187,
+        6
+      ],
+      [
+        37,
+        357,
+        22
+      ],
+      [
+        36,
+        196,
+        727
+      ]
+    ],
+    "auc_weighted": 0.9491309578798666,
+    "auc_macro": 0.9421357059069585,
+    "auc_per_class": {
+      "LOW": 0.9657247020331853,
+      "MODERATE": 0.9065364687126345,
+      "HIGH": 0.954145946975056
+    }
+  },
+  "ablation_raw6": {
+    "name": "meal_xgb_raw6",
+    "accuracy": 0.7714816535067348,
+    "f1_macro": 0.7579479300755178,
+    "f1_weighted": 0.7884244673957046,
+    "per_class": {
+      "LOW": {
+        "precision": 0.8958652373660031,
+        "recall": 0.7519280205655527,
+        "f1": 0.8176100628930818,
+        "support": 778
+      },
+      "MODERATE": {
+        "precision": 0.47820343461030385,
+        "recall": 0.8701923076923077,
+        "f1": 0.6172208013640239,
+        "support": 416
+      },
+      "HIGH": {
+        "precision": 0.9609690444145357,
+        "recall": 0.7445255474452555,
+        "f1": 0.8390129259694477,
+        "support": 959
+      }
+    },
+    "confusion": [
+      [
+        585,
+        184,
+        9
+      ],
+      [
+        34,
+        362,
+        20
+      ],
+      [
+        34,
+        211,
+        714
+      ]
+    ],
+    "auc_weighted": 0.9466980147904198,
+    "auc_macro": 0.9394203401261629,
+    "auc_per_class": {
+      "LOW": 0.964108436550596,
+      "MODERATE": 0.902334927593995,
+      "HIGH": 0.9518176562338979
+    }
+  },
+  "feature_gain": {
+    "potassium": 2.8405935764312744,
+    "phosphorus": 59.809871673583984,
+    "protein_per_kg": 9.323114395141602,
+    "sodium": 5.458581447601318,
+    "ckd_stage_encoded": 10.74960994720459,
+    "k_p_product": 58.0820198059082,
+    "protein_sodium_ratio": 2.97628116607666,
+    "clinical_score": 598.8002319335938
+  },
+  "feature_permutation": {
+    "potassium": -0.0002048852007241845,
+    "phosphorus": -0.00016492802868278328,
+    "protein_per_kg": 0.0,
+    "sodium": 0.0,
+    "ckd_stage_encoded": 0.0,
+    "stage_numeric": 0.0,
+    "k_p_product": -0.0001229036650092441,
+    "protein_sodium_ratio": 8.170698146227432e-05,
+    "clinical_score": 0.6626756671563961
+  },
+  "feature_permutation_std": {
+    "potassium": 0.00036632563825229485,
+    "phosphorus": 0.0004180561089814721,
+    "protein_per_kg": 0.0,
+    "sodium": 0.0,
+    "ckd_stage_encoded": 0.0,
+    "stage_numeric": 0.0,
+    "k_p_product": 0.0002458073300184882,
+    "protein_sodium_ratio": 0.00044096153289411097,
+    "clinical_score": 0.004351888149143515
+  },
+  "n_errors": 3,
+  "errors": [
+    {
+      "occasion": "Dinner",
+      "stage": "G2",
+      "true": "MODERATE",
+      "pred": "LOW",
+      "clinical_score": 0.7009,
+      "max_prob": 0.5807,
+      "K": 791.0,
+      "P": 215.0,
+      "pro_kg": 0.182,
+      "Na": 1378.0
+    },
+    {
+      "occasion": "Snack",
+      "stage": "G2",
+      "true": "LOW",
+      "pred": "MODERATE",
+      "clinical_score": 0.6972,
+      "max_prob": 0.4859,
+      "K": 97.0,
+      "P": 133.0,
+      "pro_kg": 0.046,
+      "Na": 556.0
+    },
+    {
+      "occasion": "Snack",
+      "stage": "G2",
+      "true": "MODERATE",
+      "pred": "LOW",
+      "clinical_score": 0.7013,
+      "max_prob": 0.6876,
+      "K": 373.0,
+      "P": 90.0,
+      "pro_kg": 0.066,
+      "Na": 224.0
+    }
+  ],
+  "confidence": {
+    "correct_mean": 0.8703141212463379,
+    "correct_p10": 0.8382498383522033,
+    "wrong_mean": 0.5847468972206116,
+    "wrong_values": [
+      0.5807,
+      0.4859,
+      0.6876
+    ]
+  },
+  "near_boundary": {
+    "n": 187,
+    "error_rate": 0.016042780748663103,
+    "overall_error_rate": 0.0013934045517882026
+  },
+  "score_stats_by_label": {
+    "LOW": {
+      "n": 778,
+      "min": 0.0005434782608695652,
+      "p25": 0.17805878503162162,
+      "median": 0.3912026804216958,
+      "p75": 0.5510799701644847,
+      "max": 0.699643808967999
+    },
+    "MODERATE": {
+      "n": 416,
+      "min": 0.7009414910448706,
+      "p25": 0.8057476164660811,
+      "median": 0.9171133153295874,
+      "p75": 1.038784959704824,
+      "max": 1.1992913614163614
+    },
+    "HIGH": {
+      "n": 959,
+      "min": 1.2068517572743767,
+      "p25": 1.5990101827101686,
+      "median": 2.2010749319850107,
+      "p75": 3.4593722608430397,
+      "max": 17.17985438844
+    }
+  },
+  "meal_vs_day_agree": 0.9948908499767766,
+  "meal_wins_on_disagree": 10,
+  "day_wins_on_disagree": 1,
+  "both_wrong_on_disagree": 0,
+  "per_occasion": {
+    "Breakfast": {
+      "accuracy": 1.0,
+      "f1_macro": 1.0,
+      "auc_weighted": 1.0,
+      "support": 551,
+      "confusion": [
+        [
+          192,
+          0,
+          0
+        ],
+        [
+          0,
+          100,
+          0
+        ],
+        [
+          0,
+          0,
+          259
+        ]
+      ],
+      "per_class": {
+        "LOW": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 192
+        },
+        "MODERATE": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 100
+        },
+        "HIGH": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 259
+        }
+      }
+    },
+    "Lunch": {
+      "accuracy": 1.0,
+      "f1_macro": 1.0,
+      "auc_weighted": 1.0,
+      "support": 439,
+      "confusion": [
+        [
+          194,
+          0,
+          0
+        ],
+        [
+          0,
+          103,
+          0
+        ],
+        [
+          0,
+          0,
+          142
+        ]
+      ],
+      "per_class": {
+        "LOW": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 194
+        },
+        "MODERATE": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 103
+        },
+        "HIGH": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 142
+        }
+      }
+    },
+    "Dinner": {
+      "accuracy": 0.9982486865148862,
+      "f1_macro": 0.9976003970566021,
+      "auc_weighted": 0.9999918913720144,
+      "support": 571,
+      "confusion": [
+        [
+          135,
+          0,
+          0
+        ],
+        [
+          1,
+          142,
+          0
+        ],
+        [
+          0,
+          0,
+          293
+        ]
+      ],
+      "per_class": {
+        "LOW": {
+          "precision": 0.9926470588235294,
+          "recall": 1.0,
+          "f1": 0.996309963099631,
+          "support": 135
+        },
+        "MODERATE": {
+          "precision": 1.0,
+          "recall": 0.993006993006993,
+          "f1": 0.9964912280701754,
+          "support": 143
+        },
+        "HIGH": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 293
+        }
+      }
+    },
+    "Snack": {
+      "accuracy": 0.9966216216216216,
+      "f1_macro": 0.9939410783768761,
+      "auc_weighted": 0.9999751649487881,
+      "support": 592,
+      "confusion": [
+        [
+          256,
+          1,
+          0
+        ],
+        [
+          1,
+          69,
+          0
+        ],
+        [
+          0,
+          0,
+          265
+        ]
+      ],
+      "per_class": {
+        "LOW": {
+          "precision": 0.9961089494163424,
+          "recall": 0.9961089494163424,
+          "f1": 0.9961089494163424,
+          "support": 257
+        },
+        "MODERATE": {
+          "precision": 0.9857142857142858,
+          "recall": 0.9857142857142858,
+          "f1": 0.9857142857142858,
+          "support": 70
+        },
+        "HIGH": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 265
+        }
+      }
+    }
+  },
+  "per_stage": {
+    "G2": {
+      "accuracy": 0.9982517482517482,
+      "f1_macro": 0.9977415899811257,
+      "auc_weighted": 0.9999932783469259,
+      "support": 1716,
+      "HIGH_recall": 1.0,
+      "MOD_recall": 0.9941520467836257,
+      "confusion": [
+        [
+          628,
+          1,
+          0
+        ],
+        [
+          2,
+          340,
+          0
+        ],
+        [
+          0,
+          0,
+          745
+        ]
+      ]
+    },
+    "G3a": {
+      "accuracy": 1.0,
+      "f1_macro": 1.0,
+      "auc_weighted": 1.0,
+      "support": 300,
+      "HIGH_recall": 1.0,
+      "MOD_recall": 1.0,
+      "confusion": [
+        [
+          106,
+          0,
+          0
+        ],
+        [
+          0,
+          46,
+          0
+        ],
+        [
+          0,
+          0,
+          148
+        ]
+      ]
+    },
+    "G3b": {
+      "accuracy": 1.0,
+      "f1_macro": 1.0,
+      "auc_weighted": 1.0,
+      "support": 113,
+      "HIGH_recall": 1.0,
+      "MOD_recall": 1.0,
+      "confusion": [
+        [
+          34,
+          0,
+          0
+        ],
+        [
+          0,
+          26,
+          0
+        ],
+        [
+          0,
+          0,
+          53
+        ]
+      ]
+    },
+    "G4": {
+      "accuracy": 1.0,
+      "f1_macro": 1.0,
+      "auc_weighted": 1.0,
+      "support": 24,
+      "HIGH_recall": 1.0,
+      "MOD_recall": 1.0,
+      "confusion": [
+        [
+          9,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          13
+        ]
+      ]
+    }
+  }
+}

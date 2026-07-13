@@ -19,7 +19,6 @@ from sqlalchemy.orm import Session
 
 from backend.api.chat_sessions import router as chat_sessions_router
 from backend.api.daily_budget import router as daily_budget_router
-from backend.api.next_meal import router as next_meal_router
 from backend.api.patient_data import router as patient_data_router
 from backend.api.auth import router as auth_router
 from backend.api.auth_reset import router as auth_reset_router
@@ -30,6 +29,7 @@ from backend.api.recommendations import router as recommendations_router
 from backend.api.risk_prediction import router as risk_prediction_router
 from backend.api.weekly_suggestions import router as weekly_suggestions_router
 from backend.api.weekly_trend import router as weekly_trend_router
+from backend.api.what_to_eat_next import router as what_to_eat_next_router
 from backend.database.db import Base, Food, SessionLocal, engine, get_db
 from backend.database.seed_foods import backfill_preparation_method, seed_foods
 from backend.models.lstm_model import warmup_lstm
@@ -80,7 +80,6 @@ app.add_middleware(
 )
 
 app.include_router(daily_budget_router, prefix="/api")
-app.include_router(next_meal_router, prefix="/api")
 app.include_router(patient_data_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(auth_reset_router, prefix="/api")
@@ -90,6 +89,7 @@ app.include_router(recommendations_router, prefix="/api")
 app.include_router(pattern_analysis_router, prefix="/api")
 app.include_router(weekly_trend_router, prefix="/api")
 app.include_router(weekly_suggestions_router, prefix="/api")
+app.include_router(what_to_eat_next_router, prefix="/api")
 app.include_router(meal_planner_router, prefix="/api")
 app.include_router(chat_sessions_router, prefix="/api")
 

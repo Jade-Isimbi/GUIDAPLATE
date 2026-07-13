@@ -75,7 +75,7 @@ const MODELS: ModelRow[] = [
   },
   {
     name: 'XGBoost v3',
-    subtitle: 'Production model',
+    subtitle: 'Production — clinical-score–aligned classifier',
     type: 'production',
     accuracy: 99.0,
     f1_macro: 0.985,
@@ -91,7 +91,7 @@ const MODELS: ModelRow[] = [
     status: 'Production',
     deployed: true,
     note:
-      'Raw features + weighted clinical severity labels. McNemar p<0.0001 vs baseline. No overfitting (1% gap).',
+      'Full day model 98.99% acc / AUC 0.9975; without clinical_score 93.24% / AUC 0.9915. Meal full 99.86%; without clinical_score 77.52% / AUC 0.949. Largely formalizes a KDOQI-weighted score; value is probabilities, SHAP, and meal-scale calibration — not independent risk discovery.',
   },
   {
     name: 'LSTM v1',
@@ -117,7 +117,7 @@ const MODELS: ModelRow[] = [
     name: 'LSTM v3',
     subtitle: 'Production sequence model',
     type: 'production',
-    accuracy: 91.8,
+    accuracy: 92.08,
     f1_macro: 0.915,
     auc: 0.984,
     recall_low: null,
@@ -126,7 +126,7 @@ const MODELS: ModelRow[] = [
     precision_mod: null,
     mcnemar_p: 0.000001,
     train_acc: 93.0,
-    test_acc: 91.8,
+    test_acc: 92.08,
     gap: 1.2,
     status: 'Production',
     deployed: true,
@@ -168,7 +168,7 @@ const OVERFITTING_ROWS = [
   { model: 'Rule Baseline', train: null, test: 75.0, gap: null, verdict: 'No params' },
   { model: 'XGBoost v1', train: 74.8, test: 75.3, gap: -0.5, verdict: 'Leakage' },
   { model: 'XGBoost v3', train: 100.0, test: 99.0, gap: 1.0, verdict: '✓ Clean' },
-  { model: 'LSTM v3', train: 93.0, test: 91.8, gap: 1.2, verdict: '✓ Clean' },
+  { model: 'LSTM v3', train: 93.0, test: 92.08, gap: 1.2, verdict: '✓ Clean' },
   { model: 'HMM', train: 63.8, test: 67.8, gap: -4.0, verdict: 'Underfitting' },
 ];
 

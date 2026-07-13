@@ -125,13 +125,11 @@ class LSTMPatternAnalyzer:
         n_real_meals: int,
     ) -> str:
         """
-        Extract per-timestep hidden states from the first LSTM layer and fit
-        a slope to detect trend direction.
+        Heuristic trend detection from LSTM hidden-state (and nutrient) dynamics—
+        not a trained output head. Returns escalating / stable / improving.
 
         X_scaled: shape (1, 6, 5)
         n_real_meals: number of real meals in the sequence (not padded)
-
-        Returns: escalating / stable / improving
         """
         hidden = self.hidden_state_model.predict(X_scaled, verbose=0)
 

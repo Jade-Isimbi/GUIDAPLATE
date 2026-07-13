@@ -3,23 +3,32 @@ risk_prediction.py
 GuidaPlate — API endpoint for dietary risk prediction
 """
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from backend.clinical_constants import (
-    CLINICAL_SEVERITY_WEIGHTS,
     KDOQI_DAILY_LIMITS,
     NEAR_LIMIT_RATIO,
-    SEVERITY_THRESHOLDS,
 )
+from backend.config import GUIDAPLATE_MEAL_XGB
 from backend.database.db import get_db
 from backend.models.recommender import get_recommender
-from backend.models.xgboost_model import get_predictor
+from backend.models.xgboost_model import (
+    VALID_OCCASIONS,
+    compute_exceeded_nutrients_meal,
+    get_meal_predictor,
+    get_predictor,
+    meal_limits_for_occasion,
+)
 
 router = APIRouter(tags=["Risk Prediction"])
 
 SUPPORTED_STAGES = set(KDOQI_DAILY_LIMITS)
+
+MealOccasion = Literal["Breakfast", "Lunch", "Dinner", "Snack"]
 
 CLINICAL_NOTES = {
     "HIGH": (
@@ -43,6 +52,7 @@ class RiskPredictionRequest(BaseModel):
     protein_per_kg: float
     sodium: float
     ckd_stage: str
+    occasion: MealOccasion  # REQUIRED
     food_name: str | None = None
 
 
@@ -59,6 +69,9 @@ class RiskPredictionResponse(BaseModel):
     shap_contributions: dict | None = None
     shap_explanation: str | None = None
     shap_dominant_nutrient: str | None = None
+    scoring_scale: Literal["meal", "day"]
+    meal_limits: dict | None = None
+    occasion: str
 
 
 def compute_exceeded_nutrients(
@@ -69,7 +82,7 @@ def compute_exceeded_nutrients(
     ckd_stage: str,
 ) -> tuple[list[str], list[str]]:
     """
-    Compare intake against KDOQI limits (matches XGBoost v3 training).
+    Compare intake against KDOQI daily limits (rollback / day path).
     Returns exceeded (over limit) and near_limit (80–99% of limit).
     """
     limits = KDOQI_DAILY_LIMITS.get(ckd_stage, KDOQI_DAILY_LIMITS["G3b"])
@@ -96,17 +109,54 @@ def compute_exceeded_nutrients(
     return exceeded, near_limit
 
 
+def nutrient_limit_ratios(
+    potassium: float,
+    phosphorus: float,
+    protein_per_kg: float,
+    sodium: float,
+    limits: dict[str, float],
+) -> dict[str, float]:
+    """value / limit for each nutrient (same keys as exceeded/near-limit lists)."""
+    pairs = {
+        "potassium": (potassium, limits["potassium"]),
+        "phosphorus": (phosphorus, limits["phosphorus"]),
+        "protein": (protein_per_kg, limits["protein_per_kg"]),
+        "sodium": (sodium, limits["sodium"]),
+    }
+    ratios: dict[str, float] = {}
+    for name, (value, limit) in pairs.items():
+        ratios[name] = (value / limit) if limit > 0 else 0.0
+    return ratios
+
+
+def _headline_by_ratio(candidates: list[str], ratios: dict[str, float]) -> str:
+    """Most severely over (or near) limit among flagged nutrients."""
+    return max(candidates, key=lambda n: ratios.get(n, 0.0))
+
+
 def generate_shap_explanation(
     shap_contributions: dict,
     exceeded_nutrients: list[str],
     near_limit_nutrients: list[str],
     risk_label: str,
     ckd_stage: str,
+    scoring_scale: Literal["meal", "day"] = "day",
+    shap_dominant_nutrient: str | None = None,
+    nutrient_ratios: dict[str, float] | None = None,
 ) -> str:
-    """Hybrid explanation: KDOQI exceedance first, SHAP when informative."""
+    """
+    Clinical severity leads the headline; SHAP is supporting context when it differs.
+    """
     parts: list[str] = []
+    limit_phrase = "this meal's limits" if scoring_scale == "meal" else "daily limits"
+    ratios = nutrient_ratios or {}
 
     if risk_label == "LOW":
+        if scoring_scale == "meal":
+            return (
+                "All four nutrients are well within this meal's safe limits for "
+                f"Stage {ckd_stage}. This is a well-balanced meal."
+            )
         return (
             "All four nutrients are well within your safe limits for "
             f"Stage {ckd_stage}. This is a well-balanced meal."
@@ -126,36 +176,60 @@ def generate_shap_explanation(
             "Limit dairy and processed foods. Choose white rice over whole grains."
         ),
         "protein": (
-            "Keep meat portions palm-sized. Consider egg whites as a safer option."
+            "Keep meat portions palm-sized. Consider eggs as a safer option."
         ),
         "sodium": (
             "Avoid added salt and processed foods. Use herbs and lemon instead."
         ),
     }
 
-    if exceeded_nutrients:
-        primary = exceeded_nutrients[0]
-
-        parts.append(
-            f"{nutrient_names[primary]} is the primary concern in this meal "
-            f"for Stage {ckd_stage}. {advice[primary]}"
-        )
-
-        others = [nutrient_names[n] for n in exceeded_nutrients[1:]]
-        if others:
+    def _append_shap_support(headline: str) -> None:
+        if (
+            shap_dominant_nutrient
+            and shap_dominant_nutrient != headline
+            and shap_dominant_nutrient in nutrient_names
+        ):
             parts.append(
-                f"{' and '.join(others)} also exceeded your daily limits in this meal."
+                f"{nutrient_names[shap_dominant_nutrient]} also contributed "
+                f"significantly to this assessment."
             )
 
-    elif near_limit_nutrients:
-        near = near_limit_nutrients[0]
+    if exceeded_nutrients:
+        headline = _headline_by_ratio(exceeded_nutrients, ratios)
         parts.append(
-            f"This meal is approaching your {near} limit. "
-            f"Monitor your remaining meals carefully today."
+            f"{nutrient_names[headline]} is the primary concern in this meal "
+            f"for Stage {ckd_stage}. {advice[headline]}"
         )
+        others = [
+            nutrient_names[n] for n in exceeded_nutrients if n != headline
+        ]
+        if others:
+            parts.append(
+                f"{' and '.join(others)} also exceeded {limit_phrase}."
+            )
+        _append_shap_support(headline)
+
+    elif near_limit_nutrients:
+        headline = _headline_by_ratio(near_limit_nutrients, ratios)
+        if scoring_scale == "meal":
+            parts.append(
+                f"This meal is approaching your {headline} limit for this occasion. "
+                f"Monitor your remaining meals carefully today."
+            )
+        else:
+            parts.append(
+                f"This meal is approaching your {headline} limit. "
+                f"Monitor your remaining meals carefully today."
+            )
+        _append_shap_support(headline)
+
     elif shap_contributions:
-        dominant = max(shap_contributions, key=shap_contributions.get)
-        if shap_contributions[dominant] > 0:
+        dominant = (
+            shap_dominant_nutrient
+            if shap_dominant_nutrient in shap_contributions
+            else max(shap_contributions, key=shap_contributions.get)
+        )
+        if shap_contributions.get(dominant, 0) > 0:
             parts.append(
                 f"{nutrient_names.get(dominant, dominant.title())} contributed most "
                 f"to the model's {risk_label.lower()} risk assessment "
@@ -176,22 +250,69 @@ def predict_risk(
             status_code=400,
             detail=f"Invalid ckd_stage {request.ckd_stage!r}. Must be one of: G2, G3a, G3b, G4.",
         )
-
-    try:
-        prediction = get_predictor().predict(
-            request.potassium,
-            request.phosphorus,
-            request.protein_per_kg,
-            request.sodium,
-            request.ckd_stage,
+    if request.occasion not in VALID_OCCASIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Invalid occasion {request.occasion!r}. "
+                "Must be one of: Breakfast, Lunch, Dinner, Snack."
+            ),
         )
 
-        exceeded_nutrients, near_limit_nutrients = compute_exceeded_nutrients(
+    use_meal = GUIDAPLATE_MEAL_XGB
+    scoring_scale: Literal["meal", "day"] = "meal" if use_meal else "day"
+
+    try:
+        if use_meal:
+            predictor = get_meal_predictor()
+            prediction = predictor.predict(
+                request.potassium,
+                request.phosphorus,
+                request.protein_per_kg,
+                request.sodium,
+                request.ckd_stage,
+                occasion=request.occasion,
+            )
+            exceeded_nutrients, near_limit_nutrients = compute_exceeded_nutrients_meal(
+                request.potassium,
+                request.phosphorus,
+                request.protein_per_kg,
+                request.sodium,
+                request.ckd_stage,
+                request.occasion,
+            )
+            meal_limits = meal_limits_for_occasion(request.ckd_stage, request.occasion)
+            shap_occasion = request.occasion
+            ratio_limits = meal_limits
+        else:
+            # Rollback: day path — occasion accepted but not used for scoring
+            predictor = get_predictor()
+            prediction = predictor.predict(
+                request.potassium,
+                request.phosphorus,
+                request.protein_per_kg,
+                request.sodium,
+                request.ckd_stage,
+            )
+            exceeded_nutrients, near_limit_nutrients = compute_exceeded_nutrients(
+                request.potassium,
+                request.phosphorus,
+                request.protein_per_kg,
+                request.sodium,
+                request.ckd_stage,
+            )
+            meal_limits = None
+            shap_occasion = None
+            ratio_limits = KDOQI_DAILY_LIMITS.get(
+                request.ckd_stage, KDOQI_DAILY_LIMITS["G3b"]
+            )
+
+        ratios = nutrient_limit_ratios(
             request.potassium,
             request.phosphorus,
             request.protein_per_kg,
             request.sodium,
-            request.ckd_stage,
+            ratio_limits,
         )
 
         risk_label = prediction["risk_label"]
@@ -204,13 +325,17 @@ def predict_risk(
         shap_explanation = None
         shap_dominant_nutrient = None
         try:
-            shap_data = get_predictor().explain(
-                request.potassium,
-                request.phosphorus,
-                request.protein_per_kg,
-                request.sodium,
-                request.ckd_stage,
+            shap_kwargs = dict(
+                potassium=request.potassium,
+                phosphorus=request.phosphorus,
+                protein_per_kg=request.protein_per_kg,
+                sodium=request.sodium,
+                ckd_stage=request.ckd_stage,
             )
+            if use_meal:
+                shap_data = predictor.explain(**shap_kwargs, occasion=shap_occasion)
+            else:
+                shap_data = predictor.explain(**shap_kwargs)
             shap_contributions = shap_data["contributions"]
             shap_dominant_nutrient = shap_data["dominant_nutrient"]
         except Exception as e:
@@ -222,6 +347,9 @@ def predict_risk(
             near_limit_nutrients,
             risk_label,
             request.ckd_stage,
+            scoring_scale=scoring_scale,
+            shap_dominant_nutrient=shap_dominant_nutrient,
+            nutrient_ratios=ratios,
         )
 
         substitutes: list[dict] = []
@@ -251,6 +379,9 @@ def predict_risk(
             shap_contributions=shap_contributions,
             shap_explanation=shap_explanation,
             shap_dominant_nutrient=shap_dominant_nutrient,
+            scoring_scale=scoring_scale,
+            meal_limits=meal_limits,
+            occasion=request.occasion,
         )
     except HTTPException:
         raise

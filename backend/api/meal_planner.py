@@ -100,7 +100,7 @@ def get_rwanda_food_context(ckd_stage: str) -> str:
     """
     # Foods safe for ALL stages
     always_safe = (
-        "rice, sorghum, cassava, "
+        "rice, sorghum porridge (Igikoma cy'Amasaka), cassava, "
         "cabbage, carrots, pumpkin, "
         "eggplant, apples, mangoes, "
         "pineapples, watermelon, "
@@ -464,11 +464,27 @@ def _format_structured_food_list_rows(
     return "\n".join(lines)
 
 
+def _item_kp_density_gates(ckd_stage: str) -> tuple[float, float]:
+    """Per-100g K/P density ceilings from full-day KDOQI (not meal-scoped limits)."""
+    stage = (ckd_stage or "").strip()
+    daily = KDOQI_DAILY_LIMITS.get(stage)
+    if daily is None and stage:
+        alt = stage[:1] + stage[1:].lower()
+        daily = KDOQI_DAILY_LIMITS.get(alt)
+    if daily is None:
+        daily = KDOQI_DAILY_LIMITS["G3b"]
+    k_frac = float(MEAL_RULES_GLOBAL["item_k_gate_frac"])
+    p_frac = float(MEAL_RULES_GLOBAL["item_p_gate_frac"])
+    return float(daily["potassium"]) * k_frac, float(daily["phosphorus"]) * p_frac
+
+
 def _rank_foods_for_prompt(
     foods: pd.DataFrame,
     limits: dict[str, float],
     max_rows: int = 30,
     day: str | None = None,
+    *,
+    ckd_stage: str,
 ) -> pd.DataFrame:
     foods = foods.copy()
     if foods.empty:
@@ -476,10 +492,15 @@ def _rank_foods_for_prompt(
     for col in ("potassium_mg", "phosphorus_mg", "protein_g"):
         foods[col] = pd.to_numeric(foods[col], errors="coerce").fillna(0)
 
+    k_gate, p_gate = _item_kp_density_gates(ckd_stage)
+    # protein_options historically used 0.25 * daily K (looser than item_k 0.20)
+    k_frac = float(MEAL_RULES_GLOBAL["item_k_gate_frac"])
+    k_gate_protein = (k_gate / k_frac) * 0.25 if k_frac else k_gate
+
     safe_food_list = (
         foods[
-            (foods["potassium_mg"] <= limits["potassium"] * 0.20)
-            & (foods["phosphorus_mg"] <= limits["phosphorus"] * 0.25)
+            (foods["potassium_mg"] <= k_gate)
+            & (foods["phosphorus_mg"] <= p_gate)
         ]
         .sort_values("potassium_mg")
         .head(25)
@@ -488,7 +509,7 @@ def _rank_foods_for_prompt(
     protein_options = (
         foods[
             (foods["protein_g"] >= 5)
-            & (foods["potassium_mg"] <= limits["potassium"] * 0.25)
+            & (foods["potassium_mg"] <= k_gate_protein)
         ]
         .sort_values("potassium_mg")
         .head(10)
@@ -513,9 +534,13 @@ def _build_prompt_food_list(
     safe_foods: pd.DataFrame,
     limits: dict[str, float],
     max_rows: int = 30,
+    *,
+    ckd_stage: str,
 ) -> str:
     # Non-weekly path: day=None → deterministic low-K order (unchanged).
-    combined = _rank_foods_for_prompt(safe_foods, limits, max_rows=max_rows)
+    combined = _rank_foods_for_prompt(
+        safe_foods, limits, max_rows=max_rows, ckd_stage=ckd_stage
+    )
     return _format_food_list_rows(combined)
 
 
@@ -524,6 +549,8 @@ def _build_occasion_prompt_food_lists(
     limits: dict[str, float],
     max_rows: int = 10,
     day: str | None = None,
+    *,
+    ckd_stage: str,
 ) -> dict[str, str]:
     """Split safe_foods by meal_type into breakfast / lunch-dinner / snack lists."""
     foods = safe_foods.copy()
@@ -556,17 +583,17 @@ def _build_occasion_prompt_food_lists(
     return {
         "breakfast": _format_food_list_rows(
             _rank_foods_for_prompt(
-                breakfast_pool, limits, max_rows=max_rows, day=day
+                breakfast_pool, limits, max_rows=max_rows, day=day, ckd_stage=ckd_stage
             )
         ),
         "lunch_dinner": _format_food_list_rows(
             _rank_foods_for_prompt(
-                lunch_dinner_pool, limits, max_rows=max_rows, day=day
+                lunch_dinner_pool, limits, max_rows=max_rows, day=day, ckd_stage=ckd_stage
             )
         ),
         "snack": _format_food_list_rows(
             _rank_foods_for_prompt(
-                snack_pool, limits, max_rows=max_rows, day=day
+                snack_pool, limits, max_rows=max_rows, day=day, ckd_stage=ckd_stage
             )
         ),
     }
@@ -584,28 +611,28 @@ _BREAD_PROXY: dict[str, Any] = {
     "sodium_mg": 466.0,
 }
 
-# Cultural aliases with no DB rows.
-# "proxy" is the sole nutrient-source key: "maize" | "bread".
+# Cultural aliases. proxy: "bread", "igikoma" (real maize-porridge row),
+# or "ugali" (real prepared-ugali row). Plain boiled maize stays a separate food.
 _CULTURAL_ALIASES: dict[str, dict[str, Any]] = {
     "igikoma": {
         "canonical": "igikoma",
         "occasions": {"Breakfast"},
-        "proxy": "maize",
+        "proxy": "igikoma",
     },
     "maize porridge": {
         "canonical": "igikoma",
         "occasions": {"Breakfast"},
-        "proxy": "maize",
+        "proxy": "igikoma",
     },
     "ugali": {
         "canonical": "ugali",
         "occasions": {"Lunch", "Dinner"},
-        "proxy": "maize",
+        "proxy": "ugali",
     },
     "ubugali": {
         "canonical": "ugali",
         "occasions": {"Lunch", "Dinner"},
-        "proxy": "maize",
+        "proxy": "ugali",
     },
     "bread": {
         "canonical": "bread",
@@ -639,12 +666,11 @@ _FLAVORING_MIN_GRAMS = 10.0
 
 # Display-only renames for plate cards / structured output.
 # Keys: normalized DB english (_normalize_food_key). Nutrients/filters unchanged.
+# sorghum/millet porridge are real diluted DB rows (not renames of raw grain).
 _DISPLAY_ENGLISH_NAMES: dict[str, str] = {
-    "maize": "maize porridge",
-    "sorghum": "sorghum porridge",
-    "millet": "millet porridge",
     "wheat": "wheat porridge",
     "sour milk": "ikivuguto",
+    "maize porridge": "igikoma",
 }
 
 # Snack-only english names: excluded from Breakfast/Lunch/Dinner;
@@ -668,6 +694,8 @@ MEAL_RULES_GLOBAL: dict[str, Any] = {
     "default_portion_grams": (_DEFAULT_MIN_GRAMS, _DEFAULT_MAX_GRAMS),
     "flavoring_min_grams": _FLAVORING_MIN_GRAMS,
     "portion_caps": _FLAVORING_MAX_GRAMS,
+    # Onion/tomato: ok as additional flavoring beside a real vegetable; never sole veg.
+    "flavoring_only_names": frozenset(_FLAVORING_MAX_GRAMS.keys()),
     "display_names": _DISPLAY_ENGLISH_NAMES,
     "cultural_aliases": _CULTURAL_ALIASES,
     "bread_proxy": _BREAD_PROXY,
@@ -678,6 +706,8 @@ MEAL_RULES_GLOBAL: dict[str, Any] = {
     "allowed_list_max_rows": 20,
     "protein_pick_categories": frozenset({"Meat", "Fish", "Egg", "Dairy"}),
     "protein_pick_allowance_frac": 0.65,
+    # Non-final groups leave room for later groups (K/P/Na + non-protein protein fit).
+    "non_final_group_allowance_frac": 0.70,
     "tea_name_match": "exact_or_prefix_or_word",
     # Non-Rwandan english that may pass the is_rwandan filter (stage safety unchanged).
     # \boats\b matches "Oats, whole grain…" / "steel cut oats"; not goat or "oat milk".
@@ -698,17 +728,21 @@ MEAL_RULES_GLOBAL: dict[str, Any] = {
             "id": "igikoma",
             "english": "igikoma",
             "category": "Grain",
-            "preparation_method": "boiled porridge",
+            "preparation_method": "boiled porridge (13% flour concentration)",
             "meal_type": "Breakfast/Any",
-            "proxy": "maize",
+            "proxy": "igikoma",
         },
         "ugali": {
             "id": "ugali",
             "english": "ugali",
             "category": "Starch",
-            "preparation_method": "boiled",
+            "preparation_method": (
+                "stiff maize-meal paste (~30% w/v flour concentration), "
+                "secondary-cited from Kenya FCT 2018 — not directly verified "
+                "against primary source"
+            ),
             "meal_type": "Lunch/Dinner",
-            "proxy": "maize",
+            "proxy": "ugali",
         },
     },
 }
@@ -722,7 +756,7 @@ OCCASION_RULES: dict[str, dict[str, Any]] = {
         # Breakfast-only english bans (sugar cane via MEAL_RULES_GLOBAL.snack_only_english)
         "exclude_english": _BREAKFAST_EXCLUDED_ENGLISH,
         "starch_allow_english": frozenset(),
-        "quota_grain_exclude_english": frozenset({"maize", "wheat"}),
+        "quota_grain_exclude_english": frozenset({"maize", "wheat", "maize porridge"}),
         "quotas": [
             (("Egg", "Dairy"), 3),
             (("Grain",), 4),
@@ -762,7 +796,7 @@ OCCASION_RULES: dict[str, dict[str, Any]] = {
         "exclude_meal_types": [],
         "exclude_english": frozenset(),
         "starch_allow_english": frozenset(),
-        "quota_grain_exclude_english": frozenset(),
+        "quota_grain_exclude_english": frozenset({"ugali"}),
         "quotas": [
             (("Meat", "Fish"), 3),
             (("Starch", "Grain"), 3),
@@ -795,7 +829,7 @@ OCCASION_RULES: dict[str, dict[str, Any]] = {
         "exclude_meal_types": [],
         "exclude_english": frozenset(),
         "starch_allow_english": frozenset(),
-        "quota_grain_exclude_english": frozenset(),
+        "quota_grain_exclude_english": frozenset({"ugali"}),
         "quotas": [
             (("Meat", "Fish"), 3),
             (("Starch", "Grain"), 3),
@@ -849,6 +883,29 @@ OCCASION_RULES: dict[str, dict[str, Any]] = {
             "Do not serve tea and igikoma in the same meal.",
         ],
     },
+}
+
+# Clinical forbidden foods per stage — removes foods that pass the stage_safe
+# range check but are clinically restricted due to high potassium/phosphorus.
+# Module-level so chat and what-to-eat-next share one source of truth.
+_FORBIDDEN_BY_STAGE: dict[str, list[str]] = {
+    "G3A": [
+        "groundnuts", "soybeans", "soya",
+        "spinach", "cassava leaves", "isombe",
+    ],
+    "G3B": [
+        "beans", "peas", "banana", "matoke", "plantains",
+        "avocado", "avocados", "irish potatoes",
+        "cassava leaves", "isombe", "groundnuts", "soybeans",
+        "soya", "spinach", "oranges", "passion fruit",
+    ],
+    "G4": [
+        "beans", "peas", "banana", "matoke", "plantains",
+        "avocado", "avocados", "irish potatoes",
+        "cassava leaves", "isombe", "groundnuts", "soybeans",
+        "soya", "spinach", "sweet potatoes", "yams",
+        "oranges", "passion fruit", "milk", "pumpkin",
+    ],
 }
 
 
@@ -946,6 +1003,27 @@ def _portion_bounds_for_name(name: str) -> tuple[float, float]:
     return _FLAVORING_MIN_GRAMS, max_g
 
 
+def is_flavoring_only(english: str) -> bool:
+    """True if english is a flavoring-only ingredient (onion/tomato), not a sole side.
+
+    Any new function that selects a Vegetable-category food MUST check this
+    before finalizing its pick — this bug has recurred multiple times because
+    each new food-selection path re-implemented this logic separately instead
+    of sharing it.
+    """
+    return _normalize_food_key(english) in MEAL_RULES_GLOBAL["flavoring_only_names"]
+
+
+def _has_real_vegetable(items: list[dict[str, Any]] | None) -> bool:
+    """True if items already include a non-flavoring Vegetable-category food."""
+    for item in items or ():
+        if str(item.get("category") or "") != "Vegetable":
+            continue
+        if not is_flavoring_only(str(item.get("english") or "")):
+            return True
+    return False
+
+
 def _display_english_name(english: str) -> str:
     key = _normalize_food_key(english)
     return _DISPLAY_ENGLISH_NAMES.get(key, (english or "").strip())
@@ -1007,11 +1085,20 @@ def _occasion_food_pool(
         if exclude_english:
             eng_norm = pool["english"].fillna("").str.lower().str.strip()
             pool = pool[~eng_norm.isin(exclude_english)]
+
+    # Flavoring-only Vegetable rows stay available for additional-item use, but
+    # never leave a pool whose only vegetables are onion/tomato (sole-veg trap).
+    if not pool.empty and "category" in pool.columns:
+        eng_check = pool["english"].fillna("").astype(str)
+        is_veg = pool["category"].astype(str) == "Vegetable"
+        is_flav = eng_check.map(is_flavoring_only)
+        if bool((is_veg & is_flav).any()) and not bool((is_veg & ~is_flav).any()):
+            pool = pool[~(is_veg & is_flav)]
     return pool
 
 
 def _lookup_maize_proxy(safe_foods: pd.DataFrame) -> dict[str, Any]:
-    """Rwandan boiled maize row for igikoma/ugali nutrient math."""
+    """Rwandan boiled maize-kernel row for ugali nutrient math (not igikoma)."""
     if safe_foods is None or safe_foods.empty or "english" not in safe_foods.columns:
         return {
             "english": "maize",
@@ -1047,6 +1134,92 @@ def _lookup_maize_proxy(safe_foods: pd.DataFrame) -> dict[str, Any]:
         "phosphorus_mg": float(row.get("phosphorus_mg") or 73.0),
         "protein_g": float(row.get("protein_g") or 2.9),
         "sodium_mg": float(row.get("sodium_mg") or 2.0),
+    }
+
+
+_IGIKOMA_FALLBACK: dict[str, Any] = {
+    "english": "maize porridge",
+    "kinyarwanda": "Igikoma",
+    "category": "Grain",
+    "preparation_method": "boiled porridge (13% flour concentration)",
+    "potassium_mg": 40.9,
+    "phosphorus_mg": 35.4,
+    "protein_g": 0.90,
+    "sodium_mg": 0.66,
+}
+
+
+def _lookup_igikoma_food(safe_foods: pd.DataFrame) -> dict[str, Any]:
+    """Real maize-porridge (igikoma) DB row — finished porridge nutrients, not kernels."""
+    if safe_foods is None or safe_foods.empty or "english" not in safe_foods.columns:
+        return dict(_IGIKOMA_FALLBACK)
+    eng = safe_foods["english"].fillna("").str.lower().str.strip()
+    kin = (
+        safe_foods["kinyarwanda"].fillna("").str.lower().str.strip()
+        if "kinyarwanda" in safe_foods.columns
+        else pd.Series([""] * len(safe_foods), index=safe_foods.index)
+    )
+    matches = safe_foods[(eng == "maize porridge") | (kin == "igikoma")]
+    if matches.empty:
+        return dict(_IGIKOMA_FALLBACK)
+    row = matches.iloc[0]
+    return {
+        "english": str(row.get("english") or "maize porridge").strip(),
+        "kinyarwanda": str(row.get("kinyarwanda") or "Igikoma").strip(),
+        "category": str(row.get("category") or "Grain").strip(),
+        "preparation_method": str(
+            row.get("preparation_method")
+            or "boiled porridge (13% flour concentration)"
+        ).strip(),
+        "potassium_mg": float(row.get("potassium_mg") or 40.9),
+        "phosphorus_mg": float(row.get("phosphorus_mg") or 35.4),
+        "protein_g": float(row.get("protein_g") or 0.90),
+        "sodium_mg": float(row.get("sodium_mg") or 0.66),
+    }
+
+
+_UGALI_FALLBACK: dict[str, Any] = {
+    "english": "ugali",
+    "kinyarwanda": "Ubugali",
+    "category": "Starch",
+    "preparation_method": (
+        "stiff maize-meal paste (~30% w/v flour concentration), "
+        "secondary-cited from Kenya FCT 2018 — not directly verified "
+        "against primary source"
+    ),
+    "potassium_mg": 93.0,
+    "phosphorus_mg": 150.0,
+    "protein_g": 3.3,
+    "sodium_mg": 7.0,
+}
+
+
+def _lookup_ugali_food(safe_foods: pd.DataFrame) -> dict[str, Any]:
+    """Real prepared ugali DB row — finished stiff paste, not boiled maize kernels."""
+    if safe_foods is None or safe_foods.empty or "english" not in safe_foods.columns:
+        return dict(_UGALI_FALLBACK)
+    eng = safe_foods["english"].fillna("").str.lower().str.strip()
+    kin = (
+        safe_foods["kinyarwanda"].fillna("").str.lower().str.strip()
+        if "kinyarwanda" in safe_foods.columns
+        else pd.Series([""] * len(safe_foods), index=safe_foods.index)
+    )
+    matches = safe_foods[(eng == "ugali") | (kin == "ubugali")]
+    if matches.empty:
+        return dict(_UGALI_FALLBACK)
+    row = matches.iloc[0]
+    return {
+        "english": str(row.get("english") or "ugali").strip(),
+        "kinyarwanda": str(row.get("kinyarwanda") or "Ubugali").strip(),
+        "category": str(row.get("category") or "Starch").strip(),
+        "preparation_method": str(
+            row.get("preparation_method")
+            or _UGALI_FALLBACK["preparation_method"]
+        ).strip(),
+        "potassium_mg": float(row.get("potassium_mg") or 93.0),
+        "phosphorus_mg": float(row.get("phosphorus_mg") or 150.0),
+        "protein_g": float(row.get("protein_g") or 3.3),
+        "sodium_mg": float(row.get("sodium_mg") or 7.0),
     }
 
 
@@ -1138,6 +1311,8 @@ def _build_structured_allowed_foods(
     limits: dict[str, float],
     max_rows: int | None = None,
     day: str | None = None,
+    *,
+    ckd_stage: str,
 ) -> pd.DataFrame:
     """
     Category-quota allowed list for structured JSON prompts.
@@ -1149,19 +1324,20 @@ def _build_structured_allowed_foods(
     quota_grain_exclude_english = rules["quota_grain_exclude_english"]
     bread_proxy = MEAL_RULES_GLOBAL["bread_proxy"]
     synthetic_specs = MEAL_RULES_GLOBAL["synthetic_specs"]
-    k_gate_frac = float(MEAL_RULES_GLOBAL["item_k_gate_frac"])
-    p_gate_frac = float(MEAL_RULES_GLOBAL["item_p_gate_frac"])
     if max_rows is None:
         max_rows = int(MEAL_RULES_GLOBAL["allowed_list_max_rows"])
 
     pool = _occasion_food_pool(safe_foods, occasion)
     # Snack (and any occasion with quotas: None): flat rank, no quota fill
     if quotas is None:
-        return _rank_foods_for_prompt(pool, limits, max_rows=max_rows, day=day)
+        return _rank_foods_for_prompt(
+            pool, limits, max_rows=max_rows, day=day, ckd_stage=ckd_stage
+        )
 
-    k_gate = limits["potassium"] * k_gate_frac
-    p_gate = limits["phosphorus"] * p_gate_frac
+    k_gate, p_gate = _item_kp_density_gates(ckd_stage)
     maize = _lookup_maize_proxy(safe_foods)
+    igikoma = _lookup_igikoma_food(safe_foods)
+    ugali = _lookup_ugali_food(safe_foods)
 
     foods = pool.copy()
     for col in ("potassium_mg", "phosphorus_mg", "protein_g", "sodium_mg"):
@@ -1184,8 +1360,10 @@ def _build_structured_allowed_foods(
             & (foods["potassium_mg"] <= k_gate)
             & (foods["phosphorus_mg"] <= p_gate)
         ]
-        # Raw maize → igikoma; wheat → bread synthetic — don't also list flour/grain rows.
-        if cats == ("Grain",) and quota_grain_exclude_english:
+        # Raw maize → igikoma; ugali synthetic; wheat → bread — don't also list those rows.
+        if quota_grain_exclude_english and (
+            "Grain" in cats or "Starch" in cats
+        ):
             cands = cands[
                 ~cands["english"].fillna("").str.lower().str.strip().isin(
                     quota_grain_exclude_english
@@ -1219,6 +1397,10 @@ def _build_structured_allowed_foods(
             meta: dict[str, Any] = {**bread_proxy}
         elif proxy_key == "maize":
             meta = {**maize}
+        elif proxy_key == "igikoma":
+            meta = {**igikoma}
+        elif proxy_key == "ugali":
+            meta = {**ugali}
         else:
             return
         if "category" in spec:
@@ -1232,7 +1414,14 @@ def _build_structured_allowed_foods(
                 meal_type=str(spec["meal_type"]),
             )
         )
-        used.add(str(spec["english"]))
+        used.add(str(spec["english"]).lower().strip())
+        # Avoid listing the DB dish row twice beside its synthetic injection.
+        if proxy_key == "igikoma":
+            used.add("maize porridge")
+            used.add("igikoma")
+        elif proxy_key == "ugali":
+            used.add("ugali")
+            used.add("ubugali")
 
     for cats, n in quotas:
         synth_id = _QUOTA_SYNTHETIC_TOKEN.get(cats)
@@ -1242,7 +1431,9 @@ def _build_structured_allowed_foods(
         _take_categories(cats, n)
 
     if not picked_rows:
-        return _rank_foods_for_prompt(pool, limits, max_rows=max_rows, day=day)
+        return _rank_foods_for_prompt(
+            pool, limits, max_rows=max_rows, day=day, ckd_stage=ckd_stage
+        )
 
     out = pd.DataFrame(picked_rows)
     return out.head(max_rows)
@@ -1252,8 +1443,17 @@ def _occasion_nutrient_budgets(
     occasion: str,
     limits: dict[str, float],
     protein_limit_g: float,
+    *,
+    absolute_meal_caps: bool = False,
 ) -> tuple[float, float, float, float]:
     """Absolute K/P/protein/Na meal caps matching _validate_occasion_suggestion."""
+    if absolute_meal_caps:
+        return (
+            float(limits["potassium"]),
+            float(limits["phosphorus"]),
+            float(protein_limit_g),
+            float(limits["sodium"]),
+        )
     k_cap, p_cap, pro_cap, na_cap = OCCASION_RULES[occasion]["nutrient_caps"]
     return (
         limits["potassium"] * k_cap,
@@ -1267,10 +1467,12 @@ def _occasion_nutrient_budget_line(
     occasion: str,
     limits: dict[str, float],
     protein_limit_g: float,
+    *,
+    absolute_meal_caps: bool = False,
 ) -> str:
     """Absolute per-meal caps matching _validate_occasion_suggestion."""
     k_bud, p_bud, pro_bud, na_bud = _occasion_nutrient_budgets(
-        occasion, limits, protein_limit_g
+        occasion, limits, protein_limit_g, absolute_meal_caps=absolute_meal_caps
     )
     return (
         f"FOR THIS MEAL ONLY, stay under: "
@@ -1287,10 +1489,12 @@ def _build_structured_occasion_prompt(
     limits: dict[str, float],
     protein_limit_g: float,
     pool: pd.DataFrame,
+    *,
+    absolute_meal_caps: bool = False,
 ) -> str:
     # Caller passes _build_structured_allowed_foods(...) as pool
     _k_bud, p_bud, pro_bud, _na_bud = _occasion_nutrient_budgets(
-        occasion, limits, protein_limit_g
+        occasion, limits, protein_limit_g, absolute_meal_caps=absolute_meal_caps
     )
     food_lines = _format_structured_food_list_rows(
         pool,
@@ -1298,7 +1502,7 @@ def _build_structured_occasion_prompt(
         phosphorus_budget_mg=p_bud,
     )
     meal_budget = _occasion_nutrient_budget_line(
-        occasion, limits, protein_limit_g
+        occasion, limits, protein_limit_g, absolute_meal_caps=absolute_meal_caps
     )
 
     has_meat_fish = (
@@ -1338,11 +1542,12 @@ def _build_structured_occasion_prompt(
             "a required food category.\n"
         )
 
+    limits_label = "This meal budget" if absolute_meal_caps else "Daily limits"
     return (
         f"You are a CKD dietary advisor for Rwanda. "
         f"Respond with a single JSON object only (no markdown).\n\n"
         f"Patient stage: {ckd_stage}\n"
-        f"Daily limits: K={limits['potassium']}mg, "
+        f"{limits_label}: K={limits['potassium']}mg, "
         f"P={limits['phosphorus']}mg, "
         f"Protein={protein_limit_g:.0f}g, "
         f"Na={limits['sodium']}mg\n"
@@ -1423,10 +1628,12 @@ def _generate_structured_occasion_suggestion(
     limits: dict[str, float],
     protein_limit_g: float,
     safe_foods: pd.DataFrame,
+    *,
+    absolute_meal_caps: bool = False,
 ) -> tuple[dict[str, Any] | None, pd.DataFrame]:
     """Ask Groq for JSON foods for one occasion. Returns (parsed dict or None, allowed list)."""
     allowed = _build_structured_allowed_foods(
-        safe_foods, occasion, limits, max_rows=20
+        safe_foods, occasion, limits, max_rows=20, ckd_stage=ckd_stage
     )
     if allowed.empty:
         _mp_logger.warning(
@@ -1440,6 +1647,7 @@ def _generate_structured_occasion_suggestion(
         limits=limits,
         protein_limit_g=protein_limit_g,
         pool=allowed,
+        absolute_meal_caps=absolute_meal_caps,
     )
     raw = query_llm_json(prompt, max_tokens=600)
     if not raw:
@@ -1466,6 +1674,11 @@ def _resolve_name_to_item(
     occasion: str,
     pool: pd.DataFrame,
     maize_proxy: dict[str, Any],
+    *,
+    igikoma_proxy: dict[str, Any] | None = None,
+    ugali_proxy: dict[str, Any] | None = None,
+    existing_items: list[dict[str, Any]] | None = None,
+    allow_flavoring_as_vegetable: bool | None = None,
 ) -> tuple[dict[str, Any] | None, str | None]:
     """Resolve AI name to a build_meal_plan-shaped item, or (None, reason)."""
     cultural_aliases = MEAL_RULES_GLOBAL["cultural_aliases"]
@@ -1488,6 +1701,10 @@ def _resolve_name_to_item(
             nutrient_proxy = bread_proxy
         elif proxy_key == "maize":
             nutrient_proxy = maize_proxy
+        elif proxy_key == "igikoma":
+            nutrient_proxy = igikoma_proxy or _IGIKOMA_FALLBACK
+        elif proxy_key == "ugali":
+            nutrient_proxy = ugali_proxy or _UGALI_FALLBACK
         else:
             return None, f"unknown alias proxy {proxy_key!r} for {key!r}"
 
@@ -1533,6 +1750,20 @@ def _resolve_name_to_item(
     ):
         return None, f"cooking fat/oil not allowed as eaten food: {english!r}"
 
+    # Flavoring-only may join a plate that already has a real vegetable; never alone.
+    # Callers validating a full plate may pass allow_flavoring_as_vegetable=True and
+    # enforce the sole-vegetable rule once on the completed plate (order-independent).
+    if category == "Vegetable" and is_flavoring_only(english):
+        allowed = (
+            allow_flavoring_as_vegetable
+            if allow_flavoring_as_vegetable is not None
+            else _has_real_vegetable(existing_items)
+        )
+        if not allowed:
+            return None, (
+                f"flavoring-only cannot be the sole vegetable: {english!r}"
+            )
+
     return (
         _scale_food_item(
             english=english,
@@ -1565,19 +1796,19 @@ def _validate_occasion_suggestion(
     limits: dict[str, float],
     protein_limit_g: float,
     allowed_foods: pd.DataFrame | None = None,
+    *,
+    absolute_meal_caps: bool = False,
+    ckd_stage: str,
 ) -> tuple[bool, list[dict[str, Any]] | str]:
     """
     Validate AI JSON for one occasion against the prompt allowed list.
     Returns (True, food_items) or (False, reason).
     """
     rules = OCCASION_RULES[occasion]
-    nutrient_caps = rules["nutrient_caps"]
     require_protein_exactly_one_if_gated = rules["require_protein_exactly_one_if_gated"]
     pairings = rules["pairings"]
     # foods_count_range is global (identical for every occasion today)
     foods_lo, foods_hi = MEAL_RULES_GLOBAL["foods_count_range"]
-    k_gate_frac = float(MEAL_RULES_GLOBAL["item_k_gate_frac"])
-    p_gate_frac = float(MEAL_RULES_GLOBAL["item_p_gate_frac"])
     tea_name_match = MEAL_RULES_GLOBAL["tea_name_match"]
 
     if not data or not isinstance(data, dict):
@@ -1598,6 +1829,8 @@ def _validate_occasion_suggestion(
         pool = _occasion_food_pool(safe_foods, occasion)
 
     maize_proxy = _lookup_maize_proxy(safe_foods)
+    igikoma_proxy = _lookup_igikoma_food(safe_foods)
+    ugali_proxy = _lookup_ugali_food(safe_foods)
     resolved: list[dict[str, Any]] = []
 
     for item in foods_raw:
@@ -1616,6 +1849,11 @@ def _validate_occasion_suggestion(
             occasion,
             pool,
             maize_proxy,
+            igikoma_proxy=igikoma_proxy,
+            ugali_proxy=ugali_proxy,
+            existing_items=resolved,
+            # Defer sole-veg check until the full plate is resolved (order-independent).
+            allow_flavoring_as_vegetable=True,
         )
         if err or food_item is None:
             return False, err or "resolve failed"
@@ -1625,6 +1863,11 @@ def _validate_occasion_suggestion(
             return False, f"grams out of range for {name!r}: {grams_f}"
 
         resolved.append(food_item)
+
+    # Flavoring-only (onion/tomato) may appear beside a real vegetable, never alone.
+    veg_items = [f for f in resolved if f.get("category") == "Vegetable"]
+    if veg_items and not _has_real_vegetable(resolved):
+        return False, "flavoring-only cannot be the sole vegetable"
 
     names_lower = {_normalize_food_key(f["english"]) for f in resolved}
 
@@ -1672,8 +1915,7 @@ def _validate_occasion_suggestion(
         and not pool.empty
         and "category" in pool.columns
     ):
-        k_gate = limits["potassium"] * k_gate_frac
-        p_gate = limits["phosphorus"] * p_gate_frac
+        k_gate, p_gate = _item_kp_density_gates(ckd_stage)
         protein_pool = pool[
             pool["category"].isin(["Meat", "Fish"])
         ].copy()
@@ -1695,18 +1937,20 @@ def _validate_occasion_suggestion(
                     f"expected exactly one Meat/Fish item, got {n_protein}"
                 )
 
-    k_cap, p_cap, pro_cap, na_cap = nutrient_caps
+    k_bud, p_bud, pro_bud, na_bud = _occasion_nutrient_budgets(
+        occasion, limits, protein_limit_g, absolute_meal_caps=absolute_meal_caps
+    )
     total_k = sum(f["potassium_mg"] for f in resolved)
     total_p = sum(f["phosphorus_mg"] for f in resolved)
     total_pro = sum(f["protein_g"] for f in resolved)
     total_na = sum(f["sodium_mg"] for f in resolved)
-    if total_k > limits["potassium"] * k_cap:
+    if total_k > k_bud:
         return False, f"potassium {total_k:.0f}mg exceeds {occasion} cap"
-    if total_p > limits["phosphorus"] * p_cap:
+    if total_p > p_bud:
         return False, f"phosphorus {total_p:.0f}mg exceeds {occasion} cap"
-    if total_pro > protein_limit_g * pro_cap:
+    if total_pro > pro_bud:
         return False, f"protein {total_pro:.1f}g exceeds {occasion} cap"
-    if total_na > limits["sodium"] * na_cap:
+    if total_na > na_bud:
         return False, f"sodium {total_na:.0f}mg exceeds {occasion} cap"
 
     return True, resolved
@@ -1719,6 +1963,9 @@ def _validate_multi_option_occasion_suggestion(
     limits: dict[str, float],
     protein_limit_g: float,
     allowed_foods: pd.DataFrame | None = None,
+    *,
+    absolute_meal_caps: bool = False,
+    ckd_stage: str,
 ) -> list[list[dict[str, Any]]]:
     """
     Validate multi-option AI JSON for one occasion.
@@ -1770,6 +2017,8 @@ def _validate_multi_option_occasion_suggestion(
             limits,
             protein_limit_g,
             allowed_foods=allowed_foods,
+            absolute_meal_caps=absolute_meal_caps,
+            ckd_stage=ckd_stage,
         )
         if ok and isinstance(payload, list) and payload:
             surviving.append(payload)
@@ -1819,7 +2068,7 @@ def build_flan_prompt(
     if safe_foods is not None and len(safe_foods) > 0:
         if use_occasion_food_lists:
             lists = _build_occasion_prompt_food_lists(
-                safe_foods, limits, max_rows=10, day=day
+                safe_foods, limits, max_rows=10, day=day, ckd_stage=ckd_stage
             )
             food_section = (
                 f"BREAKFAST-APPROPRIATE FOODS:\n{lists['breakfast']}\n\n"
@@ -1829,7 +2078,7 @@ def build_flan_prompt(
             meal_rules = _MEAL_OCCASION_RULES
         else:
             food_section = _build_prompt_food_list(
-                safe_foods, limits, max_rows=30
+                safe_foods, limits, max_rows=30, ckd_stage=ckd_stage
             )
 
     day_instruction = ""
@@ -1872,7 +2121,7 @@ def build_flan_prompt(
         if use_occasion_food_lists:
             # Trim each occasion block independently so lunch/snack are not dropped.
             lists = _build_occasion_prompt_food_lists(
-                safe_foods, limits, max_rows=8, day=day
+                safe_foods, limits, max_rows=8, day=day, ckd_stage=ckd_stage
             )
             food_section = (
                 f"BREAKFAST-APPROPRIATE FOODS:\n{lists['breakfast']}\n\n"
@@ -2039,7 +2288,7 @@ def _generate_structured_day_plan(
     """
     allowed_by_occasion: dict[str, pd.DataFrame] = {
         occ: _build_structured_allowed_foods(
-            safe_foods, occ, limits, max_rows=20, day=day
+            safe_foods, occ, limits, max_rows=20, day=day, ckd_stage=ckd_stage
         )
         for occ in _OCCASIONS
     }
@@ -2119,6 +2368,7 @@ def _generate_structured_day_plan(
             limits,
             protein_limit_g,
             allowed_foods=allowed_by_occasion[occasion],
+            ckd_stage=ckd_stage,
         )
         if ok and isinstance(payload, list) and payload:
             day_plan[occasion] = payload
@@ -2225,11 +2475,144 @@ def _filter_high_risk_mentions(text: str, ckd_stage: str) -> str:
     return filtered
 
 
+def build_lowest_risk_occasion_plate(
+    safe_foods: pd.DataFrame,
+    occasion: str,
+    *,
+    seed: str | None = None,
+) -> list[dict[str, Any]]:
+    """
+    Damage-control plate when daily K/P remaining is exhausted.
+
+    Reuses OCCASION_RULES groups / meal_types / exclusions / portion bounds,
+    but does NOT fit a nutrient budget. Picks the lowest absolute K/P/Na load
+    at each food's minimum legal portion. Lunch/Dinner skips Meat/Fish
+    (protein optional) and aims for at least 2 items (e.g. Starch + Vegetable).
+    """
+    import random
+
+    if occasion not in OCCASION_RULES:
+        return []
+
+    rules = OCCASION_RULES[occasion]
+    groups: list[list[str]] = list(rules["groups"])
+    if occasion in ("Lunch", "Dinner"):
+        groups = [g for g in groups if not set(g) & {"Meat", "Fish"}]
+
+    fat_name_re = re.compile(MEAL_RULES_GLOBAL["fat_name_re"], re.IGNORECASE)
+    resolve_exclude_category = MEAL_RULES_GLOBAL["resolve_exclude_category"]
+    resolve_exclude_meal_type = MEAL_RULES_GLOBAL["resolve_exclude_meal_type"]
+
+    pool = _occasion_food_pool(safe_foods, occasion)
+    if pool.empty:
+        return []
+
+    def _pick_lowest(
+        categories: list[str],
+        used_names: list[str],
+        group_seed: str | None,
+        picked_so_far: list[dict[str, Any]],
+    ):
+        candidates = pool[
+            pool["category"].isin(categories)
+            & ~pool["english"].isin(used_names)
+        ].copy()
+        if candidates.empty:
+            return None
+
+        fat_name = candidates["english"].fillna("").astype(str).apply(
+            lambda s: bool(fat_name_re.search(s))
+        )
+        candidates = candidates[~fat_name]
+        if "category" in candidates.columns:
+            candidates = candidates[candidates["category"] != resolve_exclude_category]
+        if "meal_type" in candidates.columns:
+            candidates = candidates[
+                candidates["meal_type"] != resolve_exclude_meal_type
+            ]
+        if candidates.empty:
+            return None
+
+        # Never pick onion/tomato as the sole Vegetable-category representative.
+        picking_vegetable = "Vegetable" in categories
+        allow_flavoring_veg = _has_real_vegetable(picked_so_far)
+
+        scored: list[tuple[tuple[float, float, float], Any]] = []
+        for _, food in candidates.iterrows():
+            raw_english = str(food.get("english") or "").strip()
+            if (
+                picking_vegetable
+                and is_flavoring_only(raw_english)
+                and not allow_flavoring_veg
+            ):
+                continue
+            min_g, _max_g = _portion_bounds_for_name(raw_english)
+            k_per_100 = float(food.get("potassium_mg", 0) or 0)
+            ph_per_100 = float(food.get("phosphorus_mg", 0) or 0)
+            na_per_100 = float(food.get("sodium_mg", 0) or 0)
+            pro_per_100 = float(food.get("protein_g", 0) or 0)
+            k_load = k_per_100 * min_g / 100.0
+            ph_load = ph_per_100 * min_g / 100.0
+            na_load = na_per_100 * min_g / 100.0
+            scored.append(
+                (
+                    (k_load, ph_load, na_load),
+                    (food, raw_english, min_g, k_load, ph_load, na_load, pro_per_100 * min_g / 100.0),
+                )
+            )
+
+        if not scored:
+            return None
+
+        scored.sort(key=lambda t: t[0])
+        # Deterministic tie-break among equal (K,P,Na) loads when seed set.
+        if group_seed is not None and len(scored) > 1:
+            best_key = scored[0][0]
+            tied = [row for row in scored if row[0] == best_key]
+            if len(tied) > 1:
+                rng = random.Random(group_seed)
+                chosen = tied[rng.randint(0, len(tied) - 1)][1]
+            else:
+                chosen = tied[0][1]
+        else:
+            chosen = scored[0][1]
+
+        food, raw_english, min_g, k_load, ph_load, na_load, pro_load = chosen
+        used_names.append(raw_english)
+        return {
+            "english": _display_english_name(raw_english),
+            "kinyarwanda": str(food.get("kinyarwanda") or "").strip(),
+            "preparation_method": str(food.get("preparation_method") or "").strip(),
+            "portion_grams": round(min_g, 1),
+            "meal_occasion": occasion,
+            "potassium_mg": round(k_load, 1),
+            "phosphorus_mg": round(ph_load, 1),
+            "protein_g": round(pro_load, 1),
+            "sodium_mg": round(na_load, 1),
+            "category": str(food.get("category") or "Other"),
+        }
+
+    picked: list[dict[str, Any]] = []
+    used_names: list[str] = []
+    for group_categories in groups:
+        group_seed = (
+            f"{seed}:{','.join(group_categories)}" if seed is not None else None
+        )
+        item = _pick_lowest(group_categories, used_names, group_seed, picked)
+        if item:
+            picked.append(item)
+
+    return picked
+
+
 def build_meal_plan(
     safe_foods: pd.DataFrame,
     limits: dict[str, float],
     protein_limit_g: float,
     day: str | None = None,
+    *,
+    absolute_meal_caps: bool = False,
+    seed: str | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
     """
     Build a balanced meal plan from Rwandan safe foods.
@@ -2241,6 +2624,13 @@ def build_meal_plan(
 
     Optional day: day-seeded Breakfast staple steer (bread vs igikoma)
     for weekly fallbacks. day=None keeps prior Grain DB-only behavior.
+
+    absolute_meal_caps: when True, treat limits/protein_limit_g as the
+    absolute per-meal budget (skip OCCASION_RULES nutrient_caps fractions).
+
+    Optional seed: when set, pick_one shuffles deterministically per
+    seed+group (e.g. what-to-eat-next). seed=None keeps unseeded random
+    (weekly/chat callers unchanged).
     """
     import random
 
@@ -2251,22 +2641,32 @@ def build_meal_plan(
     protein_pick_allowance_frac = float(
         MEAL_RULES_GLOBAL["protein_pick_allowance_frac"]
     )
+    non_final_group_allowance_frac = float(
+        MEAL_RULES_GLOBAL["non_final_group_allowance_frac"]
+    )
     snack_only_english = MEAL_RULES_GLOBAL["snack_only_english"]
     bread_proxy = MEAL_RULES_GLOBAL["bread_proxy"]
     synthetic_specs = MEAL_RULES_GLOBAL["synthetic_specs"]
     recommended_staple = _breakfast_recommended_staple(day)
 
     # Budgets from per-occasion nutrient_caps (same fractions as structured path)
+    # unless absolute_meal_caps: then limits are already the meal budget.
     K_BUDGET: dict[str, float] = {}
     PHOSPHORUS_BUDGET: dict[str, float] = {}
     PROTEIN_BUDGET: dict[str, float] = {}
     SODIUM_BUDGET: dict[str, float] = {}
     for _occ, _rules in OCCASION_RULES.items():
-        k_cap, ph_cap, pro_cap, na_cap = _rules["nutrient_caps"]
-        K_BUDGET[_occ] = limits["potassium"] * k_cap
-        PHOSPHORUS_BUDGET[_occ] = limits["phosphorus"] * ph_cap
-        PROTEIN_BUDGET[_occ] = protein_limit_g * pro_cap
-        SODIUM_BUDGET[_occ] = limits["sodium"] * na_cap
+        if absolute_meal_caps:
+            K_BUDGET[_occ] = float(limits["potassium"])
+            PHOSPHORUS_BUDGET[_occ] = float(limits["phosphorus"])
+            PROTEIN_BUDGET[_occ] = float(protein_limit_g)
+            SODIUM_BUDGET[_occ] = float(limits["sodium"])
+        else:
+            k_cap, ph_cap, pro_cap, na_cap = _rules["nutrient_caps"]
+            K_BUDGET[_occ] = limits["potassium"] * k_cap
+            PHOSPHORUS_BUDGET[_occ] = limits["phosphorus"] * ph_cap
+            PROTEIN_BUDGET[_occ] = protein_limit_g * pro_cap
+            SODIUM_BUDGET[_occ] = limits["sodium"] * na_cap
 
     foods = safe_foods.copy()
     if "meal_type" not in foods.columns:
@@ -2283,6 +2683,11 @@ def build_meal_plan(
         portion: float,
         exclude_names: list[str],
         allowed_meal_types: list[str],
+        seed: str | None = None,
+        *,
+        leave_room: bool = False,
+        allowance_override: float | None = None,
+        picked_so_far: list[dict] | None = None,
     ) -> dict | None:
         """Pick one food from categories that fits within K/protein/P/Na budgets."""
         candidates = foods_df[
@@ -2311,15 +2716,49 @@ def build_meal_plan(
         if candidates.empty:
             return None
 
-        candidates = candidates.sample(frac=1, random_state=random.randint(0, 9999))
+        if seed is not None:
+            candidates = candidates.sample(
+                frac=1,
+                random_state=random.Random(seed).randint(0, 9999),
+            )
+        else:
+            candidates = candidates.sample(
+                frac=1,
+                random_state=random.randint(0, 9999),
+            )
+
+        if leave_room:
+            budget_frac = float(
+                allowance_override
+                if allowance_override is not None
+                else non_final_group_allowance_frac
+            )
+        else:
+            budget_frac = 1.0
+
+        k_allow = k_remaining * budget_frac
+        ph_allow = ph_remaining * budget_frac
+        na_allow = na_remaining * budget_frac
 
         is_protein_pick = bool(set(categories) & protein_pick_categories)
+        # Meat/Fish/Egg/Dairy keep protein_pick_allowance_frac (0.65) unchanged.
+        # Non-protein picks use budget_frac so non-final groups leave room.
         protein_allowance = protein_remaining * (
-            protein_pick_allowance_frac if is_protein_pick else 1.0
+            protein_pick_allowance_frac if is_protein_pick else budget_frac
         )
+
+        picking_vegetable = "Vegetable" in categories
+        allow_flavoring_veg = _has_real_vegetable(picked_so_far)
 
         for _, food in candidates.iterrows():
             raw_english = str(food.get("english") or "").strip()
+            # Never pick onion/tomato as the sole Vegetable-category representative.
+            if (
+                picking_vegetable
+                and is_flavoring_only(raw_english)
+                and not allow_flavoring_veg
+            ):
+                continue
             min_g, max_g = _portion_bounds_for_name(raw_english)
             k_per_100 = float(food.get("potassium_mg", 0) or 0)
             protein_per_100 = float(food.get("protein_g", 0) or 0)
@@ -2328,15 +2767,15 @@ def build_meal_plan(
 
             fit_portion = portion
             if k_per_100 > 0:
-                fit_portion = min(fit_portion, k_remaining / k_per_100 * 100)
+                fit_portion = min(fit_portion, k_allow / k_per_100 * 100)
             if protein_per_100 > 0:
                 fit_portion = min(
                     fit_portion, protein_allowance / protein_per_100 * 100
                 )
             if ph_per_100 > 0:
-                fit_portion = min(fit_portion, ph_remaining / ph_per_100 * 100)
+                fit_portion = min(fit_portion, ph_allow / ph_per_100 * 100)
             if na_per_100 > 0:
-                fit_portion = min(fit_portion, na_remaining / na_per_100 * 100)
+                fit_portion = min(fit_portion, na_allow / na_per_100 * 100)
             fit_portion = min(fit_portion, max_g)
             if fit_portion < min_g:
                 continue
@@ -2380,12 +2819,6 @@ def build_meal_plan(
         groups = rules["groups"]
         allowed_meal_types = rules["meal_types"]
         fallback_repair = rules.get("fallback_repair") or []
-        picked: list[dict] = []
-        k_used = 0.0
-        protein_used = 0.0
-        ph_used = 0.0
-        na_used = 0.0
-        used_names: list[str] = []
 
         occasion_foods = foods
         if occasion in ("Breakfast", "Lunch", "Dinner"):
@@ -2394,105 +2827,48 @@ def build_meal_plan(
             excluded = set(snack_only_english) | set(rules.get("exclude_english") or ())
             occasion_foods = foods[~eng_norm.isin(excluded)]
 
-        for group_categories in groups:
-            food = None
-            # Weekly bread/igikoma-days: try matching synthetic for Grain first.
-            if (
-                occasion == "Breakfast"
-                and group_categories == ["Grain"]
-                and recommended_staple in ("bread", "igikoma")
-            ):
-                spec = synthetic_specs[recommended_staple]
-                if recommended_staple == "bread":
-                    meta = {**bread_proxy}
-                else:
-                    meta = {**_lookup_maize_proxy(safe_foods)}
-                if "category" in spec:
-                    meta["category"] = spec["category"]
-                if "preparation_method" in spec:
-                    meta["preparation_method"] = spec["preparation_method"]
-                synth_row = _synthetic_row(
-                    meta,
-                    english=str(spec["english"]),
-                    meal_type=str(spec["meal_type"]),
-                )
-                food = pick_one(
-                    pd.DataFrame([synth_row]),
-                    group_categories,
-                    k_budget - k_used,
-                    protein_budget - protein_used,
-                    ph_budget - ph_used,
-                    na_budget - na_used,
-                    portion,
-                    used_names,
-                    allowed_meal_types,
-                )
-            if food is None:
-                food = pick_one(
-                    occasion_foods,
-                    group_categories,
-                    k_budget - k_used,
-                    protein_budget - protein_used,
-                    ph_budget - ph_used,
-                    na_budget - na_used,
-                    portion,
-                    used_names,
-                    allowed_meal_types,
-                )
-            if food:
-                food["meal_occasion"] = occasion
-                picked.append(food)
-                k_used += food["potassium_mg"]
-                protein_used += food["protein_g"]
-                ph_used += food["phosphorus_mg"]
-                na_used += food["sodium_mg"]
+        def fill_occasion(
+            *,
+            allowance_override: float | None = None,
+        ) -> list[dict]:
+            picked: list[dict] = []
+            k_used = 0.0
+            protein_used = 0.0
+            ph_used = 0.0
+            na_used = 0.0
+            used_names: list[str] = []
 
-        # Breakfast-only when fallback_repair includes ikivuguto_fruit
-        if "ikivuguto_fruit" in fallback_repair:
-            has_ikivuguto = any(
-                _normalize_food_key(f["english"]) == "ikivuguto" for f in picked
-            )
-            has_fruit = any(f.get("category") == "Fruit" for f in picked)
-            if has_ikivuguto and not has_fruit:
-                fruit = pick_one(
-                    occasion_foods,
-                    ["Fruit"],
-                    k_budget - k_used,
-                    protein_budget - protein_used,
-                    ph_budget - ph_used,
-                    na_budget - na_used,
-                    portion,
-                    used_names,
-                    allowed_meal_types,
+            for gi, group_categories in enumerate(groups):
+                leave_room = gi < len(groups) - 1
+                group_seed = (
+                    f"{seed}:{','.join(group_categories)}"
+                    if seed is not None
+                    else None
                 )
-                if fruit:
-                    fruit["meal_occasion"] = occasion
-                    picked.append(fruit)
-                    k_used += fruit["potassium_mg"]
-                    protein_used += fruit["protein_g"]
-                    ph_used += fruit["phosphorus_mg"]
-                    na_used += fruit["sodium_mg"]
-                else:
-                    for idx in range(len(picked) - 1, -1, -1):
-                        if _normalize_food_key(picked[idx]["english"]) != "ikivuguto":
-                            continue
-                        removed = picked.pop(idx)
-                        k_used -= removed["potassium_mg"]
-                        protein_used -= removed["protein_g"]
-                        ph_used -= removed["phosphorus_mg"]
-                        na_used -= removed["sodium_mg"]
-
-                    used_names[:] = [
-                        n
-                        for n in used_names
-                        if _normalize_food_key(n) != "sour milk"
-                    ]
-                    if "sour milk" not in used_names:
-                        used_names.append("sour milk")
-
-                    replacement = pick_one(
-                        occasion_foods,
-                        ["Egg", "Dairy"],
+                food = None
+                # Weekly bread/igikoma-days: try matching synthetic for Grain first.
+                if (
+                    occasion == "Breakfast"
+                    and group_categories == ["Grain"]
+                    and recommended_staple in ("bread", "igikoma")
+                ):
+                    spec = synthetic_specs[recommended_staple]
+                    if recommended_staple == "bread":
+                        meta = {**bread_proxy}
+                    else:
+                        meta = {**_lookup_igikoma_food(safe_foods)}
+                    if "category" in spec:
+                        meta["category"] = spec["category"]
+                    if "preparation_method" in spec:
+                        meta["preparation_method"] = spec["preparation_method"]
+                    synth_row = _synthetic_row(
+                        meta,
+                        english=str(spec["english"]),
+                        meal_type=str(spec["meal_type"]),
+                    )
+                    food = pick_one(
+                        pd.DataFrame([synth_row]),
+                        group_categories,
                         k_budget - k_used,
                         protein_budget - protein_used,
                         ph_budget - ph_used,
@@ -2500,14 +2876,110 @@ def build_meal_plan(
                         portion,
                         used_names,
                         allowed_meal_types,
+                        group_seed,
+                        leave_room=leave_room,
+                        allowance_override=allowance_override if leave_room else None,
+                        picked_so_far=picked,
                     )
-                    if replacement:
-                        replacement["meal_occasion"] = occasion
-                        picked.append(replacement)
-                        k_used += replacement["potassium_mg"]
-                        protein_used += replacement["protein_g"]
-                        ph_used += replacement["phosphorus_mg"]
-                        na_used += replacement["sodium_mg"]
+                if food is None:
+                    food = pick_one(
+                        occasion_foods,
+                        group_categories,
+                        k_budget - k_used,
+                        protein_budget - protein_used,
+                        ph_budget - ph_used,
+                        na_budget - na_used,
+                        portion,
+                        used_names,
+                        allowed_meal_types,
+                        group_seed,
+                        leave_room=leave_room,
+                        allowance_override=allowance_override if leave_room else None,
+                        picked_so_far=picked,
+                    )
+                if food:
+                    food["meal_occasion"] = occasion
+                    picked.append(food)
+                    k_used += food["potassium_mg"]
+                    protein_used += food["protein_g"]
+                    ph_used += food["phosphorus_mg"]
+                    na_used += food["sodium_mg"]
+
+            # Breakfast-only when fallback_repair includes ikivuguto_fruit
+            if "ikivuguto_fruit" in fallback_repair:
+                has_ikivuguto = any(
+                    _normalize_food_key(f["english"]) == "ikivuguto" for f in picked
+                )
+                has_fruit = any(f.get("category") == "Fruit" for f in picked)
+                if has_ikivuguto and not has_fruit:
+                    fruit_seed = (
+                        f"{seed}:Fruit" if seed is not None else None
+                    )
+                    fruit = pick_one(
+                        occasion_foods,
+                        ["Fruit"],
+                        k_budget - k_used,
+                        protein_budget - protein_used,
+                        ph_budget - ph_used,
+                        na_budget - na_used,
+                        portion,
+                        used_names,
+                        allowed_meal_types,
+                        fruit_seed,
+                    )
+                    if fruit:
+                        fruit["meal_occasion"] = occasion
+                        picked.append(fruit)
+                        k_used += fruit["potassium_mg"]
+                        protein_used += fruit["protein_g"]
+                        ph_used += fruit["phosphorus_mg"]
+                        na_used += fruit["sodium_mg"]
+                    else:
+                        for idx in range(len(picked) - 1, -1, -1):
+                            if _normalize_food_key(picked[idx]["english"]) != "ikivuguto":
+                                continue
+                            removed = picked.pop(idx)
+                            k_used -= removed["potassium_mg"]
+                            protein_used -= removed["protein_g"]
+                            ph_used -= removed["phosphorus_mg"]
+                            na_used -= removed["sodium_mg"]
+
+                        used_names[:] = [
+                            n
+                            for n in used_names
+                            if _normalize_food_key(n) != "sour milk"
+                        ]
+                        if "sour milk" not in used_names:
+                            used_names.append("sour milk")
+
+                        replacement_seed = (
+                            f"{seed}:Egg,Dairy" if seed is not None else None
+                        )
+                        replacement = pick_one(
+                            occasion_foods,
+                            ["Egg", "Dairy"],
+                            k_budget - k_used,
+                            protein_budget - protein_used,
+                            ph_budget - ph_used,
+                            na_budget - na_used,
+                            portion,
+                            used_names,
+                            allowed_meal_types,
+                            replacement_seed,
+                        )
+                        if replacement:
+                            replacement["meal_occasion"] = occasion
+                            picked.append(replacement)
+                            k_used += replacement["potassium_mg"]
+                            protein_used += replacement["protein_g"]
+                            ph_used += replacement["phosphorus_mg"]
+                            na_used += replacement["sodium_mg"]
+
+            return picked
+
+        picked = fill_occasion()
+        if occasion in ("Lunch", "Dinner") and len(picked) < 2:
+            picked = fill_occasion(allowance_override=0.55)
 
         plan[occasion] = picked
 
@@ -2834,6 +3306,7 @@ def generate_meal_recommendation(
                 limits,
                 protein_limit_g,
                 allowed_foods=allowed_foods,
+                ckd_stage=ckd_stage,
             )
             if passed:
                 meal_options = passed
@@ -2990,28 +3463,6 @@ async def meal_planner_chat(
     food_db = _load_food_db()
     stage_number = _stage_num(request.ckd_stage)
     safe_foods = food_db[food_db["ckd_stage_safe"].apply(lambda x: _is_stage_safe(str(x), stage_number))]
-
-    # Clinical forbidden foods per stage — removes foods that pass the stage_safe
-    # range check but are clinically restricted due to high potassium/phosphorus
-    _FORBIDDEN_BY_STAGE: dict[str, list[str]] = {
-        "G3A": [
-            "groundnuts", "soybeans", "soya",
-            "spinach", "cassava leaves", "isombe",
-        ],
-        "G3B": [
-            "beans", "peas", "banana", "matoke", "plantains",
-            "avocado", "avocados", "irish potatoes",
-            "cassava leaves", "isombe", "groundnuts", "soybeans",
-            "soya", "spinach", "oranges", "passion fruit",
-        ],
-        "G4": [
-            "beans", "peas", "banana", "matoke", "plantains",
-            "avocado", "avocados", "irish potatoes",
-            "cassava leaves", "isombe", "groundnuts", "soybeans",
-            "soya", "spinach", "sweet potatoes", "yams",
-            "oranges", "passion fruit", "milk", "pumpkin",
-        ],
-    }
 
     _stage_key = request.ckd_stage.upper()
     _forbidden = _FORBIDDEN_BY_STAGE.get(_stage_key, [])

@@ -64,7 +64,7 @@ interface LstmPattern {
   risk_label: string;
   confidence: number;
   trend: string;
-  days_analyzed: number;
+  meals_analyzed: number;
 }
 
 interface WeeklyTrendResponse {
@@ -353,7 +353,7 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
   const [confidence, setConfidence] = useState(0);
   const [, setPatternStable] = useState(true);
   const [lstmTrend, setLstmTrend] = useState<string>('stable');
-  const [lstmDaysAnalyzed, setLstmDaysAnalyzed] = useState(0);
+  const [lstmMealsAnalyzed, setLstmMealsAnalyzed] = useState(0);
 
   useEffect(() => {
     const token = getAuthToken();
@@ -396,7 +396,7 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
         setConfidence(Math.round((trendData.lstm_pattern?.confidence ?? 0) * 100));
         setPatternStable(trendData.lstm_pattern?.trend !== 'escalating');
         setLstmTrend(trendData.lstm_pattern?.trend ?? 'stable');
-        setLstmDaysAnalyzed(trendData.lstm_pattern?.days_analyzed ?? 0);
+        setLstmMealsAnalyzed(trendData.lstm_pattern?.meals_analyzed ?? 0);
         setLoading(false);
       })
       .catch((err) => {
@@ -462,7 +462,7 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold text-foreground">Your Dietary Pattern</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            AI-powered analysis of whether your risk is escalating, stable, or improving
+            AI estimates your recent meal-sequence risk, and whether that pattern looks increasing, steady, or improving
           </p>
           <p className="text-sm text-muted-foreground">
             {weekRange} · {formatStageDisplay(profile?.ckd_stage || 'G3b')} · {profile?.name || 'Patient'}
@@ -494,7 +494,7 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
             </span>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Based on your last {lstmDaysAnalyzed} logged meals · LSTM pattern analysis
+            Based on your last {lstmMealsAnalyzed} logged meals · LSTM pattern analysis
           </p>
         </div>
       )}

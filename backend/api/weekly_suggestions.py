@@ -16,8 +16,7 @@ a generated multi-day meal schedule.
 
 from __future__ import annotations
 
-from collections import defaultdict
-from datetime import date, datetime, time, timedelta
+from datetime import datetime
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -27,20 +26,14 @@ from sqlalchemy.orm import Session
 from backend.api.daily_budget import normalize_ckd_stage
 from backend.auth.security import get_current_user_id
 from backend.clinical_constants import KDOQI_DAILY_LIMITS
-from backend.database.db import Food, FoodLog, Patient, User, get_db
+from backend.database.db import Food, Patient, User, get_db
 from backend.models.lstm_model import get_analyzer
 from backend.models.recommender import EXCLUDE_CATEGORIES, get_recommender
-from backend.utils.meal_aggregation import (
-    group_logs_into_meals,
-    meal_vector_from_totals,
-    sum_meal_nutrients,
-)
+from backend.utils.lstm_sequence import build_lstm_sequence
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Weekly Suggestions"])
 
-MAX_MEALS = 6
-WINDOW_DAYS = 7
 SUGGESTIONS_PER_OCCASION = 5
 
 NUTRIENT_LABELS = {
@@ -91,57 +84,6 @@ class WeeklySuggestionsResponse(BaseModel):
     suggestions_by_meal: list[MealOccasionSuggestions]
     clinical_note: str
     analysis_available: bool = True
-
-
-def _fetch_recent_logs(db: Session, user_id: str, days: int = WINDOW_DAYS) -> list[FoodLog]:
-    end_date = datetime.utcnow().date()
-    start_date = end_date - timedelta(days=days - 1)
-    start_dt = datetime.combine(start_date, time.min)
-    end_dt = datetime.combine(end_date, time.max)
-    return (
-        db.query(FoodLog)
-        .filter(
-            FoodLog.patient_id == user_id,
-            FoodLog.logged_at >= start_dt,
-            FoodLog.logged_at <= end_dt,
-        )
-        .order_by(FoodLog.logged_at.asc())
-        .all()
-    )
-
-
-def _group_logs_by_day(logs: list[FoodLog]) -> dict[date, list[FoodLog]]:
-    grouped: dict[date, list[FoodLog]] = defaultdict(list)
-    for log in logs:
-        if log.logged_at is None:
-            continue
-        grouped[log.logged_at.date()].append(log)
-    return grouped
-
-
-def _get_recent_meal_sequence(
-    db: Session,
-    user_id: str,
-    body_weight_kg: float,
-) -> list[list[float]]:
-    """
-    Last 6 logged meals in LSTM format, using the same aggregation
-    pipeline as next_meal.py (group_logs_into_meals → sum_meal_nutrients
-    → meal_vector_from_totals), extended across a 7-day window.
-    """
-    logs = _fetch_recent_logs(db, user_id)
-    grouped = _group_logs_by_day(logs)
-
-    meal_sequence: list[list[float]] = []
-    for day in sorted(grouped.keys()):
-        meal_groups = group_logs_into_meals(grouped[day])
-        for group in meal_groups:
-            totals = sum_meal_nutrients(group)
-            meal_sequence.append(
-                meal_vector_from_totals(totals, body_weight_kg=body_weight_kg or 0)
-            )
-
-    return meal_sequence[-MAX_MEALS:] if len(meal_sequence) > MAX_MEALS else meal_sequence
 
 
 def _meal_vectors_to_dicts(meal_sequence: list[list[float]]) -> list[dict[str, float]]:
@@ -260,7 +202,7 @@ def get_weekly_suggestions(
         else (user.weight_kg if user else None)
     )
     body_weight = float(weight_source or 70.0)
-    meal_sequence = _get_recent_meal_sequence(db, user_id, body_weight)
+    meal_sequence = build_lstm_sequence(db, user_id, body_weight)
 
     if meal_sequence:
         try:

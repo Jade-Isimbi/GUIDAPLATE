@@ -270,7 +270,7 @@ def _count_categories(logs: list[FoodLog]) -> dict[str, int]:
 
 
 def _determine_next_meal_occasion(logs: list[FoodLog]) -> str | None:
-    """Infer the next meal occasion from today's most recently logged meal."""
+    """Chronological next after the most recently logged meal."""
     if not logs:
         return "Breakfast"
 

@@ -147,6 +147,52 @@ def update_patient_profile(
     )
 
 
+class PatientLstmPatternResponse(BaseModel):
+    risk_label: str | None = None
+    confidence: float | None = None
+    trend: str | None = None
+    meals_analyzed: int = 0
+    available: bool = False
+
+
+@router.get("/patient/lstm-pattern", response_model=PatientLstmPatternResponse)
+def get_patient_lstm_pattern(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+) -> PatientLstmPatternResponse:
+    """
+    Canonical LSTM pattern for the authenticated patient.
+    Uses build_lstm_sequence (7-day / last ≤6 meals) via analyze_patient_lstm.
+    """
+    from backend.utils.lstm_sequence import analyze_patient_lstm
+
+    user = db.query(User).filter(User.user_id == user_id).first()
+    patient = db.query(Patient).filter(Patient.patient_id == user_id).first()
+
+    weight_source = (
+        patient.body_weight_kg
+        if patient and patient.body_weight_kg is not None
+        else (user.weight_kg if user else None)
+    )
+    body_weight_kg = float(weight_source or 70.0)
+
+    try:
+        result = analyze_patient_lstm(db, user_id, body_weight_kg)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    if result is None:
+        return PatientLstmPatternResponse(available=False, meals_analyzed=0)
+
+    return PatientLstmPatternResponse(
+        risk_label=result["risk_label"],
+        confidence=result["confidence"],
+        trend=result["trend"],
+        meals_analyzed=int(result.get("sequence_length") or 0),
+        available=True,
+    )
+
+
 def _serialize_food_log(log: FoodLog) -> dict:
     return {
         "log_id": log.log_id,

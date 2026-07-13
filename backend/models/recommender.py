@@ -5,6 +5,9 @@ GuidaPlate — Food recommendation engine backed by the SQLAlchemy foods table
 
 from __future__ import annotations
 
+from pathlib import Path
+
+import pandas as pd
 from sqlalchemy.orm import Session
 
 from backend.clinical_constants import CLINICAL_SEVERITY_WEIGHTS, KDOQI_DAILY_LIMITS, STAGE_NUMERIC
@@ -23,6 +26,22 @@ EXCLUDE_CATEGORIES: frozenset[str] = frozenset({
     "Condiment",
     "Spice/Herb",
 })
+
+# Candidate category must be in the queried food's group.
+# Meat/Fish/Egg interchange as protein sources; Dairy only with Dairy.
+# Never cross into Fruit/Vegetable/Starch/Grain/Legume (or vice versa).
+SUBSTITUTE_CATEGORY_GROUPS: dict[str, frozenset[str]] = {
+    "Meat": frozenset({"Meat", "Fish", "Egg"}),
+    "Fish": frozenset({"Meat", "Fish", "Egg"}),
+    "Egg": frozenset({"Meat", "Fish", "Egg"}),
+    "Dairy": frozenset({"Dairy"}),
+    "Fruit": frozenset({"Fruit"}),
+    "Vegetable": frozenset({"Vegetable"}),
+    "Starch": frozenset({"Starch"}),
+    "Grain": frozenset({"Grain"}),
+    "Legume": frozenset({"Legume"}),
+    "Other": frozenset({"Other"}),
+}
 
 INAPPROPRIATE_SUBSTITUTE_KEYWORDS: tuple[str, ...] = (
     # Oils and fats
@@ -98,6 +117,38 @@ SUBSTITUTE_OUTPUT_KEYS = [
     "notes",
     "reason",
 ]
+
+_RWANDAN_FOOD_IDS: set[str] | None = None
+
+
+def _rwandan_food_ids() -> set[str]:
+    """CSV-backed set of food_id values with is_rwandan == 1 (cached)."""
+    global _RWANDAN_FOOD_IDS
+    if _RWANDAN_FOOD_IDS is None:
+        csv_path = Path(__file__).resolve().parent.parent / "data" / "food_database.csv"
+        csv_df = pd.read_csv(csv_path)
+        if "is_rwandan" not in csv_df.columns or "food_id" not in csv_df.columns:
+            _RWANDAN_FOOD_IDS = set()
+        else:
+            mask = (
+                pd.to_numeric(csv_df["is_rwandan"], errors="coerce")
+                .fillna(0)
+                .astype(int)
+                == 1
+            )
+            _RWANDAN_FOOD_IDS = set(
+                csv_df.loc[mask, "food_id"].astype(str).str.strip()
+            )
+    return _RWANDAN_FOOD_IDS
+
+
+def _is_rwandan_candidate(food: Food) -> bool:
+    """True if food is flagged is_rwandan==1 or matches meal_planner oats bypass."""
+    from backend.api.meal_planner import _english_matches_rwandan_bypass
+
+    if str(food.food_id).strip() in _rwandan_food_ids():
+        return True
+    return _english_matches_rwandan_bypass(food.english or "")
 
 
 def _is_appropriate_substitute(food_name: str) -> bool:
@@ -218,9 +269,16 @@ class FoodRecommender:
         limits = KDOQI_DAILY_LIMITS.get(ckd_stage, KDOQI_DAILY_LIMITS["G3b"])
         threshold = self._threshold_for_nutrient(primary, limits)
         nutrient_attr = getattr(Food, nutrient_col)
+        stage_number = self._stage_to_number(ckd_stage)
 
         queried = find_food_by_name(db, food_name)
         queried_food_id = queried.food_id if queried is not None else None
+        queried_category = queried.category if queried is not None else None
+        allowed_categories = SUBSTITUTE_CATEGORY_GROUPS.get(
+            queried_category or "", frozenset()
+        )
+        if not allowed_categories:
+            return []
 
         candidates = (
             db.query(Food)
@@ -234,8 +292,11 @@ class FoodRecommender:
         candidates = [
             food
             for food in candidates
-            if _is_appropriate_substitute(food.english)
+            if food.category in allowed_categories
+            and _is_appropriate_substitute(food.english)
             and (queried_food_id is None or food.food_id != queried_food_id)
+            and self._parse_stage_safe(food.stage_safe_range, stage_number)
+            and _is_rwandan_candidate(food)
         ]
 
         if not candidates:

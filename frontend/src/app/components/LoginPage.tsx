@@ -77,6 +77,14 @@ export function LoginPage({ isDark, theme, onLogin, onGoToSignup, initialMessage
       localStorage.setItem('guidaplate_token', data.access_token);
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('guidaplate_user_id', data.user_id);
+      // TEMP diagnostic — remove after token-missing investigation
+      console.log('[login] token write', {
+        hasAccessToken: Boolean(data.access_token),
+        accessTokenLen: data.access_token?.length ?? 0,
+        guidaplate_token: localStorage.getItem('guidaplate_token')?.slice(0, 12) ?? null,
+        legacy_token: localStorage.getItem('token')?.slice(0, 12) ?? null,
+        user_id: localStorage.getItem('guidaplate_user_id'),
+      });
 
       onLogin({
         name: data.name,

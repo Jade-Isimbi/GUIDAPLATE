@@ -1,0 +1,655 @@
+{
+  "n_pass": 58,
+  "n_fail": 0,
+  "n_total": 58,
+  "all_passed": true,
+  "checks": [
+    {
+      "strategy": "00_integrity",
+      "name": "day_v3_sha256_unchanged",
+      "passed": true,
+      "detail": "sha=0c31b13c74fd49b6..."
+    },
+    {
+      "strategy": "00_integrity",
+      "name": "meal_artifact_exists",
+      "passed": true,
+      "detail": "models/xgboost_v3_meal.pkl"
+    },
+    {
+      "strategy": "00_integrity",
+      "name": "meal_path_not_day_path",
+      "passed": true,
+      "detail": "meal=xgboost_v3_meal.pkl day=xgboost_v3.pkl"
+    },
+    {
+      "strategy": "00_integrity",
+      "name": "meal_sha_differs_from_day",
+      "passed": true,
+      "detail": "meal=564c1cd5e4c735c4... day=0c31b13c74fd49b6..."
+    },
+    {
+      "strategy": "00_integrity",
+      "name": "metrics_csv_exists",
+      "passed": true,
+      "detail": "10_xgboost_v3_meal_metrics.csv"
+    },
+    {
+      "strategy": "00_integrity",
+      "name": "dataset_csv_exists",
+      "passed": true,
+      "detail": "05_risk_labels_v3_meal.csv"
+    },
+    {
+      "strategy": "01_mcnemar",
+      "name": "meal_beats_rule_mcnemar",
+      "passed": true,
+      "detail": "p=4.184e-78 meal_only=355 rule_only=1"
+    },
+    {
+      "strategy": "01_mcnemar",
+      "name": "meal_not_worse_than_day",
+      "passed": true,
+      "detail": "p=0.01586 meal_only=10 day_only=1"
+    },
+    {
+      "strategy": "02_cross_validation",
+      "name": "cv_accuracy_above_proposal",
+      "passed": true,
+      "detail": "acc=0.9978 \u00b1 0.0011 folds=[0.9986, 0.9967, 0.9995, 0.9967, 0.9972]"
+    },
+    {
+      "strategy": "02_cross_validation",
+      "name": "cv_f1_macro_stable",
+      "passed": true,
+      "detail": "f1_macro=0.9971 \u00b1 0.0015"
+    },
+    {
+      "strategy": "03_overfitting",
+      "name": "train_test_gap_under_2pp",
+      "passed": true,
+      "detail": "train=0.9985 test=0.9986 gap=-0.0001"
+    },
+    {
+      "strategy": "03_overfitting",
+      "name": "test_not_collapsed",
+      "passed": true,
+      "detail": "test_acc=0.9986"
+    },
+    {
+      "strategy": "04_confusion",
+      "name": "proposal_auc_floor",
+      "passed": true,
+      "detail": "auc=1.0000 (floor 0.9)"
+    },
+    {
+      "strategy": "04_confusion",
+      "name": "proposal_high_sensitivity",
+      "passed": true,
+      "detail": "HIGH sens=1.0000 (floor 0.85)"
+    },
+    {
+      "strategy": "04_confusion",
+      "name": "proposal_mod_sensitivity",
+      "passed": true,
+      "detail": "MOD sens=0.9952 (floor 0.85)"
+    },
+    {
+      "strategy": "04_confusion",
+      "name": "zero_high_false_negatives",
+      "passed": true,
+      "detail": "HIGH\u2192not-HIGH=0 cm=[[777, 1, 0], [2, 414, 0], [0, 0, 959]]"
+    },
+    {
+      "strategy": "05_per_stage",
+      "name": "stage_G2_performance",
+      "passed": true,
+      "detail": "n=1716 acc=0.9983 HIGH_sens=1.0000 MOD_sens=0.9942"
+    },
+    {
+      "strategy": "05_per_stage",
+      "name": "stage_G3a_performance",
+      "passed": true,
+      "detail": "n=300 acc=1.0000 HIGH_sens=1.0000 MOD_sens=1.0000"
+    },
+    {
+      "strategy": "05_per_stage",
+      "name": "stage_G3b_performance",
+      "passed": true,
+      "detail": "n=113 acc=1.0000 HIGH_sens=1.0000 MOD_sens=1.0000"
+    },
+    {
+      "strategy": "05_per_stage",
+      "name": "stage_G4_performance",
+      "passed": true,
+      "detail": "n=24 acc=1.0000 HIGH_sens=1.0000 MOD_sens=1.0000"
+    },
+    {
+      "strategy": "05b_per_occasion",
+      "name": "occasion_Breakfast_present",
+      "passed": true,
+      "detail": "n=551"
+    },
+    {
+      "strategy": "05b_per_occasion",
+      "name": "occasion_Breakfast_performance",
+      "passed": true,
+      "detail": "acc=1.0000 HIGH_sens=1.0000 MOD_sens=1.0000"
+    },
+    {
+      "strategy": "05b_per_occasion",
+      "name": "occasion_Lunch_present",
+      "passed": true,
+      "detail": "n=439"
+    },
+    {
+      "strategy": "05b_per_occasion",
+      "name": "occasion_Lunch_performance",
+      "passed": true,
+      "detail": "acc=1.0000 HIGH_sens=1.0000 MOD_sens=1.0000"
+    },
+    {
+      "strategy": "05b_per_occasion",
+      "name": "occasion_Dinner_present",
+      "passed": true,
+      "detail": "n=571"
+    },
+    {
+      "strategy": "05b_per_occasion",
+      "name": "occasion_Dinner_performance",
+      "passed": true,
+      "detail": "acc=0.9982 HIGH_sens=1.0000 MOD_sens=0.9930"
+    },
+    {
+      "strategy": "05b_per_occasion",
+      "name": "occasion_Snack_present",
+      "passed": true,
+      "detail": "n=592"
+    },
+    {
+      "strategy": "05b_per_occasion",
+      "name": "occasion_Snack_performance",
+      "passed": true,
+      "detail": "acc=0.9966 HIGH_sens=1.0000 MOD_sens=0.9857"
+    },
+    {
+      "strategy": "06_edge_cases",
+      "name": "edge_empty_meal",
+      "passed": true,
+      "detail": "G3a/Breakfast score=0.000 exp=LOW got=LOW"
+    },
+    {
+      "strategy": "06_edge_cases",
+      "name": "edge_tiny_snack",
+      "passed": true,
+      "detail": "G3a/Snack score=0.184 exp=LOW got=LOW"
+    },
+    {
+      "strategy": "06_edge_cases",
+      "name": "edge_at_low_mod_boundary",
+      "passed": true,
+      "detail": "G2/Lunch score=0.700 exp=LOW got=LOW"
+    },
+    {
+      "strategy": "06_edge_cases",
+      "name": "edge_just_above_high",
+      "passed": true,
+      "detail": "G3b/Dinner score=1.500 exp=HIGH got=HIGH"
+    },
+    {
+      "strategy": "06_edge_cases",
+      "name": "edge_extreme_high_K",
+      "passed": true,
+      "detail": "G4/Dinner score=3.521 exp=HIGH got=HIGH"
+    },
+    {
+      "strategy": "06_edge_cases",
+      "name": "edge_extreme_high_P",
+      "passed": true,
+      "detail": "G4/Lunch score=6.356 exp=HIGH got=HIGH"
+    },
+    {
+      "strategy": "06_edge_cases",
+      "name": "edge_high_protein",
+      "passed": true,
+      "detail": "G3a/Dinner score=3.327 exp=HIGH got=HIGH"
+    },
+    {
+      "strategy": "06_edge_cases",
+      "name": "edge_high_sodium",
+      "passed": true,
+      "detail": "G2/Breakfast score=1.655 exp=HIGH got=HIGH"
+    },
+    {
+      "strategy": "06_edge_cases",
+      "name": "edge_balanced_safe",
+      "passed": true,
+      "detail": "G3a/Lunch score=0.399 exp=LOW got=LOW"
+    },
+    {
+      "strategy": "06_edge_cases",
+      "name": "edge_all_pass",
+      "passed": true,
+      "detail": "9/9 edge cases matched label oracle"
+    },
+    {
+      "strategy": "07_comparison",
+      "name": "meal_accuracy_ge_day_on_meal",
+      "passed": true,
+      "detail": "meal=0.9986 day_on_meal=0.9944"
+    },
+    {
+      "strategy": "07_comparison",
+      "name": "meal_beats_rule_accuracy",
+      "passed": true,
+      "detail": "meal=0.9986 rule=0.8342"
+    },
+    {
+      "strategy": "07_comparison",
+      "name": "meal_mod_sens_ge_day",
+      "passed": true,
+      "detail": "meal=0.9952 day=0.9832"
+    },
+    {
+      "strategy": "08_hyperparams",
+      "name": "n_estimators_positive",
+      "passed": true,
+      "detail": "n_estimators=200"
+    },
+    {
+      "strategy": "08_hyperparams",
+      "name": "max_depth_reasonable",
+      "passed": true,
+      "detail": "max_depth=4"
+    },
+    {
+      "strategy": "08_hyperparams",
+      "name": "learning_rate_positive",
+      "passed": true,
+      "detail": "learning_rate=0.01"
+    },
+    {
+      "strategy": "08_hyperparams",
+      "name": "subsample_valid",
+      "passed": true,
+      "detail": "subsample=0.7"
+    },
+    {
+      "strategy": "09_calibration",
+      "name": "high_brier_reasonable",
+      "passed": true,
+      "detail": "Brier(HIGH)=0.0097"
+    },
+    {
+      "strategy": "09_calibration",
+      "name": "correct_more_confident_than_errors",
+      "passed": true,
+      "detail": "conf_correct=0.870 conf_wrong=0.585 n_err=3"
+    },
+    {
+      "strategy": "10_integration",
+      "name": "joblib_load_meal",
+      "passed": true,
+      "detail": "model loaded"
+    },
+    {
+      "strategy": "10_integration",
+      "name": "predict_proba_shape",
+      "passed": true,
+      "detail": "shape=(1, 3)"
+    },
+    {
+      "strategy": "10_integration",
+      "name": "class_order_012",
+      "passed": true,
+      "detail": "classes=[0, 1, 2]"
+    },
+    {
+      "strategy": "10_integration",
+      "name": "n_features_is_9",
+      "passed": true,
+      "detail": "n_features_in_=9"
+    },
+    {
+      "strategy": "10_integration",
+      "name": "breakfast_caps_lt_dinner",
+      "passed": true,
+      "detail": "BF K=750.0 Dinner K=1200.0"
+    },
+    {
+      "strategy": "10_integration",
+      "name": "snack_caps_tightest",
+      "passed": true,
+      "detail": "Snack K=450.0"
+    },
+    {
+      "strategy": "10_integration",
+      "name": "same_nutrients_higher_risk_as_snack",
+      "passed": true,
+      "detail": "Breakfast score=1.411 Snack score=3.759"
+    },
+    {
+      "strategy": "10_integration",
+      "name": "day_model_still_loads",
+      "passed": true,
+      "detail": "xgboost_v3.pkl OK"
+    },
+    {
+      "strategy": "10_integration",
+      "name": "dataset_has_four_occasions",
+      "passed": true,
+      "detail": "occasions=['Breakfast', 'Dinner', 'Lunch', 'Snack']"
+    },
+    {
+      "strategy": "10_integration",
+      "name": "published_metrics_sane",
+      "passed": true,
+      "detail": "pub auc=1.0 HIGH=1.0 MOD=0.9952"
+    },
+    {
+      "strategy": "10_integration",
+      "name": "day_v3_untouched_after_tests",
+      "passed": true,
+      "detail": "sha match"
+    }
+  ],
+  "extras": {
+    "mcnemar": {
+      "vs_rule": {
+        "label": "meal_vs_rule",
+        "p": 4.1844109728039786e-78,
+        "b": 1,
+        "c": 355,
+        "table": [
+          [
+            1795,
+            1
+          ],
+          [
+            355,
+            2
+          ]
+        ]
+      },
+      "vs_day": {
+        "label": "meal_vs_day",
+        "p": 0.015861332739773033,
+        "b": 1,
+        "c": 10,
+        "table": [
+          [
+            2140,
+            1
+          ],
+          [
+            10,
+            2
+          ]
+        ]
+      }
+    },
+    "cv": {
+      "accuracy_folds": [
+        0.9986065954482118,
+        0.9967487227124942,
+        0.9995355318160706,
+        0.9967487227124942,
+        0.9972131908964236
+      ],
+      "accuracy_mean": 0.997770552717139,
+      "accuracy_std": 0.0011147236414305798,
+      "f1_macro_folds": [
+        0.9981501951668039,
+        0.995678861552182,
+        0.9993847899359053,
+        0.9956818711236831,
+        0.9964322446793137
+      ],
+      "f1_macro_mean": 0.9970655924915774,
+      "f1_macro_std": 0.0014692771503313114
+    },
+    "overfit": {
+      "train_acc": 0.9984904784022295,
+      "test_acc": 0.9986065954482118,
+      "gap": -0.00011611704598235573
+    },
+    "holdout": {
+      "confusion": [
+        [
+          777,
+          1,
+          0
+        ],
+        [
+          2,
+          414,
+          0
+        ],
+        [
+          0,
+          0,
+          959
+        ]
+      ],
+      "high_sens": 1.0,
+      "mod_sens": 0.9951923076923077,
+      "auc": 0.9999951584655228,
+      "accuracy": 0.9986065954482118,
+      "f1_macro": 0.9981543698077159
+    },
+    "per_stage": {
+      "G2": {
+        "n": 1716,
+        "accuracy": 0.9982517482517482,
+        "high_sens": 1.0,
+        "mod_sens": 0.9941520467836257
+      },
+      "G3a": {
+        "n": 300,
+        "accuracy": 1.0,
+        "high_sens": 1.0,
+        "mod_sens": 1.0
+      },
+      "G3b": {
+        "n": 113,
+        "accuracy": 1.0,
+        "high_sens": 1.0,
+        "mod_sens": 1.0
+      },
+      "G4": {
+        "n": 24,
+        "accuracy": 1.0,
+        "high_sens": 1.0,
+        "mod_sens": 1.0
+      }
+    },
+    "per_occasion": {
+      "Breakfast": {
+        "n": 551,
+        "accuracy": 1.0,
+        "high_sens": 1.0,
+        "mod_sens": 1.0
+      },
+      "Lunch": {
+        "n": 439,
+        "accuracy": 1.0,
+        "high_sens": 1.0,
+        "mod_sens": 1.0
+      },
+      "Dinner": {
+        "n": 571,
+        "accuracy": 0.9982486865148862,
+        "high_sens": 1.0,
+        "mod_sens": 0.993006993006993
+      },
+      "Snack": {
+        "n": 592,
+        "accuracy": 0.9966216216216216,
+        "high_sens": 1.0,
+        "mod_sens": 0.9857142857142858
+      }
+    },
+    "edge_cases": {
+      "cases": [
+        {
+          "name": "empty_meal",
+          "stage": "G3a",
+          "occasion": "Breakfast",
+          "clinical_score": 0.0,
+          "expected": "LOW",
+          "predicted": "LOW",
+          "confidence": 0.871,
+          "pass": true
+        },
+        {
+          "name": "tiny_snack",
+          "stage": "G3a",
+          "occasion": "Snack",
+          "clinical_score": 0.1838,
+          "expected": "LOW",
+          "predicted": "LOW",
+          "confidence": 0.871,
+          "pass": true
+        },
+        {
+          "name": "at_low_mod_boundary",
+          "stage": "G2",
+          "occasion": "Lunch",
+          "clinical_score": 0.7,
+          "expected": "LOW",
+          "predicted": "LOW",
+          "confidence": 0.7078,
+          "pass": true
+        },
+        {
+          "name": "just_above_high",
+          "stage": "G3b",
+          "occasion": "Dinner",
+          "clinical_score": 1.5,
+          "expected": "HIGH",
+          "predicted": "HIGH",
+          "confidence": 0.8525,
+          "pass": true
+        },
+        {
+          "name": "extreme_high_K",
+          "stage": "G4",
+          "occasion": "Dinner",
+          "clinical_score": 3.5214,
+          "expected": "HIGH",
+          "predicted": "HIGH",
+          "confidence": 0.8609,
+          "pass": true
+        },
+        {
+          "name": "extreme_high_P",
+          "stage": "G4",
+          "occasion": "Lunch",
+          "clinical_score": 6.3557,
+          "expected": "HIGH",
+          "predicted": "HIGH",
+          "confidence": 0.8825,
+          "pass": true
+        },
+        {
+          "name": "high_protein",
+          "stage": "G3a",
+          "occasion": "Dinner",
+          "clinical_score": 3.3273,
+          "expected": "HIGH",
+          "predicted": "HIGH",
+          "confidence": 0.8545,
+          "pass": true
+        },
+        {
+          "name": "high_sodium",
+          "stage": "G2",
+          "occasion": "Breakfast",
+          "clinical_score": 1.6555,
+          "expected": "HIGH",
+          "predicted": "HIGH",
+          "confidence": 0.8288,
+          "pass": true
+        },
+        {
+          "name": "balanced_safe",
+          "stage": "G3a",
+          "occasion": "Lunch",
+          "clinical_score": 0.3987,
+          "expected": "LOW",
+          "predicted": "LOW",
+          "confidence": 0.8491,
+          "pass": true
+        }
+      ],
+      "n_pass": 9,
+      "n_total": 9
+    },
+    "comparison": {
+      "meal": {
+        "accuracy": 0.9986065954482118,
+        "mod_sens": 0.9951923076923077,
+        "high_sens": 1.0
+      },
+      "day_on_meal": {
+        "accuracy": 0.9944263817928471,
+        "mod_sens": 0.9831730769230769,
+        "high_sens": 0.9947862356621481
+      },
+      "rule": {
+        "accuracy": 0.8341848583372039,
+        "mod_sens": 0.46875,
+        "high_sens": 0.9749739311783108
+      }
+    },
+    "hyperparams": {
+      "n_estimators": 200,
+      "max_depth": 4,
+      "learning_rate": 0.01,
+      "subsample": 0.7,
+      "colsample_bytree": 0.9,
+      "min_child_weight": 5,
+      "gamma": 0.2,
+      "reg_alpha": 0,
+      "reg_lambda": 2.0
+    },
+    "calibration": {
+      "brier_high": 0.009672046639025211,
+      "mean_conf_correct": 0.8703141212463379,
+      "mean_conf_wrong": 0.5847468972206116,
+      "calibration_high": {
+        "frac_pos": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.5650557620817844,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "mean_pred": [
+          0.04854474474710447,
+          0.052360486228581506,
+          0.05430549510660018,
+          0.059519540476976274,
+          0.5036373378286575,
+          0.855203046674622,
+          0.8810492182309743,
+          0.884427547454834
+        ]
+      }
+    },
+    "integration": {
+      "proba_shape": [
+        1,
+        3
+      ],
+      "dataset_n": 10765,
+      "published_accuracy": 0.9986
+    },
+    "elapsed_sec": 3.88,
+    "day_v3_sha256": "0c31b13c74fd49b63e7d4ce750fdcf897c850410438b99e8f27d364d17b679f5",
+    "meal_sha256": "564c1cd5e4c735c41cbe03584cfb44812692e1ebe1e37baf06e3c58a6aa776db"
+  }
+}

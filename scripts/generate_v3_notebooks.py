@@ -700,7 +700,7 @@ v3_trade_off = (
 
 if v3_success:
     joblib.dump(best_model, MODEL_DIR / 'xgboost_v3.pkl')
-    decision = '✅ V3 SUCCESS — leakage resolved'
+    decision = '✅ V3 SUCCESS — original ratio-leakage fixed (intake/limit features removed); distinct from disclosed clinical_score label/feature design (not a bug)'
     deploy_msg = 'Recommend deploying v3 to production'
 elif v3_trade_off:
     joblib.dump(best_model, MODEL_DIR / 'xgboost_v3.pkl')

@@ -1,9 +1,16 @@
-# Integration Verification
-Terminal output of verify_tier3.py
-showing 9/9 checks passed.
+# Archived Tier 3 RF — offline artifact check
 
-To regenerate:
-  python verify_tier3.py
+Not a live API integration test. The weekly Random Forest is
+**abandoned / not deployed**; artifacts live under `models/archive/`.
 
-Save terminal screenshot as:
-  verify_tier3_results.png
+To re-run the offline load/smoke script:
+
+```bash
+python scripts/archive/verify_tier3.py
+```
+
+Historical screenshot (if present):
+
+```
+verify_tier3_results.png
+```

@@ -3,10 +3,6 @@ node_modules/
 frontend/node_modules/
 frontend/dist/
 
-# Keras model files
-models/*.keras
-models/*.h5
-
 # Python cache
 __pycache__/
 *.pyc
@@ -34,11 +30,16 @@ data/raw/nhanes/*.XPT
 backend/data/nhanes/*.xpt
 backend/data/nhanes/*.XPT
 
-# Model binaries
+# Model binaries (block experiments; allow production artifacts below)
 models/*.pkl
 models/*.h5
 models/*.keras
 models/*.npz
+!models/xgboost_v3.pkl
+!models/xgboost_v3_meal.pkl
+!models/lstm_v3_final.keras
+!models/lstm_v3_scaler.pkl
+!models/lstm_v3_label_encoder.pkl
 
 # Archive
 /archive/

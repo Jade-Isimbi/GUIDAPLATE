@@ -20,13 +20,31 @@ African Leadership University · July 2026
 |---|---|---|---|
 | Rule-Based Baseline | 75.0% | 0.718 | 0.357 |
 | XGBoost v1 (leakage) | 75.3% | 0.723 | 0.367 |
-| XGBoost v3 (production) | 99.0% | 0.985 | 0.969 |
+| XGBoost v3 day (full 9 features) | 98.99% | 0.985 | 0.969 |
+| XGBoost v3 meal (full 9 features) | 99.86% | 0.998 | 0.995 |
 | LSTM v1 (original) | 81.4% | 0.765 | 0.357 |
-| LSTM v3 (production) | 91.8% | 0.915 | 0.908 |
+| LSTM v3 (production) | 92.08% | 0.915 | 0.908 |
 | HMM Supervised | 67.8% | 0.670 | 0.602 |
 
-McNemar (Baseline vs XGBoost v3): p<0.0001  
+McNemar (Baseline vs XGBoost v3 day): p<0.0001  
 McNemar (Baseline vs LSTM v3): p<0.000001
+
+### What the XGBoost numbers mean (clinical_score dominance)
+
+Labels are defined by thresholding a KDOQI-weighted `clinical_score`, and that score is also one of the nine input features. Near-perfect **full-model** accuracy is therefore expected under this design — it is **not** evidence of independent discovery of CKD risk beyond the engineered rule.
+
+**Day model** (`xgboost_v3.pkl`, holdout n=296)  
+- Full model (9 features): **98.99%** accuracy, F1 macro **0.985**, AUC **0.9975**  
+- Without `clinical_score` (8 features): **93.24%** accuracy, F1 macro **0.924**, AUC **0.9915**  
+- Raw nutrients + stage only (6 features): **93.58%** accuracy, F1 macro **0.931**, AUC **0.9913**  
+- Sources: `outputs/stats/10_xgboost_v3_metrics.csv`, `outputs/stats/10_xgboost_v3_day_ablation.json`
+
+**Meal model** (`xgboost_v3_meal.pkl`, holdout n=2153)  
+- Full model (9 features): **99.86%** accuracy, F1 macro **0.998**, AUC **~1.00**  
+- Without `clinical_score`: **77.52%** accuracy, F1 macro **0.760**, AUC **0.949**  
+- Sources: `outputs/stats/10_xgboost_v3_meal_metrics.csv`, `outputs/stats/10_xgboost_v3_meal_deep_eval.json`
+
+**Interpretation:** production XGBoost classifiers largely formalize a KDOQI-weighted clinical scoring rule. Their product value is consistent probabilistic application (class confidence), SHAP explainability, and meal-scale calibration with Meal Check — not independent discovery of risk patterns beyond that rule. Detail: `docs/XGBOOST_V3_MEAL.md` §8.
 
 ## Analysis of Results
 
@@ -34,10 +52,10 @@ The original project proposal set two clear technical targets for the machine le
 
 **What was achieved**
 
-- Both production tiers beat both technical targets. XGBoost v3: AUC 0.997, 100% HIGH sensitivity. LSTM v3: AUC 0.984, 88.4% HIGH sensitivity.
+- Both production tiers beat both technical targets on the **full** feature set. Day XGBoost: AUC 0.9975, 100% HIGH sensitivity. LSTM v3: AUC 0.984, 88.4% HIGH sensitivity.
 - Improvements over the rule-based baseline are statistically significant (McNemar p < 0.0001 for both comparisons).
-- **RQ1** — XGBoost accuracy rose from 75.0% to 99.0%; HIGH sensitivity maxed at 100% on the test set.
-- **RQ2** — LSTM reads the last six meals and classifies trend as escalating, stable, or improving.
+- **RQ1** — Full day XGBoost accuracy is 98.99% vs a 75% rule baseline. Ablation without `clinical_score` still reaches **93.2%** on the day holdout; on the meal holdout the same ablation falls to **77.5%**. The headline lift is best read as **faithful soft application of the clinical score**, plus probabilities/SHAP — not as unconstrained nutrient-only learning.
+- **RQ2** — LSTM classifies **sequence risk** (LOW/MODERATE/HIGH) from the last six meals; **trend direction** (escalating/stable/improving) is a **separate heuristic** over hidden-state and nutrient dynamics—**not** a trained model output.
 - **RQ3** — SHAP explanations run live in the app for every risk check.
 - **RQ4** — Stage-specific advice enforced: G3b patients never see clinically forbidden foods (e.g. beans, banana); meal plans prioritize protein at Lunch/Dinner with Rwandan foods only.
 
@@ -73,12 +91,12 @@ The RAG meal planner grounds LLM responses in KDOQI/KDIGO guidelines rather than
 ```
 GUIDAPLATE/
 ├── backend/           # FastAPI API, ML inference, RAG meal planner
-├── frontend/          # React + Vite UI
-├── models/            # Production artifacts (xgboost, LSTM)
+├── frontend/           # React + Vite UI
+├── models/            # Production artifacts (xgboost day/meal, LSTM)
 ├── notebooks/         # Training & evaluation pipeline (v3)
 ├── docs/testing/      # Testing evidence screenshots (10 strategies)
 ├── scripts/           # Evidence generation & utilities
-└── verify_tier3.py    # Tier 3 integration check (9/9)
+└── scripts/archive/   # Abandoned checks (e.g. Tier 3 RF offline artifact script)
 ```
 
 ## Setup
@@ -173,11 +191,11 @@ Archived (superseded): `notebooks/archive/` (includes `11_weekly_tier3.ipynb`)
 | Tier | Model | Input | Output | MOD Recall |
 |---|---|---|---|---|
 | Tier 1 | XGBoost v3 | Single meal nutrients | LOW/MODERATE/HIGH | 0.969 |
-| Tier 2 | LSTM v3 | Last 6 meals (hidden state) | Pattern + trend direction | 0.908 |
+| Tier 2 | LSTM v3 | Last 6 meals (hidden state) | Sequence risk (trained); trend direction (heuristic from hidden states) | 0.908 |
 
 ### LSTM Trend Detection
 
-LSTM v3 extracts 64-dimensional hidden states from layer 1 (`return_sequences=True`) to classify whether dietary risk is escalating, stable, or improving across the last six logged meals.
+After inference, GuidaPlate derives a **heuristic** trend label from layer-1 hidden-state magnitudes (and nutrient trajectory in scaled input space)—**not** a dedicated trend classification head.
 
 ### RAG Meal Planner
 
@@ -197,15 +215,16 @@ Tested on two environments: **local development** (Mac, CPU-only inference) and 
 | Edge case testing | 9 synthetic boundary cases | `docs/testing/06_edge_case_testing/` |
 | Model comparison | Full comparison table | `docs/testing/07_model_comparison/` |
 | Hyperparameter sweep | 15 RF combinations | `docs/testing/08_hyperparameter_sweep/` |
-| Calibration | Platt vs Isotonic | `docs/testing/09_calibration/` |
-| Integration testing | Tier 3 wiring (9 checks) | `docs/testing/10_integration_verification/` |
+| Calibration | Platt vs Isotonic (offline Weekly RF research) | `docs/testing/09_calibration/` |
+| Archived Tier 3 RF | Offline artifact load checks (not live API wiring) | `docs/testing/10_integration_verification/` |
 
 Regenerate evidence images:
 
 ```bash
 source venv311/bin/activate
 python scripts/generate_testing_evidence.py
-python verify_tier3.py   # expect 9/9 passed
+# Optional abandoned Tier 3 offline check (not a live integration test):
+python scripts/archive/verify_tier3.py
 ```
 
 ## Features

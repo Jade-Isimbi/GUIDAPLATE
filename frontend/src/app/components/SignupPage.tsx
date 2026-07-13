@@ -13,7 +13,6 @@ interface SignupPageProps {
     weightKg: number;
     dob: string;
     sex: string;
-    language: string;
     email: string;
     phone: string;
   }) => void;
@@ -38,8 +37,6 @@ const COUNTRY_CODES = [
   { code: '+33',  flag: '🇫🇷', name: 'France' },
 ];
 
-const LANGUAGES = ['English', 'French', 'Kinyarwanda'];
-
 export function SignupPage({ isDark, theme, onSignup, onGoToLogin }: SignupPageProps) {
   const [name,        setName]        = useState('');
   const [email,       setEmail]       = useState('');
@@ -53,7 +50,6 @@ export function SignupPage({ isDark, theme, onSignup, onGoToLogin }: SignupPageP
   const [weight,      setWeight]      = useState('');
   const [dob,         setDob]         = useState('');
   const [sex,         setSex]         = useState('');
-  const [language,    setLanguage]    = useState('English');
   const [agreed,      setAgreed]      = useState(false);
   const [errors,      setErrors]      = useState<Record<string, string>>({});
   const [showCC,      setShowCC]      = useState(false);
@@ -134,7 +130,6 @@ export function SignupPage({ isDark, theme, onSignup, onGoToLogin }: SignupPageP
           weight_kg: parseFloat(weight),
           dob,
           sex,
-          language,
         }),
       });
 
@@ -155,7 +150,6 @@ export function SignupPage({ isDark, theme, onSignup, onGoToLogin }: SignupPageP
         weightKg: data.weight_kg,
         dob,
         sex,
-        language,
         email,
         phone: fullPhone,
       });
@@ -414,30 +408,6 @@ export function SignupPage({ isDark, theme, onSignup, onGoToLogin }: SignupPageP
               ))}
             </div>
             {errText('sex')}
-          </div>
-
-          {/* Preferred Language */}
-          <div>
-            <label style={labelStyle}>Preferred Language</label>
-            <div className="grid grid-cols-3 gap-2">
-              {LANGUAGES.map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  onClick={() => setLanguage(l)}
-                  className="py-2.5 rounded-xl transition-all duration-150"
-                  style={{
-                    background: language === l ? 'rgba(46,134,171,0.15)' : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                    border: `1px solid ${language === l ? 'rgba(46,134,171,0.5)' : (isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.14)')}`,
-                    color: language === l ? '#2E86AB' : (isDark ? '#f0f4f8' : '#0e1625'),
-                    fontWeight: language === l ? 700 : 500,
-                    fontSize: '0.82rem',
-                  }}
-                >
-                  {l}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Consent checkbox */}

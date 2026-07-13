@@ -35,7 +35,6 @@ class RegisterRequest(BaseModel):
     weight_kg: float | None = None
     dob: str | None = None
     sex: str | None = None
-    language: str | None = None
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -65,7 +64,6 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
         weight_kg=request.weight_kg,
         dob=request.dob,
         sex=request.sex,
-        language=request.language,
     )
     patient = Patient(
         patient_id=user.user_id,

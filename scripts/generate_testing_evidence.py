@@ -350,7 +350,8 @@ else:
 # ─────────────────────────────────────
 print("\n[10] Integration verification")
 target = DOCS / "10_integration_verification"
-print("  ⚠ This is terminal output from verify_tier3.py — not a saved file.")
+print("  ⚠ This is terminal output from scripts/archive/verify_tier3.py — not a saved file.")
+print("     (Abandoned Tier 3 offline artifact check — not live API wiring.)")
 print("  → Manually screenshot your terminal showing the 9/9 PASSED summary,")
 print(f"    then save it into:")
 print(f"    {target}/")

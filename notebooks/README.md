@@ -12,7 +12,6 @@ Run in this order:
 3. `04c_xgboost_v3_raw_features.ipynb` — XGBoost v3 training
 4. `05c_lstm_v3_improved.ipynb` — LSTM v3 training
 5. `06_model_comparison.ipynb` — full model comparison + McNemar
-6. `11_weekly_tier3.ipynb` — Tier 3 weekly RF + deployment
 
 ## Supporting research
 
@@ -28,6 +27,9 @@ Run in this order:
 ## Archived notebooks
 
 Superseded notebooks are in `notebooks/archive/`.
+
+Includes `11_weekly_tier3.ipynb` — Tier 3 weekly RF training/eval
+(**abandoned / not deployed**; model artifacts in `models/archive/weekly_rf.pkl`).
 
 ## Prerequisites
 

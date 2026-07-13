@@ -1,0 +1,2 @@
+model,accuracy,f1_weighted,f1_macro,auc_roc,high_sensitivity,mod_sensitivity,mcnemar_p,mcnemar_b,mcnemar_c,n_features,training_samples,test_samples,n_meal_rows_total,best_cv_f1_macro,artifact,day_v3_untouched,label_scale
+XGBoost v3 meal,0.9986,0.9986,0.9982,1.0,1.0,0.9952,0.0,1,355,9,8612,2153,10765,0.9982,xgboost_v3_meal.pkl,True,occasion_fraction_of_daily_kdoqi

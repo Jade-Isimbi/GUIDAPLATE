@@ -124,7 +124,6 @@ class User(Base):
     weight_kg = Column(Float, nullable=True)
     dob = Column(String, nullable=True)
     sex = Column(String, nullable=True)
-    language = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

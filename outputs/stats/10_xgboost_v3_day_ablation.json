@@ -1,0 +1,193 @@
+{
+  "model": "XGBoost v3 day",
+  "artifact": "xgboost_v3.pkl",
+  "protected_sha256": "0c31b13c74fd49b63e7d4ce750fdcf897c850410438b99e8f27d364d17b679f5",
+  "sha256_verified_unchanged": true,
+  "split": {
+    "test_size": 0.2,
+    "random_state": 42,
+    "stratify": true,
+    "n_train": 1180,
+    "n_test": 296,
+    "label_source": "outputs/stats/05_risk_labels_v3.csv",
+    "matches_notebook": "notebooks/04c_xgboost_v3_raw_features.ipynb"
+  },
+  "protocol_note": "Full metrics: production pickle predict-only. Ablations: temporary in-memory retrain on the same train split without writing models/xgboost_v3.pkl \u2014 same protocol family as meal ablation_no_clinical_score / ablation_raw6 in 10_xgboost_v3_meal_deep_eval.json.",
+  "day_model": {
+    "name": "day_xgb_full_production_pkl",
+    "accuracy": 0.9898648648648649,
+    "f1_macro": 0.9852948433259314,
+    "f1_weighted": 0.9899308820293274,
+    "auc_weighted": 0.9975374609303179,
+    "auc_macro": 0.9965419501133786,
+    "per_class": {
+      "LOW": {
+        "precision": 0.9444444444444444,
+        "recall": 1.0,
+        "f1": 0.9714285714285714,
+        "support": 51
+      },
+      "MODERATE": {
+        "precision": 1.0,
+        "recall": 0.9693877551020408,
+        "f1": 0.9844559585492227,
+        "support": 98
+      },
+      "HIGH": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 147
+      }
+    },
+    "confusion": [
+      [
+        51,
+        0,
+        0
+      ],
+      [
+        3,
+        95,
+        0
+      ],
+      [
+        0,
+        0,
+        147
+      ]
+    ],
+    "n_features": 9,
+    "features": [
+      "potassium",
+      "phosphorus",
+      "protein_per_kg",
+      "sodium",
+      "ckd_stage_encoded",
+      "stage_numeric",
+      "k_p_product",
+      "protein_sodium_ratio",
+      "clinical_score"
+    ],
+    "protocol": "predict_only_on_models/xgboost_v3.pkl",
+    "artifact": "xgboost_v3.pkl"
+  },
+  "ablation_no_clinical_score": {
+    "name": "day_xgb_no_clinical_score",
+    "accuracy": 0.9324324324324325,
+    "f1_macro": 0.9240801467083086,
+    "f1_weighted": 0.932294731772567,
+    "auc_weighted": 0.991494429192176,
+    "auc_macro": 0.9908576697576189,
+    "per_class": {
+      "LOW": {
+        "precision": 0.9038461538461539,
+        "recall": 0.9215686274509803,
+        "f1": 0.912621359223301,
+        "support": 51
+      },
+      "MODERATE": {
+        "precision": 0.90625,
+        "recall": 0.8877551020408163,
+        "f1": 0.8969072164948454,
+        "support": 98
+      },
+      "HIGH": {
+        "precision": 0.9594594594594594,
+        "recall": 0.9659863945578231,
+        "f1": 0.9627118644067797,
+        "support": 147
+      }
+    },
+    "confusion": [
+      [
+        47,
+        4,
+        0
+      ],
+      [
+        5,
+        87,
+        6
+      ],
+      [
+        0,
+        5,
+        142
+      ]
+    ],
+    "n_features": 8,
+    "features": [
+      "potassium",
+      "phosphorus",
+      "protein_per_kg",
+      "sodium",
+      "ckd_stage_encoded",
+      "stage_numeric",
+      "k_p_product",
+      "protein_sodium_ratio"
+    ],
+    "protocol": "temporary_retrain_same_split_as_04c; never written to models/xgboost_v3.pkl"
+  },
+  "ablation_raw6": {
+    "name": "day_xgb_raw6",
+    "accuracy": 0.9358108108108109,
+    "f1_macro": 0.9309055437768309,
+    "f1_weighted": 0.9356661119137705,
+    "auc_weighted": 0.9913411058485364,
+    "auc_macro": 0.9905210874262252,
+    "per_class": {
+      "LOW": {
+        "precision": 0.94,
+        "recall": 0.9215686274509803,
+        "f1": 0.9306930693069307,
+        "support": 51
+      },
+      "MODERATE": {
+        "precision": 0.9072164948453608,
+        "recall": 0.8979591836734694,
+        "f1": 0.9025641025641026,
+        "support": 98
+      },
+      "HIGH": {
+        "precision": 0.9530201342281879,
+        "recall": 0.9659863945578231,
+        "f1": 0.9594594594594594,
+        "support": 147
+      }
+    },
+    "confusion": [
+      [
+        47,
+        4,
+        0
+      ],
+      [
+        3,
+        88,
+        7
+      ],
+      [
+        0,
+        5,
+        142
+      ]
+    ],
+    "n_features": 6,
+    "features": [
+      "potassium",
+      "phosphorus",
+      "protein_per_kg",
+      "sodium",
+      "ckd_stage_encoded",
+      "stage_numeric"
+    ],
+    "protocol": "temporary_retrain_same_split_as_04c; never written to models/xgboost_v3.pkl"
+  },
+  "published_holdout_csv": {
+    "path": "outputs/stats/10_xgboost_v3_metrics.csv",
+    "accuracy": 0.9899,
+    "f1_macro": 0.9853,
+    "auc_roc": 0.9975
+  }
+}

@@ -1,17 +1,17 @@
 import { useState, useRef, useEffect, Fragment } from 'react';
-import { AlertTriangle, CheckCircle2, XCircle, Zap, Info, ChevronRight, RotateCcw, Search, Trash2, Plus, Minus, Mic, MicOff } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, XCircle, Zap, Info, ChevronRight, RotateCcw, Search, Trash2, Plus, Minus, Mic, MicOff, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer, Cell } from 'recharts';
 import {
   CKDStage,
   FOODS,
+  RWANDAN_FOOD_IDS,
   STAGE_THRESHOLDS,
   type Food,
   potassiumColor,
 } from '../../data/foodDatabase';
 import { foodTranslation, matchesFoodQuery } from '../../utils/foodDisplay';
 import { authFetch, getAuthToken } from '../../utils/auth';
-import { displayBudgetStatus, formatStageDisplay, getRiskDisplay, getWeeklyRiskLabel, isFoodInStageRange } from '../../utils/riskDisplay';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { displayBudgetStatus, formatStageDisplay, getRiskDisplay, isFoodInStageRange } from '../../utils/riskDisplay';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const FOOD_DB_COUNT = 386;
@@ -84,15 +84,72 @@ function getUnitInfo(foodName: string, category: string): { unit: string; grams:
   return UNIT_MAP[category] || UNIT_MAP.Other;
 }
 
-const NO_SUBSTITUTES_MSG =
-  'No category-matched lower-potassium substitutes found for this meal.';
+function noSubstitutesMessage(nutrient: string): string {
+  return `No category-matched lower-${nutrient} substitutes found for this meal.`;
+}
 
-const OCCASION_ENCODING: Record<string, number> = {
-  Breakfast: 0.00,
-  Lunch: 0.33,
-  Dinner: 0.67,
-  Snack: 0.50,
-};
+type ConcernNutrient = 'potassium' | 'phosphorus' | 'protein' | 'sodium';
+
+function nutrientSwapDisplay(
+  food: Food,
+  nutrient: ConcernNutrient,
+): { label: string; value: string } {
+  switch (nutrient) {
+    case 'phosphorus':
+      return { label: 'Phosphorus', value: `${food.phosphorus_mg}mg` };
+    case 'protein':
+      return { label: 'Protein', value: `${food.protein_g}g` };
+    case 'sodium':
+      return { label: 'Sodium', value: `${food.sodium_mg}mg` };
+    case 'potassium':
+    default:
+      return { label: 'Potassium', value: `${food.potassium_mg}mg` };
+  }
+}
+
+function primaryConcernNutrient(
+  result: ResultState,
+): ConcernNutrient {
+  const order: ConcernNutrient[] = ['potassium', 'phosphorus', 'protein', 'sodium'];
+  const display: Record<ConcernNutrient, string> = {
+    potassium: 'Potassium',
+    phosphorus: 'Phosphorus',
+    protein: 'Protein',
+    sodium: 'Sodium',
+  };
+
+  let best: ConcernNutrient | null = null;
+  let bestPct = -1;
+  for (const key of order) {
+    const entry = result.breakdown[display[key]];
+    if (entry?.status === 'Exceeded' && entry.pct > bestPct) {
+      best = key;
+      bestPct = entry.pct;
+    }
+  }
+  if (best) return best;
+
+  bestPct = -1;
+  for (const key of order) {
+    const entry = result.breakdown[display[key]];
+    if (entry?.status === 'Near limit' && entry.pct > bestPct) {
+      best = key;
+      bestPct = entry.pct;
+    }
+  }
+  if (best) return best;
+
+  const shap = result.shap_dominant_nutrient?.toLowerCase();
+  if (
+    shap === 'potassium' ||
+    shap === 'phosphorus' ||
+    shap === 'protein' ||
+    shap === 'sodium'
+  ) {
+    return shap;
+  }
+  return 'potassium';
+}
 
 type MealOccasion = 'Breakfast' | 'Lunch' | 'Dinner' | 'Snack';
 
@@ -220,81 +277,37 @@ const saveRiskAssessment = async (
   }
 };
 
-interface FoodSuggestion {
+interface WhatToEatNextFood {
   english: string;
-  french: string | null;
-  kinyarwanda: string | null;
-  category: string | null;
-  reason: string;
+  kinyarwanda?: string | null;
+  category?: string | null;
+  portion_grams: number;
+  potassium_mg: number;
+  phosphorus_mg: number;
+  protein_g: number;
+  sodium_mg: number;
+  preparation_method?: string | null;
 }
 
-interface MealOccasionSuggestions {
+interface WhatToEatNextNutrients {
+  potassium_mg: number;
+  phosphorus_mg: number;
+  protein_g: number;
+  sodium_mg: number;
+}
+
+interface WhatToEatNextResponse {
   occasion: string;
-  suggestions: FoodSuggestion[];
-}
-
-interface WeeklySuggestionsResponse {
-  trajectory_risk: string;
-  flagged_nutrient: string | null;
-  flagged_reason: string;
-  remaining_days: number;
-  suggestions_by_meal: MealOccasionSuggestions[];
-  clinical_note: string;
-  analysis_available: boolean;
-}
-
-const SUGGESTION_OCCASION_LABELS: Record<string, string> = {
-  breakfast: 'Breakfast',
-  lunch: 'Lunch',
-  dinner: 'Dinner',
-  snack: 'Snack',
-};
-
-const getNextOccasion = (current: string): string => {
-  const order = ['breakfast', 'lunch', 'dinner', 'snack'];
-  const idx = order.indexOf((current ?? '').toLowerCase());
-  if (idx === -1) return 'lunch';
-  if (idx === order.length - 1) return 'breakfast';
-  return order[idx + 1];
-};
-
-const getTimeBasedOccasion = (): string => {
-  const hour = new Date().getHours();
-  if (hour < 10) return 'breakfast';
-  if (hour < 14) return 'lunch';
-  if (hour < 19) return 'dinner';
-  return 'snack';
-};
-
-function mealOccasionToSuggestionTab(occasion: string | null | undefined): string {
-  const key = (occasion ?? '').toLowerCase();
-  if (key === 'breakfast' || key === 'lunch' || key === 'dinner' || key === 'snack') {
-    return key;
-  }
-  return getTimeBasedOccasion();
-}
-
-const SUGGESTIONS_DEFAULT_SUBTITLE =
-  'Based on your recent meals, here are safe options for your next meal';
-
-const toPlainNutrient = (key: string): string => {
-  const map: Record<string, string> = {
-    potassium: 'potassium',
-    protein_per_kg: 'protein',
-    phosphorus: 'phosphorus',
-    sodium: 'sodium',
-  };
-  return map[key?.toLowerCase()] ?? key;
-};
-
-function getSuggestionsSubtitle(
-  hasResult: boolean,
-  suggestions: WeeklySuggestionsResponse | null,
-): string {
-  if (!hasResult) return SUGGESTIONS_DEFAULT_SUBTITLE;
-  const nutrient = suggestions?.flagged_nutrient?.trim();
-  if (!nutrient) return SUGGESTIONS_DEFAULT_SUBTITLE;
-  return `Based on the meal you just checked, we updated your suggestions to be lower in ${toPlainNutrient(nutrient)}`;
+  meals_remaining_today: number;
+  meal_budget: WhatToEatNextNutrients;
+  remaining_today: WhatToEatNextNutrients;
+  trend: string | null;
+  trajectory_risk: string | null;
+  safety_margin_applied: boolean;
+  safety_margin: number;
+  meal_options: WhatToEatNextFood[][];
+  reason: string;
+  budget_exhausted: boolean;
 }
 
 interface RiskAssessmentProps {
@@ -335,6 +348,27 @@ function getStageLimits(stage: CKDStage, bodyWeightKg: number) {
   };
 }
 
+/** API meal_limits use protein_per_kg; UI bars need protein grams. */
+function limitsFromMealApi(
+  mealLimits: {
+    potassium: number;
+    phosphorus: number;
+    protein_per_kg: number;
+    sodium: number;
+  },
+  bodyWeightKg: number,
+  fallback: ReturnType<typeof getStageLimits>,
+): ReturnType<typeof getStageLimits> {
+  return {
+    potassium: mealLimits.potassium,
+    phosphorus: mealLimits.phosphorus,
+    protein: mealLimits.protein_per_kg * bodyWeightKg,
+    sodium: mealLimits.sodium,
+    label: fallback.label,
+    gfr: fallback.gfr,
+  };
+}
+
 function substituteCategories(category: string): string[] {
   const rules: Record<string, string[]> = {
     Starch: ['Starch'],
@@ -365,6 +399,10 @@ function getFoodRiskScore(entry: MealFoodItem, limits: ReturnType<typeof getStag
 }
 
 interface FoodSubstitution { riskyFood: Food; substitutes: Food[] }
+
+function isRwandanFood(food: Food): boolean {
+  return RWANDAN_FOOD_IDS.has(food.id);
+}
 
 function getSmartSubstitutions(
   mealFoods: MealFoodItem[],
@@ -401,6 +439,7 @@ function getSmartSubstitutions(
       const substitutes = FOODS
         .filter((f) => f.id !== riskyFood.id)
         .filter((f) => !mealIds.has(f.id))
+        .filter((f) => isRwandanFood(f))
         .filter((f) => allowedCats.includes(f.category))
         .filter((f) => f.potassium_mg < riskyFood.potassium_mg)
         .filter((f) => isFoodInStageRange(f.ckd_stage_safe, stage))
@@ -476,6 +515,30 @@ function groupLogsByOccasion(logs: FoodLog[]): Record<MealOccasion, FoodLog[]> {
     if (occasion in grouped) grouped[occasion].push(log);
   }
   return grouped;
+}
+
+/** Matches backend get_food_nutrients: ratio = grams/100, same rounding. */
+function mealItemsToOptimisticLogs(
+  items: MealFoodItem[],
+  occasion: MealOccasion,
+): FoodLog[] {
+  const loggedAt = new Date().toISOString();
+  return items.map(({ food, grams }) => {
+    const ratio = grams / 100;
+    return {
+      log_id: `temp-${crypto.randomUUID()}`,
+      food_name: food.english,
+      category: food.category ?? null,
+      stage_safe_range: food.ckd_stage_safe ?? null,
+      portion_grams: grams,
+      meal_occasion: occasion,
+      potassium_mg: Math.round(food.potassium_mg * ratio * 10) / 10,
+      phosphorus_mg: Math.round(food.phosphorus_mg * ratio * 10) / 10,
+      protein_g: Math.round(food.protein_g * ratio * 100) / 100,
+      sodium_mg: Math.round(food.sodium_mg * ratio * 10) / 10,
+      logged_at: loggedAt,
+    };
+  });
 }
 
 function potassiumStatusColor(mg: number, limit: number): string {
@@ -806,6 +869,7 @@ interface ResultState {
   breakdown: Record<string, BreakdownEntry>;
   assessedFoods: MealFoodItem[];
   substitutions: FoodSubstitution[];
+  occasion: MealOccasion;
   shap_explanation?: string | null;
   shap_contributions?: Record<string, number> | null;
   shap_dominant_nutrient?: string | null;
@@ -912,6 +976,55 @@ interface DailyBudgetData {
   date: string;
 }
 
+const TOTAL_MEAL_OCCASIONS = 4;
+const PACE_AHEAD_MARGIN = 0.15; // design choice — not clinical
+
+const NUTRIENT_PACE_KEYS = [
+  { key: 'potassium', label: 'potassium' },
+  { key: 'phosphorus', label: 'phosphorus' },
+  { key: 'protein_per_kg', label: 'protein' },
+  { key: 'sodium', label: 'sodium' },
+] as const;
+
+function joinNutrientNames(names: string[]): string {
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`;
+}
+
+function nutrientsAheadOfPace(dailyBudget: DailyBudgetData | null): string[] {
+  if (!dailyBudget) return [];
+  const meals = dailyBudget.meals_logged_today ?? 0;
+  const expectedPace = Math.min(1, meals / TOTAL_MEAL_OCCASIONS);
+  return NUTRIENT_PACE_KEYS
+    .filter(({ key }) => {
+      const usage = (dailyBudget.nutrients[key]?.percent_used ?? 0) / 100;
+      return usage > expectedPace + PACE_AHEAD_MARGIN;
+    })
+    .map(({ label }) => label);
+}
+
+function buildActionText(
+  level: 'LOW' | 'MODERATE' | 'HIGH',
+  dailyBudget: DailyBudgetData | null,
+): string {
+  const ahead = nutrientsAheadOfPace(dailyBudget);
+  const list = joinNutrientNames(ahead);
+  const those = ahead.length === 1 ? 'that' : 'those';
+
+  if (level === 'LOW') {
+    if (ahead.length === 0) {
+      return 'This meal looks good. Keep your next meal similarly balanced.';
+    }
+    return `This meal looks fine on its own, but you're using up ${list} faster than the rest of today's meals. Keep your next meal lighter in ${those}.`;
+  }
+
+  if (ahead.length === 0) {
+    return 'This meal is high for your limits. See better alternatives below, and keep the rest of today lighter.';
+  }
+  return `This meal is high for your limits, and you're also ahead on ${list} for how much of the day you've eaten. See better alternatives below, and keep your next meal lighter in ${those}.`;
+}
+
 export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage }: RiskAssessmentProps) {
   const initialOccasion = readInitialMealOccasion();
   const initialStoredResults = loadStoredResultsByOccasion();
@@ -941,6 +1054,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
   const [currentMealType, setCurrentMealType] = useState<MealOccasion>(initialOccasion);
   const [logsByOccasion, setLogsByOccasion] = useState<Record<MealOccasion, FoodLog[]>>(EMPTY_LOGS_BY_OCCASION);
   const [occasionAddMode, setOccasionAddMode] = useState(false);
+  const [isAssessing, setIsAssessing] = useState(false);
   const [deletingLogId, setDeletingLogId] = useState<string | null>(null);
   const [apiStatus,       setApiStatus]       = useState<'unknown' | 'connected' | 'unavailable'>('unknown');
   const [usingLiveModel,  setUsingLiveModel]  = useState<boolean>(initialAssessment?.usingLiveModel ?? false);
@@ -952,9 +1066,11 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
   const [dailyBudgetLoading, setDailyBudgetLoading] = useState(true);
   const [dailyBudgetError, setDailyBudgetError] = useState<string | null>(null);
   const [resettingDay,    setResettingDay]    = useState(false);
-  const [suggestions, setSuggestions] = useState<WeeklySuggestionsResponse | null>(null);
-  const [suggestionTab, setSuggestionTab] = useState<string>('breakfast');
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [nextMeal, setNextMeal] = useState<WhatToEatNextResponse | null>(null);
+  const [loadingNextMeal, setLoadingNextMeal] = useState(false);
+  const [nextMealError, setNextMealError] = useState(false);
+  const [alternativesFallback, setAlternativesFallback] =
+    useState<WhatToEatNextResponse | null>(null);
   const [entryQuantities, setEntryQuantities] = useState<Record<number, number>>({});
   const wrapRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -964,62 +1080,53 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
     currentMealTypeRef.current = currentMealType;
   }, [currentMealType]);
 
-  useEffect(() => {
-    if (result) return;
-    setSuggestionTab(mealOccasionToSuggestionTab(currentMealType));
-  }, [currentMealType, result]);
-
-  useEffect(() => {
-    if (!result) return;
-    const showLstmAlternatives =
-      result.level === 'HIGH' ||
-      result.level === 'MODERATE' ||
-      isDailyBudgetExceeded(dailyBudget);
-    if (showLstmAlternatives) {
-      setSuggestionTab(getNextOccasion(currentMealType));
-    }
-  }, [result, dailyBudget, currentMealType]);
+  const isPostCheckMode = result?.occasion === currentMealType;
+  const panelTitle = isPostCheckMode ? 'What to eat next' : 'Suggestion';
 
   useEffect(() => {
     if (!getAuthToken()) {
-      setSuggestions(null);
+      setNextMeal(null);
+      setNextMealError(false);
       return;
     }
 
     let cancelled = false;
-    setSuggestions(null);
-    setLoadingSuggestions(true);
+    setLoadingNextMeal(true);
+    setNextMealError(false);
 
-    authFetch(`${API_BASE}/api/next-meal/weekly-suggestions`)
+    const url = isPostCheckMode
+      ? `${API_BASE}/api/next-meal/what-to-eat-next`
+      : `${API_BASE}/api/next-meal/what-to-eat-next?occasion=${encodeURIComponent(currentMealType)}`;
+
+    authFetch(url)
       .then(async (r) => {
         if (r.status === 401 || !r.ok) return null;
-        return r.json() as Promise<WeeklySuggestionsResponse>;
+        return r.json() as Promise<WhatToEatNextResponse>;
       })
       .then((data) => {
         if (cancelled) return;
-        const hasSuggestions = data?.suggestions_by_meal?.some(
-          (group) => group.suggestions.length > 0,
-        );
-        if (hasSuggestions) {
-          setSuggestionTab(
-            result
-              ? getNextOccasion(currentMealTypeRef.current)
-              : mealOccasionToSuggestionTab(currentMealTypeRef.current),
-          );
+        if (data && Array.isArray(data.meal_options)) {
+          setNextMeal(data);
+          setNextMealError(false);
+        } else {
+          setNextMeal(null);
+          setNextMealError(true);
         }
-        setSuggestions(hasSuggestions ? data : null);
       })
       .catch(() => {
-        if (!cancelled) setSuggestions(null);
+        if (!cancelled) {
+          setNextMeal(null);
+          setNextMealError(true);
+        }
       })
       .finally(() => {
-        if (!cancelled) setLoadingSuggestions(false);
+        if (!cancelled) setLoadingNextMeal(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [result]);
+  }, [result, currentMealType, isPostCheckMode]);
 
   const searchFoods = async (query: string) => {
     const q = query.trim();
@@ -1167,6 +1274,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
     });
     if (occasion === currentMealTypeRef.current) {
       applyAssessmentToDisplay(null);
+      setAlternativesFallback(null);
     }
   };
 
@@ -1179,6 +1287,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
     }
     clearLegacyUnscopedMealKeys();
     applyAssessmentToDisplay(null);
+    setAlternativesFallback(null);
   };
 
   const selectMealType = (type: MealOccasion) => {
@@ -1192,15 +1301,14 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
     setEntries([]);
     setError('');
     setSearch('');
+    setAlternativesFallback(null);
     applyAssessmentToDisplay(resultsByOccasion[type]);
   };
 
   const reAssessOccasion = () => {
-    clearOccasionAssessment(currentMealType);
-    setOccasionAddMode(true);
-    setEntries([]);
-    setError('');
-    setSearch('');
+    // Re-run classification on current logged foods (skipSave) — do not clear
+    // results or enter add-mode; "+ Add another food" handles that separately.
+    assessLoggedOccasion();
   };
 
   const mealOccasion = currentMealType;
@@ -1395,6 +1503,13 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
     setError('');
   };
 
+  const cancelSelectedFood = () => {
+    setSelectedFood(null);
+    setFoodQty(1);
+    setSearch('');
+    setError('');
+  };
+
   const updateGrams = (id: number, delta: number) => {
     setEntries((prev) => prev.map((e) => e.food.id === id ? { ...e, grams: Math.max(10, e.grams + delta) } : e));
     setEntryQuantities((prev) => {
@@ -1454,6 +1569,13 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
 
   const computeRisk = async (foodsOverride?: MealFoodItem[], skipSave = false) => {
     const occasion = currentMealType;
+    const nextMealSnapshot =
+      nextMeal &&
+      nextMeal.occasion === occasion &&
+      Array.isArray(nextMeal.meal_options) &&
+      nextMeal.meal_options.length > 0
+        ? nextMeal
+        : null;
     const isAddMore = occasionAddMode && !foodsOverride;
 
     if (isAddMore && entries.length === 0) {
@@ -1474,7 +1596,9 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
       return;
     }
     setError('');
+    setIsAssessing(true);
 
+    try {
     const assessedFoods = [...foodsToAssess];
     const mealTotals = sumMealNutrients(assessedFoods);
     const limits = getStageLimits(stage, bodyWeightKg);
@@ -1499,6 +1623,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
             sodium: mealTotals.sodium,
             ckd_stage: stage,
             food_name: primaryFoodName,
+            occasion: currentMealType,
           }),
           signal: AbortSignal.timeout(5000),
         });
@@ -1509,16 +1634,22 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
         liveModel = true;
         confidence = typeof apiResult.confidence === 'number' ? apiResult.confidence : null;
 
+        const breakdownLimits =
+          apiResult.scoring_scale === 'meal' && apiResult.meal_limits
+            ? limitsFromMealApi(apiResult.meal_limits, bodyWeightKg, limits)
+            : limits;
+
         const breakdown = buildBreakdown(
           mealTotals,
-          limits,
+          breakdownLimits,
           apiResult.exceeded_nutrients,
           apiResult.near_limit_nutrients,
         );
 
         const apiSubs: Food[] = (apiResult.substitutes ?? [])
           .map((s: { english: string }) => lookupFoodByEnglish(s.english))
-          .filter((f: Food | undefined): f is Food => f !== undefined);
+          .filter((f: Food | undefined): f is Food => f !== undefined)
+          .filter(isRwandanFood);
 
         const substitutions: FoodSubstitution[] =
           apiSubs.length > 0
@@ -1533,6 +1664,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
           breakdown,
           assessedFoods,
           substitutions,
+          occasion,
           shap_explanation: apiResult.shap_explanation,
           shap_contributions: apiResult.shap_contributions,
           shap_dominant_nutrient: apiResult.shap_dominant_nutrient,
@@ -1541,6 +1673,15 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
         const newEntriesToSave = isAddMore ? [...entries] : assessedFoods;
 
         if (!skipSave) {
+          if (newEntriesToSave.length > 0) {
+            const optimistic = mealItemsToOptimisticLogs(newEntriesToSave, occasion);
+            setLogsByOccasion((prev) => ({
+              ...prev,
+              [occasion]: isAddMore
+                ? [...(prev[occasion] ?? []), ...optimistic]
+                : optimistic,
+            }));
+          }
           setEntries([]);
           setOccasionAddMode(false);
           if (newEntriesToSave.length > 0) {
@@ -1557,31 +1698,18 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
         });
 
         try {
-          const token = getAuthToken();
-          if (token) {
-            const patternResponse = await fetch(`${API_BASE}/api/predict/pattern`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                meal_sequence: [
-                  {
-                    potassium: mealTotals.potassium,
-                    phosphorus: mealTotals.phosphorus,
-                    protein_per_kg: mealTotals.protein / bodyWeightKg,
-                    sodium: mealTotals.sodium,
-                    occasion_encoded: OCCASION_ENCODING[occasion] ?? 0.5,
-                  },
-                ],
-                ckd_stage: stage,
-              }),
-              signal: AbortSignal.timeout(5000),
-            });
+          if (getAuthToken()) {
+            const patternResponse = await authFetch(
+              `${API_BASE}/api/patient/lstm-pattern`,
+              { signal: AbortSignal.timeout(5000) },
+            );
             if (patternResponse.ok) {
               const patternJson = await patternResponse.json();
-              if (patternJson?.risk_label && typeof patternJson?.confidence === 'number') {
+              if (
+                patternJson?.available &&
+                patternJson?.risk_label &&
+                typeof patternJson?.confidence === 'number'
+              ) {
                 lstm = {
                   risk_label: String(patternJson.risk_label),
                   confidence: Number(patternJson.confidence),
@@ -1592,6 +1720,12 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
           }
         } catch (err) {
           console.warn('LSTM pattern request failed:', err);
+        }
+
+        if (level === 'LOW' || substitutions.length > 0) {
+          setAlternativesFallback(null);
+        } else if (nextMealSnapshot) {
+          setAlternativesFallback(nextMealSnapshot);
         }
 
         commitOccasionAssessment(occasion, {
@@ -1629,18 +1763,29 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
     else if (exceededCount >= 1 || maxPct > 80) level = 'MODERATE';
 
     const fallbackScore = scoreFromBreakdown(breakdown);
+    const offlineSubstitutions = getSmartSubstitutions(assessedFoods, stage, limits);
 
     const resultState: ResultState = {
       level,
       score: fallbackScore,
       breakdown,
       assessedFoods,
-      substitutions: getSmartSubstitutions(assessedFoods, stage, limits),
+      substitutions: offlineSubstitutions,
+      occasion,
     };
 
     const newEntriesToSave = isAddMore ? [...entries] : assessedFoods;
 
     if (!skipSave) {
+      if (newEntriesToSave.length > 0) {
+        const optimistic = mealItemsToOptimisticLogs(newEntriesToSave, occasion);
+        setLogsByOccasion((prev) => ({
+          ...prev,
+          [occasion]: isAddMore
+            ? [...(prev[occasion] ?? []), ...optimistic]
+            : optimistic,
+        }));
+      }
       setEntries([]);
       setOccasionAddMode(false);
       if (newEntriesToSave.length > 0) {
@@ -1654,6 +1799,12 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
       bodyWeightKg,
     });
 
+    if (level === 'LOW' || offlineSubstitutions.length > 0) {
+      setAlternativesFallback(null);
+    } else if (nextMealSnapshot) {
+      setAlternativesFallback(nextMealSnapshot);
+    }
+
     commitOccasionAssessment(occasion, {
       result: resultState,
       lstmPattern: null,
@@ -1663,6 +1814,9 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
 
     await fetchDailyBudget();
     await fetchTodayLogs();
+    } finally {
+      setIsAssessing(false);
+    }
   };
 
   const assessLoggedOccasion = () => {
@@ -1730,71 +1884,103 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
     { label: 'Sodium',     value: Math.round(totals.sodium),     limit: thresholds.sodium,     unit: 'mg', color: '#E74C3C' },
   ];
 
-  const renderWeeklySuggestionsPanel = (hasCheckedMeal: boolean) => {
-    if (!suggestions || loadingSuggestions) return null;
-    return (
-      <div className="bg-teal-50 rounded-lg p-3 flex flex-col">
-        <div className="text-sm font-semibold text-teal-700" style={{ marginBottom: 4 }}>
-          What to eat next
-        </div>
-        <p className="text-xs text-muted-foreground mb-3">
-          {getSuggestionsSubtitle(hasCheckedMeal, suggestions)}
-        </p>
-
-        {!suggestions.analysis_available && (
-          <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 mb-3 flex items-center gap-2">
-            <span className="text-amber-600 text-sm font-medium">
-              ⚠ Pattern analysis temporarily unavailable
-            </span>
-            <span className="text-amber-500 text-xs">
-              Showing general safe foods for your stage
-            </span>
-          </div>
-        )}
-
-        <Tabs value={suggestionTab} onValueChange={setSuggestionTab}>
-          <TabsList className="w-full grid grid-cols-4 h-auto mb-2">
-            {suggestions.suggestions_by_meal.map((group) => (
-              <TabsTrigger key={group.occasion} value={group.occasion} className="text-xs sm:text-sm">
-                {SUGGESTION_OCCASION_LABELS[group.occasion] || group.occasion}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {suggestions.suggestions_by_meal.map((group) => {
-            const foods = group.suggestions.slice(0, 4);
-            return (
-              <TabsContent key={group.occasion} value={group.occasion} className="mt-0">
-                {foods.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-2">No suggestions available</p>
-                ) : (
-                  <ul className="grid grid-cols-2 gap-2">
-                    {foods.map((food) => (
-                      <li key={`${group.occasion}-${food.english}`} className="min-w-0">
-                        <p className="text-sm font-semibold text-foreground capitalize leading-snug">
-                          {food.english}
-                        </p>
-                        {food.category && (
-                          <p className="text-[11px] text-muted-foreground leading-tight">{food.category}</p>
-                        )}
-                        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{food.reason}</p>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </TabsContent>
-            );
-          })}
-        </Tabs>
-
-        {suggestions.clinical_note && (
-          <p className="text-xs italic text-muted-foreground mt-3 leading-relaxed">
-            {suggestions.clinical_note}
-          </p>
+  const renderWhatToEatNextPanel = () => (
+    <div className="rounded-lg border p-3 flex flex-col bg-white dark:bg-card">
+      <div className="flex items-center gap-2 flex-wrap" style={{ marginBottom: 8 }}>
+        <div style={{ color: theme.text, fontWeight: 600, fontSize: '0.9rem' }}>{panelTitle}</div>
+        {nextMeal?.occasion && (
+          <span
+            className="px-2.5 py-1 rounded-full"
+            style={{ background: 'rgba(46,134,171,0.12)', color: '#2E86AB', fontSize: '0.66rem', fontWeight: 600 }}
+          >
+            {nextMeal.occasion}
+          </span>
         )}
       </div>
-    );
-  };
+
+      {loadingNextMeal ? (
+        <p className="text-xs text-muted-foreground py-2">Finding your next meal…</p>
+      ) : nextMealError || !nextMeal || nextMeal.meal_options.length === 0 ? (
+        <p className="text-xs text-muted-foreground py-2 leading-relaxed">
+          Suggestions unavailable right now — check your profile CKD stage, or try again after logging a meal.
+        </p>
+      ) : (
+        <>
+          {nextMeal.safety_margin_applied && (
+            <p
+              className="text-xs leading-relaxed mb-2 px-2 py-1.5 rounded-md"
+              style={{
+                background: 'rgba(245,158,11,0.12)',
+                color: '#B45309',
+                fontWeight: 500,
+              }}
+            >
+              Recent meals look {nextMeal.trend ?? 'escalating'} — we tightened this suggestion as a
+              safety margin.
+            </p>
+          )}
+          <p
+            className={
+              nextMeal.budget_exhausted
+                ? 'text-xs mb-3 leading-relaxed px-2 py-1.5 rounded-md'
+                : 'text-xs text-muted-foreground mb-3 leading-relaxed'
+            }
+            style={
+              nextMeal.budget_exhausted
+                ? { background: 'rgba(245,158,11,0.12)', color: '#B45309', fontWeight: 500 }
+                : undefined
+            }
+          >
+            {nextMeal.reason}
+          </p>
+          <div className="space-y-3">
+            {nextMeal.meal_options.map((option, optIdx) => (
+              <div key={`opt-${optIdx}`}>
+                {nextMeal.meal_options.length >= 2 && (
+                  <p style={{ color: theme.text, fontWeight: 600, fontSize: '0.825rem', marginBottom: 8 }}>
+                    Option {optIdx + 1}
+                  </p>
+                )}
+                <div className="rounded-lg overflow-hidden border border-muted">
+                  <div
+                    className="grid gap-1 px-2 py-1.5 font-semibold text-muted-foreground"
+                    style={{
+                      gridTemplateColumns: '1.4fr 0.55fr 0.7fr 0.7fr 0.55fr',
+                      fontSize: '0.65rem',
+                    }}
+                  >
+                    <span>Food</span>
+                    <span>Grams</span>
+                    <span>K (mg)</span>
+                    <span>P (mg)</span>
+                    <span>Pro (g)</span>
+                  </div>
+                  {option.map((food, i) => (
+                    <div
+                      key={`${food.english}-${i}`}
+                      className="grid gap-1 px-2 py-1.5 items-center border-t border-muted"
+                      style={{
+                        gridTemplateColumns: '1.4fr 0.55fr 0.7fr 0.7fr 0.55fr',
+                        fontSize: '0.75rem',
+                      }}
+                    >
+                      <span className="font-medium capitalize truncate" style={{ color: theme.text }}>
+                        {food.english}
+                      </span>
+                      <span className="text-muted-foreground">{Math.round(food.portion_grams)}</span>
+                      <span style={{ color: '#2E86AB', fontWeight: 600 }}>{Math.round(food.potassium_mg)}</span>
+                      <span style={{ color: '#F39C12', fontWeight: 600 }}>{Math.round(food.phosphorus_mg)}</span>
+                      <span style={{ color: '#27AE60', fontWeight: 600 }}>{Number(food.protein_g).toFixed(1)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
 
   const renderDailyBudgetGrid = () => {
     if (!dailyBudget) {
@@ -1911,10 +2097,6 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                 </p>
                 <div className="space-y-2 mb-4">
                   {logsByOccasion[currentMealType].map((log) => {
-                    const kMg = Math.round(log.potassium_mg ?? 0);
-                    const kColor = potassiumStatusColor(kMg, thresholds.potassium);
-                    const dailyOverride = isDailyBudgetExceeded(dailyBudget);
-                    const isPotassiumSafe = kColor === '#27AE60';
                     return (
                       <div
                         key={log.log_id}
@@ -1927,16 +2109,6 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                         <span className="text-sm shrink-0" style={{ color: theme.textSecondary }}>
                           {Math.round(log.portion_grams ?? 0)}g
                         </span>
-                        {dailyOverride ? (
-                          <span className="text-sm shrink-0" style={{ color: theme.textSecondary }}>
-                            {kMg}mg K
-                          </span>
-                        ) : (
-                          <span className="text-sm shrink-0 font-medium" style={{ color: isPotassiumSafe ? '#27AE60' : kColor }}>
-                            {kMg}mg K
-                            {isPotassiumSafe && ' ✔ Safe'}
-                          </span>
-                        )}
                         <button
                           type="button"
                           onClick={() => void deleteFoodLog(log.log_id)}
@@ -1960,7 +2132,8 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                         setEntries([]);
                         setError('');
                       }}
-                      className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-80"
+                      disabled={isAssessing}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
                       style={{ background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', border: `1px solid ${theme.cardBorder}`, color: theme.text }}
                     >
                       + Add another food
@@ -1969,19 +2142,35 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                       <button
                         type="button"
                         onClick={reAssessOccasion}
-                        className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-80"
+                        disabled={isAssessing}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
                         style={{ background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', border: `1px solid ${theme.cardBorder}`, color: theme.text }}
                       >
-                        ↺ Re-check
+                        {isAssessing ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" />
+                            Checking…
+                          </>
+                        ) : (
+                          <>↺ Re-check</>
+                        )}
                       </button>
                     ) : (
                       <button
                         type="button"
                         onClick={() => assessLoggedOccasion()}
-                        className="flex-1 flex items-center justify-center gap-1 py-2.5 rounded-xl text-white text-sm font-semibold transition-opacity hover:opacity-90"
+                        disabled={isAssessing}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-white text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
                         style={{ background: 'linear-gradient(135deg, #2E86AB 0%, #1A5F7A 100%)' }}
                       >
-                        ✓ Checked
+                        {isAssessing ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" />
+                            Checking…
+                          </>
+                        ) : (
+                          <>✓ Checked</>
+                        )}
                       </button>
                     )}
                   </div>
@@ -2202,6 +2391,15 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                     >
                       Add
                     </button>
+                    <button
+                      type="button"
+                      onClick={cancelSelectedFood}
+                      className="shrink-0 w-6 h-6 flex items-center justify-center rounded hover:opacity-70"
+                      style={{ color: theme.textTertiary }}
+                      aria-label="Cancel food selection"
+                    >
+                      ×
+                    </button>
                   </div>
                 );
               })()}
@@ -2365,11 +2563,21 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
             <div className="flex gap-3 mt-4">
               <button
                 onClick={() => void computeRisk()}
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
+                disabled={isAssessing}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white transition-all duration-200 hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
                 style={{ background: 'linear-gradient(135deg, #2E86AB 0%, #1A5F7A 100%)', fontWeight: 600, fontSize: '0.9rem' }}
               >
-                <Zap size={15} />
-                Check this meal
+                {isAssessing ? (
+                  <>
+                    <Loader2 size={15} className="animate-spin" />
+                    Checking…
+                  </>
+                ) : (
+                  <>
+                    <Zap size={15} />
+                    Check this meal
+                  </>
+                )}
               </button>
               <button
                 onClick={reset}
@@ -2411,12 +2619,12 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
               className="rounded-2xl p-5 sm:p-6 flex flex-col gap-4 min-h-[420px] sm:min-h-[480px]"
               style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}
             >
-              {suggestions && !loadingSuggestions && (
+              {getAuthToken() && (
                 <div className="flex-[11] min-h-0">
-                  {renderWeeklySuggestionsPanel(false)}
+                  {renderWhatToEatNextPanel()}
                 </div>
               )}
-              <div className={suggestions && !loadingSuggestions ? 'flex-[9] min-h-0' : 'flex-1'}>
+              <div className={getAuthToken() ? 'flex-[9] min-h-0' : 'flex-1'}>
                 <div style={{ color: theme.text, fontWeight: 600, fontSize: '1.05rem' }}>Today&apos;s nutrient budget</div>
                 <p style={{ color: theme.textSecondary, marginTop: 8, fontSize: '0.875rem', lineHeight: 1.6 }}>
                   Add a meal to see how it affects your daily limits
@@ -2451,12 +2659,9 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <span style={{ color: cfg.color, fontSize: 'clamp(1.05rem,3vw,1.25rem)', fontWeight: 700 }}>{cfg.label}</span>
-                          <span className="px-2.5 py-1 rounded-full" style={{ background: `${cfg.color}20`, color: cfg.color, fontSize: '0.7rem', fontWeight: 600 }}>
-                            Using {result.score}% of your daily allowance
-                          </span>
                           {usingLiveModel && (
                             <span className="px-2.5 py-1 rounded-full" style={{ background: 'rgba(46,134,171,0.12)', color: '#2E86AB', fontSize: '0.66rem', fontWeight: 600 }}>
-                              Checked by AI risk assessment
+                              Risk classified with AI assist (KDOQI-weighted score)
                             </span>
                           )}
                         </div>
@@ -2477,49 +2682,14 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                     <div className="mt-1">
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 mb-1.5">
                         <span style={{ color: theme.textSecondary, fontSize: '0.74rem' }}>How much of your daily allowance this meal uses</span>
-                        <span style={{ color: cfg.color, fontWeight: 600, fontSize: '0.74rem' }}>{result.score}%</span>
+                        <span className="px-2.5 py-1 rounded-full" style={{ background: `${cfg.color}20`, color: cfg.color, fontSize: '0.7rem', fontWeight: 600 }}>
+                          Using {result.score}% of your daily allowance
+                        </span>
                       </div>
                       <div className="rounded-full overflow-hidden" style={{ height: 5, background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
                         <div style={{ width: `${result.score}%`, height: 5, background: `linear-gradient(90deg,${cfg.color}80,${cfg.color})`, borderRadius: 9999, transition: 'width 0.6s ease' }} />
                       </div>
                     </div>
-                    {lstmPattern?.risk_label && (() => {
-                      const patternLevel = lstmPattern.risk_label as RiskLevel;
-                      const patternCfg = RISK_CFG[patternLevel] ?? RISK_CFG.MODERATE;
-                      const patternPhrase = getWeeklyRiskLabel(lstmPattern.risk_label).toLowerCase();
-                      const mealAloneNote =
-                        result.level === 'LOW'
-                          ? 'this meal alone looks safe'
-                          : result.level === 'HIGH'
-                            ? 'this meal alone also suggests reducing intake'
-                            : 'this meal alone suggests caution';
-                      const mealsToday = dailyBudget?.meals_logged_today ?? result.assessedFoods.length;
-                      return (
-                        <>
-                          <div className="mt-2 pt-2" style={{ borderTop: `1px solid ${cfg.border}` }} />
-                          <div
-                            className="mt-2 leading-snug"
-                            title="Based on all meals logged today, not just this one"
-                          >
-                            <p className="text-xs" style={{ color: patternCfg.color }}>
-                              Today&apos;s pattern: your meals today are showing{' '}
-                              <span style={{ fontWeight: 600 }}>{patternPhrase}</span>
-                              <span className="text-muted-foreground font-normal">
-                                {' · '}{mealAloneNote}
-                              </span>
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Based on {mealsToday} meal{mealsToday !== 1 ? 's' : ''} logged today
-                            </p>
-                            {(patternLevel === 'HIGH' || patternLevel === 'MODERATE') && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Try to keep your next meal lighter to balance your intake for the day.
-                              </p>
-                            )}
-                          </div>
-                        </>
-                      );
-                    })()}
                   </div>
                 );
               })()}
@@ -2602,25 +2772,10 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                   <div style={{ color: theme.text, fontWeight: 600, fontSize: '0.9rem', marginBottom: 8 }}>What you should do</div>
 
                   {(() => {
-                    const inferred =
-                      (result.shap_dominant_nutrient ?? '').trim()
-                      || (result.shap_explanation?.match(/\b(potassium|phosphorus|protein|sodium)\b/i)?.[1] ?? '').trim();
-                    const flaggedNutrient = inferred.length > 0
-                      ? inferred.charAt(0).toUpperCase() + inferred.slice(1).toLowerCase()
-                      : 'nutrient';
-
-                    const actionText =
-                      result.level === 'LOW'
-                        ? 'Your meal is within safe limits. For your next meal, try to keep portions similar to maintain your daily balance.'
-                        : result.level === 'MODERATE'
-                          ? `This meal is at your limit. Keep your next meal light — choose low ${flaggedNutrient} options from the suggestions below.`
-                          : 'This meal exceeds safe limits. Do not add more food today without checking it first. See safer options below.';
+                    const actionText = buildActionText(result.level, dailyBudget);
 
                     return (
                       <div className="mb-2 p-2 rounded-md bg-muted/40 border border-muted">
-                        <p className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide">
-                          Your action
-                        </p>
                         <p className="text-xs leading-relaxed">
                           {actionText}
                         </p>
@@ -2628,15 +2783,22 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                     );
                   })()}
 
-                  {result.shap_contributions &&
-                    Object.values(result.shap_contributions).some((v) => (v as number) > 0) && (
+                  {(() => {
+                    const hasShapBars =
+                      !!result.shap_contributions &&
+                      Object.values(result.shap_contributions).some((v) => (v as number) > 0);
+                    const shapExplanation = result.shap_explanation?.trim() ?? '';
+                    const hasShapExplanation = shapExplanation.length > 0;
+                    if (!hasShapBars && !hasShapExplanation) return null;
+                    return (
                     <div className="mb-2">
                       <p className="text-xs text-muted-foreground mb-1">
                         What drove this result
                       </p>
-                      {Object.entries(result.shap_contributions)
-                        .sort((a, b) => b[1] - a[1])
-                        .map(([nutrient, pct]) => (
+                      {hasShapBars &&
+                        Object.entries(result.shap_contributions!)
+                          .sort((a, b) => b[1] - a[1])
+                          .map(([nutrient, pct]) => (
                           <div key={nutrient} className="flex items-center gap-2 mb-0.5">
                             <span className="text-xs w-20 capitalize">{nutrient}</span>
                             <div className="flex-1 bg-muted rounded-full h-1.5">
@@ -2654,73 +2816,23 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                             <span className="text-xs w-10 text-right">{pct}%</span>
                           </div>
                         ))}
+                      {hasShapExplanation && (
+                        <p
+                          className={`text-xs leading-relaxed ${hasShapBars ? 'mt-2' : ''}`}
+                          style={{ color: theme.textSecondary }}
+                        >
+                          {shapExplanation}
+                        </p>
+                      )}
                     </div>
-                  )}
+                    );
+                  })()}
                 </div>
 
-                {/* Card 2 — Safer food choices */}
-                {(() => {
-                  const showLstmAlternatives =
-                    result.level === 'HIGH' ||
-                    result.level === 'MODERATE' ||
-                    isDailyBudgetExceeded(dailyBudget);
-
-                  const currentOccasionKey = currentMealType.toLowerCase();
-                  const occasionFoods = showLstmAlternatives && suggestions
-                    ? (
-                        suggestions.suggestions_by_meal.find(
-                          (group) => group.occasion.toLowerCase() === currentOccasionKey,
-                        )?.suggestions.slice(0, 4) ?? []
-                      )
-                    : [];
-
-                  const flaggedNutrient = suggestions?.flagged_nutrient?.trim();
-                  const nutrientLabel = flaggedNutrient
-                    ? toPlainNutrient(flaggedNutrient)
-                    : 'key nutrients';
-
-                  if (showLstmAlternatives) {
-                    return (
-                      <div className="rounded-lg border p-3 flex flex-col bg-white dark:bg-card">
-                        <div style={{ color: theme.text, fontWeight: 600, fontSize: '0.9rem', marginBottom: 8 }}>
-                          Safer {currentOccasionKey} options
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-3">
-                          Based on your recent meal pattern, these are lower in {nutrientLabel}:
-                        </p>
-                        {occasionFoods.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">
-                            No alternatives available — try reducing portion size
-                          </p>
-                        ) : (
-                          <ul className="grid grid-cols-2 gap-2">
-                            {occasionFoods.map((food) => (
-                              <li key={`${currentOccasionKey}-${food.english}`} className="min-w-0">
-                                <p className="text-sm font-semibold text-foreground capitalize leading-snug">
-                                  {food.english}
-                                </p>
-                                {food.category && (
-                                  <p className="text-[11px] text-muted-foreground leading-tight">{food.category}</p>
-                                )}
-                                <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{food.reason}</p>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    );
-                  }
-
-                  return (
+                {/* Card 2 — Better alternatives */}
                 <div className="rounded-lg border p-3 flex flex-col bg-white dark:bg-card">
                   <div style={{ color: theme.text, fontWeight: 600, fontSize: '0.9rem', marginBottom: 8 }}>Better alternatives</div>
-                  {result.substitutions.length === 0 ? (
-                    <p className="text-sm text-center" style={{ color: theme.textSecondary }}>
-                      {!usingLiveModel
-                        ? 'Connect to live model for personalized swaps.'
-                        : 'Your meal looks safe — no swaps needed.'}
-                    </p>
-                  ) : (
+                  {result.substitutions.length > 0 ? (
                     <ul className="space-y-4">
                       {result.substitutions.map(({ riskyFood, substitutes }) => (
                         <li key={riskyFood.id}>
@@ -2741,7 +2853,12 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                                     </p>
                                   )}
                                   <p style={{ color: '#2E86AB', fontSize: '0.75rem', marginTop: 4, fontWeight: 600 }}>
-                                    Potassium: {riskyFood.potassium_mg}mg → {sub.potassium_mg}mg
+                                    {(() => {
+                                      const nutrient = primaryConcernNutrient(result);
+                                      const from = nutrientSwapDisplay(riskyFood, nutrient);
+                                      const to = nutrientSwapDisplay(sub, nutrient);
+                                      return `${from.label}: ${from.value} → ${to.value}`;
+                                    })()}
                                   </p>
                                   <span
                                     className="inline-block mt-2 px-2 py-0.5 rounded-full"
@@ -2756,40 +2873,68 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                         </li>
                       ))}
                     </ul>
+                  ) : result.level === 'LOW' ? (
+                    <p className="text-sm text-center" style={{ color: theme.textSecondary }}>
+                      {!usingLiveModel
+                        ? 'Connect to live model for personalized swaps.'
+                        : 'Your meal looks safe — no swaps needed.'}
+                    </p>
+                  ) : alternativesFallback ? (
+                    <>
+                      <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                        No direct swap found. Here&apos;s a safe option for this meal:
+                      </p>
+                      <div className="space-y-3">
+                        {alternativesFallback.meal_options.slice(0, 1).map((option, optIdx) => (
+                          <div key={`alt-fb-${optIdx}`}>
+                            <div className="rounded-lg overflow-hidden border border-muted">
+                              <div
+                                className="grid gap-1 px-2 py-1.5 font-semibold text-muted-foreground"
+                                style={{
+                                  gridTemplateColumns: '1.4fr 0.55fr 0.7fr 0.7fr 0.55fr',
+                                  fontSize: '0.65rem',
+                                }}
+                              >
+                                <span>Food</span>
+                                <span>Grams</span>
+                                <span>K (mg)</span>
+                                <span>P (mg)</span>
+                                <span>Pro (g)</span>
+                              </div>
+                              {option.map((food, i) => (
+                                <div
+                                  key={`${food.english}-${i}`}
+                                  className="grid gap-1 px-2 py-1.5 items-center border-t border-muted"
+                                  style={{
+                                    gridTemplateColumns: '1.4fr 0.55fr 0.7fr 0.7fr 0.55fr',
+                                    fontSize: '0.75rem',
+                                  }}
+                                >
+                                  <span className="font-medium capitalize truncate" style={{ color: theme.text }}>
+                                    {food.english}
+                                  </span>
+                                  <span className="text-muted-foreground">{Math.round(food.portion_grams)}</span>
+                                  <span style={{ color: '#2E86AB', fontWeight: 600 }}>{Math.round(food.potassium_mg)}</span>
+                                  <span style={{ color: '#F39C12', fontWeight: 600 }}>{Math.round(food.phosphorus_mg)}</span>
+                                  <span style={{ color: '#27AE60', fontWeight: 600 }}>{Number(food.protein_g).toFixed(1)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-center" style={{ color: theme.textSecondary }}>
+                      {!usingLiveModel
+                        ? 'Connect to live model for personalized swaps.'
+                        : noSubstitutesMessage(primaryConcernNutrient(result))}
+                    </p>
                   )}
                 </div>
-                  );
-                })()}
 
-                {/* Card 3 — Today's Budget */}
-                {dailyBudgetLoading ? (
-                  <div className="rounded-lg border p-3 flex flex-col bg-white dark:bg-card">
-                    <p style={{ color: theme.textTertiary, fontSize: '0.8rem' }}>Loading…</p>
-                  </div>
-                ) : dailyBudgetError ? (
-                  <div className="rounded-lg border p-3 flex flex-col bg-white dark:bg-card">
-                    <p style={{ color: theme.textTertiary, fontSize: '0.8rem' }}>{dailyBudgetError}</p>
-                  </div>
-                ) : dailyBudget ? (
-                  <div className="rounded-lg border p-3 flex flex-col bg-white dark:bg-card">
-                    {suggestions && !loadingSuggestions && (
-                      <>
-                        <hr className="border-gray-100 my-3" />
-                        {renderWeeklySuggestionsPanel(true)}
-                      </>
-                    )}
-
-                    {dailyBudget.suggestion_context && (
-                      <p
-                        className="text-xs italic line-clamp-2 mt-3"
-                        style={{ color: theme.textSecondary }}
-                        title={dailyBudget.suggestion_context.message}
-                      >
-                        {dailyBudget.suggestion_context.message}
-                      </p>
-                    )}
-                  </div>
-                ) : null}
+                {/* Card 3 — What to eat next */}
+                {getAuthToken() && renderWhatToEatNextPanel()}
               </div>
 
               <div className="flex justify-end">

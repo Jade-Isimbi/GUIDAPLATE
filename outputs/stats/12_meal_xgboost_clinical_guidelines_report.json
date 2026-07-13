@@ -1,0 +1,698 @@
+{
+  "n_pass": 97,
+  "n_fail": 0,
+  "n_total": 97,
+  "all_passed": true,
+  "verdict": "Meal XGBoost v3 aligns with GuidaPlate's KDOQI/KDIGO-derived clinical constants and OCCASION_RULES meal operationalization. Severity weights/thresholds are author-derived (documented). Forbidden-food guidelines are enforced outside this model.",
+  "checks": [
+    {
+      "section": "A_constants",
+      "name": "sodium_2300_G2",
+      "passed": true,
+      "detail": "Na=2300.0",
+      "guideline_ref": "KDOQI 2020 Guideline 5.1"
+    },
+    {
+      "section": "A_constants",
+      "name": "sodium_2300_G3a",
+      "passed": true,
+      "detail": "Na=2300.0",
+      "guideline_ref": "KDOQI 2020 Guideline 5.1"
+    },
+    {
+      "section": "A_constants",
+      "name": "sodium_2300_G3b",
+      "passed": true,
+      "detail": "Na=2300.0",
+      "guideline_ref": "KDOQI 2020 Guideline 5.1"
+    },
+    {
+      "section": "A_constants",
+      "name": "sodium_2300_G4",
+      "passed": true,
+      "detail": "Na=2300.0",
+      "guideline_ref": "KDOQI 2020 Guideline 5.1"
+    },
+    {
+      "section": "A_constants",
+      "name": "protein_kdoqi_G2",
+      "passed": true,
+      "detail": "protein_per_kg=0.8",
+      "guideline_ref": "KDOQI 2020 Table 11"
+    },
+    {
+      "section": "A_constants",
+      "name": "protein_kdoqi_G3a",
+      "passed": true,
+      "detail": "protein_per_kg=0.6",
+      "guideline_ref": "KDOQI 2020 Table 11"
+    },
+    {
+      "section": "A_constants",
+      "name": "protein_kdoqi_G3b",
+      "passed": true,
+      "detail": "protein_per_kg=0.6",
+      "guideline_ref": "KDOQI 2020 Table 11"
+    },
+    {
+      "section": "A_constants",
+      "name": "protein_kdoqi_G4",
+      "passed": true,
+      "detail": "protein_per_kg=0.55",
+      "guideline_ref": "KDOQI 2020 Table 11"
+    },
+    {
+      "section": "A_constants",
+      "name": "potassium_monotone_by_stage",
+      "passed": true,
+      "detail": "G2=3500.0 G3a/b=3000.0 G4=2500.0",
+      "guideline_ref": "KDIGO stage severity + product KDOQI table"
+    },
+    {
+      "section": "A_constants",
+      "name": "phosphorus_monotone_by_stage",
+      "passed": true,
+      "detail": "G2=1000.0 G3=800.0 G4=700.0",
+      "guideline_ref": "KDIGO stage severity + product KDOQI table"
+    },
+    {
+      "section": "A_constants",
+      "name": "train_kdoqi_matches_backend_G2",
+      "passed": true,
+      "detail": "train={'potassium': 3500.0, 'phosphorus': 1000.0, 'protein_per_kg': 0.8, 'sodium': 2300.0} backend={'potassium': 3500.0, 'phosphorus': 1000.0, 'protein_per_kg': 0.8, 'sodium': 2300.0}",
+      "guideline_ref": "clinical_constants.py source of truth"
+    },
+    {
+      "section": "A_constants",
+      "name": "train_kdoqi_matches_backend_G3a",
+      "passed": true,
+      "detail": "train={'potassium': 3000.0, 'phosphorus': 800.0, 'protein_per_kg': 0.6, 'sodium': 2300.0} backend={'potassium': 3000.0, 'phosphorus': 800.0, 'protein_per_kg': 0.6, 'sodium': 2300.0}",
+      "guideline_ref": "clinical_constants.py source of truth"
+    },
+    {
+      "section": "A_constants",
+      "name": "train_kdoqi_matches_backend_G3b",
+      "passed": true,
+      "detail": "train={'potassium': 3000.0, 'phosphorus': 800.0, 'protein_per_kg': 0.6, 'sodium': 2300.0} backend={'potassium': 3000.0, 'phosphorus': 800.0, 'protein_per_kg': 0.6, 'sodium': 2300.0}",
+      "guideline_ref": "clinical_constants.py source of truth"
+    },
+    {
+      "section": "A_constants",
+      "name": "train_kdoqi_matches_backend_G4",
+      "passed": true,
+      "detail": "train={'potassium': 2500.0, 'phosphorus': 700.0, 'protein_per_kg': 0.55, 'sodium': 2300.0} backend={'potassium': 2500.0, 'phosphorus': 700.0, 'protein_per_kg': 0.55, 'sodium': 2300.0}",
+      "guideline_ref": "clinical_constants.py source of truth"
+    },
+    {
+      "section": "A_constants",
+      "name": "weights_match_backend",
+      "passed": true,
+      "detail": "train={'potassium': 0.35, 'phosphorus': 0.3, 'protein': 0.25, 'sodium': 0.1} backend={'potassium': 0.35, 'phosphorus': 0.3, 'protein': 0.25, 'sodium': 0.1}",
+      "guideline_ref": "clinical_constants CLINICAL_SEVERITY_WEIGHTS"
+    },
+    {
+      "section": "A_constants",
+      "name": "weights_sum_to_one",
+      "passed": true,
+      "detail": "sum=0.9999999999999999",
+      "guideline_ref": "author-derived severity weights"
+    },
+    {
+      "section": "A_constants",
+      "name": "weight_priority_K_gt_P_gt_pro_gt_Na",
+      "passed": true,
+      "detail": "K=0.35 P=0.3 pro=0.25 Na=0.1",
+      "guideline_ref": "author-derived clinical priority (documented in clinical_constants)"
+    },
+    {
+      "section": "A_constants",
+      "name": "thresholds_match_backend",
+      "passed": true,
+      "detail": "{'HIGH': 1.2, 'MODERATE': 0.7}",
+      "guideline_ref": "clinical_constants SEVERITY_THRESHOLDS"
+    },
+    {
+      "section": "A_constants",
+      "name": "assign_label_matches_thresholds",
+      "passed": true,
+      "detail": "boundaries 0.7 / 1.2",
+      "guideline_ref": "SEVERITY_THRESHOLDS"
+    },
+    {
+      "section": "A_constants",
+      "name": "occasion_frac_Breakfast",
+      "passed": true,
+      "detail": "OCCASION_RULES=(0.25, 0.25, 0.3, 0.25) train=(0.25, 0.25, 0.3, 0.25)",
+      "guideline_ref": "meal_planner.OCCASION_RULES"
+    },
+    {
+      "section": "A_constants",
+      "name": "occasion_frac_Lunch",
+      "passed": true,
+      "detail": "OCCASION_RULES=(0.4, 0.4, 0.4, 0.4) train=(0.4, 0.4, 0.4, 0.4)",
+      "guideline_ref": "meal_planner.OCCASION_RULES"
+    },
+    {
+      "section": "A_constants",
+      "name": "occasion_frac_Dinner",
+      "passed": true,
+      "detail": "OCCASION_RULES=(0.4, 0.4, 0.4, 0.4) train=(0.4, 0.4, 0.4, 0.4)",
+      "guideline_ref": "meal_planner.OCCASION_RULES"
+    },
+    {
+      "section": "A_constants",
+      "name": "occasion_frac_Snack",
+      "passed": true,
+      "detail": "OCCASION_RULES=(0.15, 0.15, 0.1, 0.15) train=(0.15, 0.15, 0.1, 0.15)",
+      "guideline_ref": "meal_planner.OCCASION_RULES"
+    },
+    {
+      "section": "A_constants",
+      "name": "egfr_range_G2",
+      "passed": true,
+      "detail": "60\u201389",
+      "guideline_ref": "KDIGO 2024 Chapter 1 (product table)"
+    },
+    {
+      "section": "A_constants",
+      "name": "egfr_range_G3a",
+      "passed": true,
+      "detail": "45\u201359",
+      "guideline_ref": "KDIGO 2024 Chapter 1 (product table)"
+    },
+    {
+      "section": "A_constants",
+      "name": "egfr_range_G3b",
+      "passed": true,
+      "detail": "30\u201344",
+      "guideline_ref": "KDIGO 2024 Chapter 1 (product table)"
+    },
+    {
+      "section": "A_constants",
+      "name": "egfr_range_G4",
+      "passed": true,
+      "detail": "15\u201329",
+      "guideline_ref": "KDIGO 2024 Chapter 1 (product table)"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "caps_G2_Breakfast",
+      "passed": true,
+      "detail": "{'potassium': 875.0, 'phosphorus': 250.0, 'protein_per_kg': 0.24, 'sodium': 575.0}",
+      "guideline_ref": "KDOQI daily \u00d7 OCCASION_RULES"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "caps_G2_Lunch",
+      "passed": true,
+      "detail": "{'potassium': 1400.0, 'phosphorus': 400.0, 'protein_per_kg': 0.32000000000000006, 'sodium': 920.0}",
+      "guideline_ref": "KDOQI daily \u00d7 OCCASION_RULES"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "caps_G2_Dinner",
+      "passed": true,
+      "detail": "{'potassium': 1400.0, 'phosphorus': 400.0, 'protein_per_kg': 0.32000000000000006, 'sodium': 920.0}",
+      "guideline_ref": "KDOQI daily \u00d7 OCCASION_RULES"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "caps_G2_Snack",
+      "passed": true,
+      "detail": "{'potassium': 525.0, 'phosphorus': 150.0, 'protein_per_kg': 0.08000000000000002, 'sodium': 345.0}",
+      "guideline_ref": "KDOQI daily \u00d7 OCCASION_RULES"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "caps_G3a_Breakfast",
+      "passed": true,
+      "detail": "{'potassium': 750.0, 'phosphorus': 200.0, 'protein_per_kg': 0.18, 'sodium': 575.0}",
+      "guideline_ref": "KDOQI daily \u00d7 OCCASION_RULES"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "caps_G3a_Lunch",
+      "passed": true,
+      "detail": "{'potassium': 1200.0, 'phosphorus': 320.0, 'protein_per_kg': 0.24, 'sodium': 920.0}",
+      "guideline_ref": "KDOQI daily \u00d7 OCCASION_RULES"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "caps_G3a_Dinner",
+      "passed": true,
+      "detail": "{'potassium': 1200.0, 'phosphorus': 320.0, 'protein_per_kg': 0.24, 'sodium': 920.0}",
+      "guideline_ref": "KDOQI daily \u00d7 OCCASION_RULES"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "caps_G3a_Snack",
+      "passed": true,
+      "detail": "{'potassium': 450.0, 'phosphorus': 120.0, 'protein_per_kg': 0.06, 'sodium': 345.0}",
+      "guideline_ref": "KDOQI daily \u00d7 OCCASION_RULES"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "caps_G3b_Breakfast",
+      "passed": true,
+      "detail": "{'potassium': 750.0, 'phosphorus': 200.0, 'protein_per_kg': 0.18, 'sodium': 575.0}",
+      "guideline_ref": "KDOQI daily \u00d7 OCCASION_RULES"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "caps_G3b_Lunch",
+      "passed": true,
+      "detail": "{'potassium': 1200.0, 'phosphorus': 320.0, 'protein_per_kg': 0.24, 'sodium': 920.0}",
+      "guideline_ref": "KDOQI daily \u00d7 OCCASION_RULES"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "caps_G3b_Dinner",
+      "passed": true,
+      "detail": "{'potassium': 1200.0, 'phosphorus': 320.0, 'protein_per_kg': 0.24, 'sodium': 920.0}",
+      "guideline_ref": "KDOQI daily \u00d7 OCCASION_RULES"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "caps_G3b_Snack",
+      "passed": true,
+      "detail": "{'potassium': 450.0, 'phosphorus': 120.0, 'protein_per_kg': 0.06, 'sodium': 345.0}",
+      "guideline_ref": "KDOQI daily \u00d7 OCCASION_RULES"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "caps_G4_Breakfast",
+      "passed": true,
+      "detail": "{'potassium': 625.0, 'phosphorus': 175.0, 'protein_per_kg': 0.165, 'sodium': 575.0}",
+      "guideline_ref": "KDOQI daily \u00d7 OCCASION_RULES"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "caps_G4_Lunch",
+      "passed": true,
+      "detail": "{'potassium': 1000.0, 'phosphorus': 280.0, 'protein_per_kg': 0.22000000000000003, 'sodium': 920.0}",
+      "guideline_ref": "KDOQI daily \u00d7 OCCASION_RULES"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "caps_G4_Dinner",
+      "passed": true,
+      "detail": "{'potassium': 1000.0, 'phosphorus': 280.0, 'protein_per_kg': 0.22000000000000003, 'sodium': 920.0}",
+      "guideline_ref": "KDOQI daily \u00d7 OCCASION_RULES"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "caps_G4_Snack",
+      "passed": true,
+      "detail": "{'potassium': 375.0, 'phosphorus': 105.0, 'protein_per_kg': 0.05500000000000001, 'sodium': 345.0}",
+      "guideline_ref": "KDOQI daily \u00d7 OCCASION_RULES"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "lunch_equals_dinner_caps",
+      "passed": true,
+      "detail": "Lunch={'potassium': 1200.0, 'phosphorus': 320.0, 'protein_per_kg': 0.24, 'sodium': 920.0} Dinner={'potassium': 1200.0, 'phosphorus': 320.0, 'protein_per_kg': 0.24, 'sodium': 920.0}",
+      "guideline_ref": "OCCASION_RULES"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "snack_tightest_potassium",
+      "passed": true,
+      "detail": "Snack=450.0 BF=750.0 Lunch=1200.0",
+      "guideline_ref": "OCCASION_RULES nutrient_caps"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "daily_fraction_sum_documented",
+      "passed": true,
+      "detail": "sum_K_fracs=1.20 (allows ~120% if all meals maxed \u2014 product choice, not KDOQI text)",
+      "guideline_ref": "OCCASION_RULES operationalization"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "train_helper_matches_G2_Breakfast",
+      "passed": true,
+      "detail": "train={'potassium': 875.0, 'phosphorus': 250.0, 'protein_per_kg': 0.24, 'sodium': 575.0} backend={'potassium': 875.0, 'phosphorus': 250.0, 'protein_per_kg': 0.24, 'sodium': 575.0}",
+      "guideline_ref": "train_xgboost_v3_meal.meal_caps"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "train_helper_matches_G2_Snack",
+      "passed": true,
+      "detail": "train={'potassium': 525.0, 'phosphorus': 150.0, 'protein_per_kg': 0.08000000000000002, 'sodium': 345.0} backend={'potassium': 525.0, 'phosphorus': 150.0, 'protein_per_kg': 0.08000000000000002, 'sodium': 345.0}",
+      "guideline_ref": "train_xgboost_v3_meal.meal_caps"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "train_helper_matches_G4_Breakfast",
+      "passed": true,
+      "detail": "train={'potassium': 625.0, 'phosphorus': 175.0, 'protein_per_kg': 0.165, 'sodium': 575.0} backend={'potassium': 625.0, 'phosphorus': 175.0, 'protein_per_kg': 0.165, 'sodium': 575.0}",
+      "guideline_ref": "train_xgboost_v3_meal.meal_caps"
+    },
+    {
+      "section": "B_meal_caps",
+      "name": "train_helper_matches_G4_Snack",
+      "passed": true,
+      "detail": "train={'potassium': 375.0, 'phosphorus': 105.0, 'protein_per_kg': 0.05500000000000001, 'sodium': 345.0} backend={'potassium': 375.0, 'phosphorus': 105.0, 'protein_per_kg': 0.05500000000000001, 'sodium': 345.0}",
+      "guideline_ref": "train_xgboost_v3_meal.meal_caps"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "under40_pct_caps_G2_Breakfast",
+      "passed": true,
+      "detail": "pred=LOW exp=LOW score=0.400 conf=0.85",
+      "guideline_ref": "KDOQI meal-cap operationalization"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "under40_pct_caps_G2_Lunch",
+      "passed": true,
+      "detail": "pred=LOW exp=LOW score=0.400 conf=0.84",
+      "guideline_ref": "KDOQI meal-cap operationalization"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "under40_pct_caps_G2_Dinner",
+      "passed": true,
+      "detail": "pred=LOW exp=LOW score=0.400 conf=0.84",
+      "guideline_ref": "KDOQI meal-cap operationalization"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "under40_pct_caps_G2_Snack",
+      "passed": true,
+      "detail": "pred=LOW exp=LOW score=0.400 conf=0.87",
+      "guideline_ref": "KDOQI meal-cap operationalization"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "under40_pct_caps_G3a_Breakfast",
+      "passed": true,
+      "detail": "pred=LOW exp=LOW score=0.400 conf=0.86",
+      "guideline_ref": "KDOQI meal-cap operationalization"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "under40_pct_caps_G3a_Lunch",
+      "passed": true,
+      "detail": "pred=LOW exp=LOW score=0.400 conf=0.84",
+      "guideline_ref": "KDOQI meal-cap operationalization"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "under40_pct_caps_G3a_Dinner",
+      "passed": true,
+      "detail": "pred=LOW exp=LOW score=0.400 conf=0.84",
+      "guideline_ref": "KDOQI meal-cap operationalization"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "under40_pct_caps_G3a_Snack",
+      "passed": true,
+      "detail": "pred=LOW exp=LOW score=0.400 conf=0.87",
+      "guideline_ref": "KDOQI meal-cap operationalization"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "under40_pct_caps_G3b_Breakfast",
+      "passed": true,
+      "detail": "pred=LOW exp=LOW score=0.400 conf=0.86",
+      "guideline_ref": "KDOQI meal-cap operationalization"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "under40_pct_caps_G3b_Lunch",
+      "passed": true,
+      "detail": "pred=LOW exp=LOW score=0.400 conf=0.84",
+      "guideline_ref": "KDOQI meal-cap operationalization"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "under40_pct_caps_G3b_Dinner",
+      "passed": true,
+      "detail": "pred=LOW exp=LOW score=0.400 conf=0.84",
+      "guideline_ref": "KDOQI meal-cap operationalization"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "under40_pct_caps_G3b_Snack",
+      "passed": true,
+      "detail": "pred=LOW exp=LOW score=0.400 conf=0.87",
+      "guideline_ref": "KDOQI meal-cap operationalization"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "under40_pct_caps_G4_Breakfast",
+      "passed": true,
+      "detail": "pred=LOW exp=LOW score=0.400 conf=0.87",
+      "guideline_ref": "KDOQI meal-cap operationalization"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "under40_pct_caps_G4_Lunch",
+      "passed": true,
+      "detail": "pred=LOW exp=LOW score=0.400 conf=0.84",
+      "guideline_ref": "KDOQI meal-cap operationalization"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "under40_pct_caps_G4_Dinner",
+      "passed": true,
+      "detail": "pred=LOW exp=LOW score=0.400 conf=0.84",
+      "guideline_ref": "KDOQI meal-cap operationalization"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "under40_pct_caps_G4_Snack",
+      "passed": true,
+      "detail": "pred=LOW exp=LOW score=0.400 conf=0.87",
+      "guideline_ref": "KDOQI meal-cap operationalization"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "at_100pct_caps_G3a_Lunch",
+      "passed": true,
+      "detail": "pred=MODERATE exp=MODERATE score=1.0000",
+      "guideline_ref": "score=1.0 \u2192 MODERATE (0.7\u20131.2)"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "at_100pct_caps_G3a_Snack",
+      "passed": true,
+      "detail": "pred=MODERATE exp=MODERATE score=1.0000",
+      "guideline_ref": "score=1.0 \u2192 MODERATE (0.7\u20131.2)"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "at_100pct_caps_G4_Lunch",
+      "passed": true,
+      "detail": "pred=MODERATE exp=MODERATE score=1.0000",
+      "guideline_ref": "score=1.0 \u2192 MODERATE (0.7\u20131.2)"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "at_100pct_caps_G4_Snack",
+      "passed": true,
+      "detail": "pred=MODERATE exp=MODERATE score=1.0000",
+      "guideline_ref": "score=1.0 \u2192 MODERATE (0.7\u20131.2)"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "double_all_caps_G3a_Dinner",
+      "passed": true,
+      "detail": "pred=HIGH exp=HIGH score=3.000",
+      "guideline_ref": "KDOQI exceedance \u2192 HIGH"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "double_all_caps_G3a_Snack",
+      "passed": true,
+      "detail": "pred=HIGH exp=HIGH score=3.000",
+      "guideline_ref": "KDOQI exceedance \u2192 HIGH"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "double_all_caps_G4_Dinner",
+      "passed": true,
+      "detail": "pred=HIGH exp=HIGH score=3.000",
+      "guideline_ref": "KDOQI exceedance \u2192 HIGH"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "double_all_caps_G4_Snack",
+      "passed": true,
+      "detail": "pred=HIGH exp=HIGH score=3.000",
+      "guideline_ref": "KDOQI exceedance \u2192 HIGH"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "potassium_overshoot_score_gt_sodium_overshoot",
+      "passed": true,
+      "detail": "2\u00d7K score=1.375 (HIGH) vs 2\u00d7Na score=0.750 (MODERATE)",
+      "guideline_ref": "CLINICAL_SEVERITY_WEIGHTS K=0.35 > Na=0.10"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "same_dinner_risk_nondecreasing_by_stage",
+      "passed": true,
+      "detail": "G2:MODERATE(0.76) \u2192 G3a:MODERATE(0.97) \u2192 G3b:MODERATE(0.97) \u2192 G4:MODERATE(1.16)",
+      "guideline_ref": "tighter KDOQI caps at later stages"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "same_intake_snack_ge_dinner_G3a",
+      "passed": true,
+      "detail": "Snack HIGH(2.26) vs Dinner LOW(0.53)",
+      "guideline_ref": "OCCASION_RULES tighter snack caps"
+    },
+    {
+      "section": "C_scenarios",
+      "name": "same_intake_snack_ge_dinner_G4",
+      "passed": true,
+      "detail": "Snack HIGH(2.67) vs Dinner LOW(0.60)",
+      "guideline_ref": "OCCASION_RULES tighter snack caps"
+    },
+    {
+      "section": "D_monotonicity",
+      "name": "score_monotone_increasing_potassium",
+      "passed": true,
+      "detail": "scores=[0.5, 0.675, 1.025, 1.375, 2.075]",
+      "guideline_ref": "clinical_score definition"
+    },
+    {
+      "section": "D_monotonicity",
+      "name": "label_nondecreasing_potassium",
+      "passed": true,
+      "detail": "labels=['LOW', 'LOW', 'MODERATE', 'HIGH', 'HIGH']",
+      "guideline_ref": "guideline-aligned severity direction"
+    },
+    {
+      "section": "D_monotonicity",
+      "name": "score_monotone_increasing_phosphorus",
+      "passed": true,
+      "detail": "scores=[0.5, 0.65, 0.95, 1.25, 1.85]",
+      "guideline_ref": "clinical_score definition"
+    },
+    {
+      "section": "D_monotonicity",
+      "name": "label_nondecreasing_phosphorus",
+      "passed": true,
+      "detail": "labels=['LOW', 'LOW', 'MODERATE', 'HIGH', 'HIGH']",
+      "guideline_ref": "guideline-aligned severity direction"
+    },
+    {
+      "section": "D_monotonicity",
+      "name": "score_monotone_increasing_protein_per_kg",
+      "passed": true,
+      "detail": "scores=[0.5, 0.625, 0.875, 1.125, 1.625]",
+      "guideline_ref": "clinical_score definition"
+    },
+    {
+      "section": "D_monotonicity",
+      "name": "label_nondecreasing_protein_per_kg",
+      "passed": true,
+      "detail": "labels=['LOW', 'LOW', 'MODERATE', 'MODERATE', 'HIGH']",
+      "guideline_ref": "guideline-aligned severity direction"
+    },
+    {
+      "section": "D_monotonicity",
+      "name": "score_monotone_increasing_sodium",
+      "passed": true,
+      "detail": "scores=[0.5, 0.55, 0.65, 0.75, 0.95]",
+      "guideline_ref": "clinical_score definition"
+    },
+    {
+      "section": "D_monotonicity",
+      "name": "label_nondecreasing_sodium",
+      "passed": true,
+      "detail": "labels=['LOW', 'LOW', 'LOW', 'MODERATE', 'MODERATE']",
+      "guideline_ref": "guideline-aligned severity direction"
+    },
+    {
+      "section": "D_monotonicity",
+      "name": "no_false_HIGH_when_all_le_50pct_meal_cap",
+      "passed": true,
+      "detail": "false_HIGH=0/16",
+      "guideline_ref": "clinical safety property"
+    },
+    {
+      "section": "D_monotonicity",
+      "name": "no_false_LOW_when_all_ge_2x_meal_cap",
+      "passed": true,
+      "detail": "false_LOW=0/16",
+      "guideline_ref": "clinical safety property"
+    },
+    {
+      "section": "E_holdout",
+      "name": "dataset_labels_match_backend_oracle",
+      "passed": true,
+      "detail": "agreement=1.0000 n=10765",
+      "guideline_ref": "KDOQI\u00d7OCCASION_RULES labeling"
+    },
+    {
+      "section": "E_holdout",
+      "name": "model_agrees_with_guideline_oracle",
+      "passed": true,
+      "detail": "agreement=0.9985",
+      "guideline_ref": "SEVERITY_THRESHOLDS on meal clinical_score"
+    },
+    {
+      "section": "E_holdout",
+      "name": "zero_HIGH_misses_on_holdout",
+      "passed": true,
+      "detail": "HIGH_misses_holdout=0/959",
+      "guideline_ref": "clinical safety on unseen meals"
+    },
+    {
+      "section": "E_holdout",
+      "name": "never_predict_LOW_when_oracle_HIGH",
+      "passed": true,
+      "detail": "HIGH\u2192LOW=0",
+      "guideline_ref": "clinical safety: no class-skip under-call"
+    },
+    {
+      "section": "E_holdout",
+      "name": "fullset_HIGH_misses_only_near_1_2_boundary",
+      "passed": true,
+      "detail": "HIGH_misses_full=10/4797; score_max=1.2021151227590559; all_pred_MODERATE=True",
+      "guideline_ref": "boundary soft errors only (score < 1.205 \u2192 MOD not LOW)"
+    },
+    {
+      "section": "F_scope",
+      "name": "forbidden_foods_exist_separate_from_xgb",
+      "passed": true,
+      "detail": "stages=['G3A', 'G3B', 'G4']",
+      "guideline_ref": "Meal planner / recommender layer (not XGBoost)"
+    },
+    {
+      "section": "F_scope",
+      "name": "xgb_does_not_encode_food_identity",
+      "passed": true,
+      "detail": "XGBoost inputs are nutrient totals + stage only \u2014 food bans are enforced elsewhere",
+      "guideline_ref": "architecture boundary"
+    },
+    {
+      "section": "F_scope",
+      "name": "weights_thresholds_are_author_derived",
+      "passed": true,
+      "detail": "CLINICAL_SEVERITY_WEIGHTS and SEVERITY_THRESHOLDS are product-calibrated (documented in clinical_constants) \u2014 not a published KDOQI formula",
+      "guideline_ref": "clinical_constants.py honesty note"
+    },
+    {
+      "section": "F_scope",
+      "name": "day_v3_still_protected",
+      "passed": true,
+      "detail": "production day model untouched",
+      "guideline_ref": "artifact safety"
+    }
+  ],
+  "extras": {
+    "holdout": {
+      "oracle_label_agree": 1.0,
+      "model_oracle_agree": 0.998513701811426,
+      "high_miss_full": 10,
+      "high_miss_holdout": 0,
+      "high_to_low": 0
+    },
+    "meal_model": "/Users/jade/GUIDAPLATE/models/xgboost_v3_meal.pkl"
+  }
+}

@@ -1,11 +1,13 @@
+# GuidaPlate frontend
 
-  # GuidaPlate (Copy)
+React + Vite UI for GuidaPlate (meal check, planner, weekly trend, auth).
 
-  This is a code bundle for GuidaPlate (Copy). The original project is available at https://www.figma.com/design/gs91KGD7HmBDafo2Q5080M/GuidaPlate--Copy-.
+## Setup
 
-  ## Running the code
+```bash
+npm install
+npm run dev      # local dev server
+npm run build    # production build → dist/
+```
 
-  Run `npm i` to install the dependencies.
-
-  Run `npm run dev` to start the development server.
-  
+Full project context, API, and ML docs: see the [root README](../README.md).

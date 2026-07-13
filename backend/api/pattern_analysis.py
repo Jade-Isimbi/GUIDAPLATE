@@ -39,7 +39,11 @@ class PatternAnalysisResponse(BaseModel):
 
 
 def build_clinical_note(risk_label: str, trend: str) -> str:
-    """Generate guidance from LSTM risk level and meal-sequence trend."""
+    """Generate guidance from LSTM risk level and meal-sequence trend.
+
+    Trend phrases describe the heuristic direction label, not a separately
+    trained prediction.
+    """
     notes = {
         ("HIGH", "escalating"): (
             "Nutrient burden is increasing across recent meals with high overall "
@@ -86,7 +90,7 @@ def build_clinical_note(risk_label: str, trend: str) -> str:
 
 @router.post("/predict/pattern", response_model=PatternAnalysisResponse)
 def predict_pattern(request: MealSequenceRequest) -> PatternAnalysisResponse:
-    """Analyze a temporal meal sequence for escalating dietary risk patterns."""
+    """Run the trained LSTM risk classifier on a meal sequence; attach a heuristic trend label from hidden-state dynamics."""
     sequence_len = len(request.meal_sequence)
     if sequence_len < 1 or sequence_len > MAX_SEQUENCE_STEPS:
         raise HTTPException(

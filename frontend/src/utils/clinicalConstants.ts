@@ -2,8 +2,12 @@
  * GuidaPlate Clinical Constants
  * Mirrors backend/clinical_constants.py
  * Source: KDOQI 2020 / KDIGO 2024
+ *
+ * KDOQI_DAILY_LIMITS is generated — do not hand-edit that block;
+ * run scripts/generate_clinical_constants_ts.py
  */
 
+/* GENERATED from backend/clinical_constants.py — do not hand-edit; run scripts/generate_clinical_constants_ts.py */
 export const KDOQI_DAILY_LIMITS = {
   G2: { potassium: 3500, phosphorus: 1000, protein: 0.8, sodium: 2300 },
   G3a: { potassium: 3000, phosphorus: 800, protein: 0.6, sodium: 2300 },

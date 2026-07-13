@@ -6,6 +6,7 @@ All notebooks and app code should import from here instead of hardcoding paths.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from backend.clinical_constants import KDOQI_DAILY_LIMITS
@@ -31,7 +32,7 @@ FOOD_DATABASE_CSV: Path = BACKEND_DIR / "data" / "food_database.csv"
 # ---------------------------------------------------------------------------
 MODELS_DIR: Path = ROOT / "models"
 # LSTM v3 — v3 clinical labels + occasion feature + proper masking + augmentation
-# Accuracy: 91.80% | F1: 0.9191 | AUC: 0.9835
+# Accuracy: 92.08% | F1: 0.9191 | AUC: 0.9835  (from outputs/stats/11_lstm_v3_metrics.csv)
 # HIGH sens: 88.44% | MOD sens: 90.82%
 # Beats B2 on all metrics — deployed: 2026-06-23
 LSTM_MODEL_PATH: Path = MODELS_DIR / "lstm_v3_final.keras"
@@ -43,6 +44,15 @@ LSTM_LABEL_ENCODER_PATH: Path = MODELS_DIR / "lstm_v3_label_encoder.pkl"
 # MOD sensitivity: 96.94% | McNemar p<0.0001
 # Leakage resolved — deployed: 2026-06-23
 XGBOOST_MODEL_PATH: Path = MODELS_DIR / "xgboost_v3.pkl"
+
+# Meal-scale XGBoost v3 — parallel artifact (never replaces XGBOOST_MODEL_PATH)
+XGBOOST_MEAL_MODEL_PATH: Path = MODELS_DIR / "xgboost_v3_meal.pkl"
+
+# Meal Check promotion switch (default ON). Set GUIDAPLATE_MEAL_XGB=0 to rollback
+# /api/predict/risk to day-scale xgboost_v3.pkl scoring.
+GUIDAPLATE_MEAL_XGB: bool = os.getenv(
+    "GUIDAPLATE_MEAL_XGB", "1"
+).strip().lower() in {"1", "true", "yes", "on"}
 
 # Reproducible splits / synthetic generation
 RANDOM_SEED: int = 42

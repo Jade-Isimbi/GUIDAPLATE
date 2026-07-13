@@ -20,7 +20,9 @@ trained models:
 ## Maintenance scripts
 | Script | Purpose |
 |---|---|
-| `generate_food_database_ts.py` | Syncs frontend/src/data/foodDatabase.ts from backend/data/food_database.csv — run after CSV updates |
+| `generate_food_database_ts.py` | Syncs FOODS + RWANDAN_FOOD_IDS in foodDatabase.ts from backend/data/food_database.csv (`--check` for Rwandan ID drift) |
+| `generate_clinical_constants_ts.py` | Syncs STAGE_THRESHOLDS + KDOQI_DAILY_LIMITS TS mirrors from backend/clinical_constants.py (`--check` for drift) |
+| `archive/verify_tier3.py` | Abandoned Tier 3 RF — offline load/smoke for `models/archive/weekly_rf*` (not a live API test) |
 | `backfill_legacy_patients.py` | One-time DB migration for legacy user rows — only needed on old databases |
 
 ## Notebook generators
