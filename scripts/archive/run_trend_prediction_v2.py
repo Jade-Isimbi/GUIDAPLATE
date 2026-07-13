@@ -22,7 +22,7 @@ from tensorflow.keras.layers import Concatenate, Dense, Dropout, GRU, Input
 from tensorflow.keras.models import Model
 from tensorflow.keras.utils import to_categorical
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 MODEL_DIR = ROOT / "models"
 STATS_DIR = ROOT / "outputs" / "stats"
 FIG_DIR = ROOT / "outputs" / "figures"

@@ -1,34 +1,24 @@
 # backend/data/
 
-## Food Database
-food_database.csv is present.
-50 verified Rwandan foods.
-15 columns.
-Sources: Kenya FCT 2018 + USDA FDC.
-Do NOT modify this file.
+## Live (production)
 
-Columns:
-food_id, english, french,
-kinyarwanda, category, meal_type,
-protein_g, potassium_mg,
-phosphorus_mg, sodium_mg,
-energy_kcal, preparation_method,
-source, ckd_stage_safe, notes
+| File | Role |
+|---|---|
+| `food_database.csv` | Full food catalog loaded by the API / codegen |
+| `rag_chunks.json` | RAG retrieval chunks |
+| `rag_documents/` | Source PDFs for RAG |
+| `nhanes/` | Symlinks / copies of NHANES files for local ML (not deployed runtime) |
+
+Do **not** hand-edit `food_database.csv` without regenerating `frontend` food TS via `scripts/generate_food_database_ts.py`.
+
+## Archive (not loaded at runtime)
+
+| File | Role |
+|---|---|
+| `archive/food_database_50_original.csv` | Original 50-food subset |
+| `archive/Rwandan_food_database - Sheet1.csv` | Spreadsheet import source |
 
 ## NHANES Files
-Place NHANES XPT files in:
-backend/data/nhanes/
+Place NHANES XPT files in `backend/data/nhanes/` (often symlinked from `data/raw/nhanes/`).
 
-These are symlinked from:
-data/raw/nhanes/
-
-Required files:
-DR1TOT_J.xpt — Day 1 totals
-DR2TOT_J.xpt — Day 2 totals
-DR1IFF_J.xpt — Day 1 individual foods
-DR2IFF_J.xpt — Day 2 individual foods
-BIOPRO_J.xpt — Blood biochemistry
-DEMO_J.xpt   — Demographics
-BMX_J.xpt    — Body measures
-
-All 7 files present. ✅
+Required for training notebooks: DR1TOT_J, DR2TOT_J, DR1IFF_J, DR2IFF_J, BIOPRO_J, DEMO_J, BMX_J.

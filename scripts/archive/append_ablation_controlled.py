@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 NB_PATH = ROOT / 'notebooks' / '05b_lstm_v2_improved.ipynb'
 
 MD = '''## Ablation Study v2 — Controlled

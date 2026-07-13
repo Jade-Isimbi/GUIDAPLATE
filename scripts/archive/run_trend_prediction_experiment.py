@@ -24,7 +24,7 @@ from tensorflow.keras.layers import Dense, Dropout, GRU, Input, Concatenate
 from tensorflow.keras.models import Model
 from tensorflow.keras.utils import to_categorical
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 MODEL_DIR = ROOT / "models"
 STATS_DIR = ROOT / "outputs" / "stats"
 FIG_DIR = ROOT / "outputs" / "figures"
@@ -181,7 +181,7 @@ def main():
     print(f"Train patients: {len(train_pids)}, Test patients: {len(set(test_pids))}")
 
     # Transition matrix
-    with open(MODEL_DIR / "transition_matrix.json") as f:
+    with open(MODEL_DIR / "archive" / "transition_matrix.json") as f:
         tm = json.load(f)
     tm_idx = {
         0: [tm["LOW"]["LOW"], tm["LOW"]["MODERATE"], tm["LOW"]["HIGH"]],

@@ -10,21 +10,12 @@ Production artifacts required by the live app. Do not remove.
 | `lstm_v3_scaler.pkl` | 1 KB | LSTM input scaler | backend/models/lstm_model.py |
 | `lstm_v3_label_encoder.pkl` | 1 KB | LSTM label encoder | backend/models/lstm_model.py |
 
-## Research-only artifacts (not loaded at runtime)
-
-| File | Size | Role | Used by |
-|---|---|---|---|
-| `transition_matrix.json` | 1 KB | Meal-to-meal transition probs (offline experiments) | notebooks/scripts only — not the production API |
-
-## Abandoned / not deployed (archived)
+## Abandoned / not deployed (`archive/`)
 
 Trained and evaluated, but **not** loaded by any live API. Weekly Trend uses nutrient aggregates + LSTM only.
 
-| File | Size | Role | Notes |
-|---|---|---|---|
-| `archive/weekly_rf.pkl` | 663 KB | Tier 3 weekly Random Forest | Trained in `notebooks/archive/11_weekly_tier3.ipynb`. Offline check: `scripts/archive/verify_tier3.py`. |
-| `archive/weekly_rf_config.json` | 1 KB | Metadata for the archived RF | Companion to `archive/weekly_rf.pkl`. |
-
-## Other archived models
-
-Non-production models (v1, v2, ablations, GRU experiments) are also under `models/archive/`.
+| File | Role | Notes |
+|---|---|---|
+| `archive/weekly_rf.pkl` + `weekly_rf_config.json` | Tier 3 weekly Random Forest | Offline check: `scripts/archive/verify_tier3.py` |
+| `archive/transition_matrix.json` | Meal-to-meal transition probs | Offline trend/HMM experiments only |
+| Other `archive/*` | v1/v2 XGB/LSTM, ablations, GRU | Superseded by v3 production set above |

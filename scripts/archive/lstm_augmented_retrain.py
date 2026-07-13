@@ -40,7 +40,7 @@ RISK_ENCODE = {c: i for i, c in enumerate(RISK_CLASSES)}
 BASELINE_ACC = 0.9071
 ACC_TOLERANCE = 0.02
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 MODEL_DIR = ROOT / "models"
 STATS_DIR = ROOT / "outputs" / "stats"
 

@@ -17,7 +17,7 @@ from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.layers import Dense, Dropout, LSTM, Masking
 from tensorflow.keras.models import Sequential
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 MODEL_DIR = ROOT / 'models'
 STATS_DIR = ROOT / 'outputs' / 'stats'
 

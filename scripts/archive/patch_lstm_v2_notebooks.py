@@ -2,7 +2,7 @@
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 
 V2_LABELS_CELL = r'''print('=' * 50)
 print('FIX 1 — SEQUENCE-AWARE LABELS (v2)')

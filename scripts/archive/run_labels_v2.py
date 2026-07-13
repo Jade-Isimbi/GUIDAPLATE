@@ -6,7 +6,7 @@ import datetime
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 STATS_DIR = ROOT / 'outputs' / 'stats'
 
 STAGE_ORDER = ['G2', 'G3a', 'G3b', 'G4']

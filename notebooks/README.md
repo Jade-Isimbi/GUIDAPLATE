@@ -3,7 +3,7 @@
 Jupyter notebooks for the GuidaPlate
 data pipeline and model development.
 
-## Production pipeline (v3)
+## Cite these for RQ1–RQ3 (v3 spine)
 
 Run in this order:
 
