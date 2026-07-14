@@ -16,3 +16,7 @@ streamlit
 plotly
 sentence-transformers
 huggingface_hub
+
+# Backend test suite (pytest backend/tests/)
+pytest
+pytest-cov
