@@ -1,0 +1,194 @@
+[
+  {
+    "path": "data/processed/ckd_cohort_final.csv",
+    "sha256": "49ecdc3edadb9ee0ebae8783fa7868e817299b95f1b78010bc530dcfd6fa4b61",
+    "bytes": 141227,
+    "approx_rows": 1862,
+    "git_status": "git-tracked",
+    "role": "Day XGB + meal meal-builder cohort join"
+  },
+  {
+    "path": "data/processed/ckd_patients.csv",
+    "sha256": "17ce5ba1467216600587a5a43db3c64cd0fa0f154f34de366db7871fbed89b87",
+    "bytes": 213361,
+    "approx_rows": 1947,
+    "git_status": "git-tracked",
+    "role": "Processed CKD patient table (EDA / pipeline)"
+  },
+  {
+    "path": "data/processed/ckd_patients_clean.csv",
+    "sha256": "e2ae2bd9ae08639837d6182a89e8a8d670409d35b90fad62c1f1c7be7b0b4724",
+    "bytes": 214412,
+    "approx_rows": 1769,
+    "git_status": "git-tracked",
+    "role": "Cleaned CKD patient table"
+  },
+  {
+    "path": "data/processed/food_nutrients_clean.csv",
+    "sha256": "25f33ad3c540c335de50568d5d0bb7d4728b024ab5d5a9e0a21918bf3e39992b",
+    "bytes": 23804,
+    "approx_rows": 383,
+    "git_status": "git-tracked",
+    "role": "Legacy USDA nutrients (not live GuidaPlate DB)"
+  },
+  {
+    "path": "outputs/stats/05_risk_labels_v3.csv",
+    "sha256": "295c6ad4ddbd5ae671aabc0d2d0f51d862bcf5f7a0d46af7c6e3daffb462ff6b",
+    "bytes": 130997,
+    "approx_rows": 1862,
+    "git_status": "git-tracked",
+    "role": "Day XGB v3 labels + clinical_score"
+  },
+  {
+    "path": "outputs/stats/05_risk_labels_v3_meal.csv",
+    "sha256": "3e45f7201ed5a0d106c4f3b78bafb66b8b1d0c5381fc950f527d8867e1956e9c",
+    "bytes": 940607,
+    "approx_rows": 10765,
+    "git_status": "git-tracked",
+    "role": "Meal XGB v3 labels (train/eval table)"
+  },
+  {
+    "path": "data/raw/nhanes/DR1TOT_J.csv",
+    "sha256": "7b2ee14e0afc232ff6c2f724091604cd76753adcc8ab1634bebe4c808e21eeff",
+    "bytes": 7520222,
+    "approx_rows": 8704,
+    "git_status": "git-tracked",
+    "role": "NHANES day-1 totals (CSV)"
+  },
+  {
+    "path": "data/raw/nhanes/DR2TOT_J.csv",
+    "sha256": "6c757881d667a9dba5da6250a3299f7b8b7e3a4057223697d1305a2784ee49a5",
+    "bytes": 5528208,
+    "approx_rows": 8704,
+    "git_status": "git-tracked",
+    "role": "NHANES day-2 totals (CSV)"
+  },
+  {
+    "path": "data/raw/nhanes/DEMO_J.csv",
+    "sha256": "fa29ceca1e07ef10ff971d54aa2b347be834593b7119a6acfd9dbb7d191214c1",
+    "bytes": 2153714,
+    "approx_rows": 9254,
+    "git_status": "git-tracked",
+    "role": "NHANES demographics (CSV)"
+  },
+  {
+    "path": "data/raw/nhanes/BIOPRO_J.csv",
+    "sha256": "64a80e3100c2d5ad8a78b9ca8a1600d086ef432d9f48a50156bf2d36ebd9dfca",
+    "bytes": 1573224,
+    "approx_rows": 6401,
+    "git_status": "git-tracked",
+    "role": "NHANES biochemistry (CSV)"
+  },
+  {
+    "path": "data/raw/nhanes/BMX_J.csv",
+    "sha256": "e2f2fc73c73fc3c8675a09283ae6bcf03802651deccc11c0559eb3b4e3bfc217",
+    "bytes": 526431,
+    "approx_rows": 8704,
+    "git_status": "git-tracked",
+    "role": "NHANES body measures (CSV)"
+  },
+  {
+    "path": "data/raw/nhanes/DR1TOT_J.xpt",
+    "sha256": "390ae5205acfbcb87e0ca3d9aabd1c801b60657d3f2802ac08d5b3ed93f0af6d",
+    "bytes": 11722480,
+    "approx_rows": 8704,
+    "git_status": "local-only (gitignored)",
+    "role": "NHANES day-1 totals (XPT)"
+  },
+  {
+    "path": "data/raw/nhanes/DR2TOT_J.xpt",
+    "sha256": "b73be9b0a4787e73eb831d22b356d03657ffae7d41e5713b60aaa49b828d9c1b",
+    "bytes": 5931360,
+    "approx_rows": 8704,
+    "git_status": "local-only (gitignored)",
+    "role": "NHANES day-2 totals (XPT)"
+  },
+  {
+    "path": "data/raw/nhanes/DEMO_J.xpt",
+    "sha256": "c0b46e0345ea19404928656277c8b0d10b0cca348a9b2fe4fc3c67e8b7ee73ec",
+    "bytes": 3412720,
+    "approx_rows": 9254,
+    "git_status": "local-only (gitignored)",
+    "role": "NHANES demographics (XPT)"
+  },
+  {
+    "path": "data/raw/nhanes/BIOPRO_J.xpt",
+    "sha256": "5bcd5722c1892883b96a9d7fed0befadabacae313f800fadc0133cd5dd00c4c6",
+    "bytes": 2106080,
+    "approx_rows": 6401,
+    "git_status": "local-only (gitignored)",
+    "role": "NHANES biochemistry (XPT)"
+  },
+  {
+    "path": "data/raw/nhanes/BMX_J.xpt",
+    "sha256": "8d675e42d8826ac98714b2c3dd4c5138a5e353fb4424f7eff5e6db4a01ce838a",
+    "bytes": 1466000,
+    "approx_rows": 8704,
+    "git_status": "local-only (gitignored)",
+    "role": "NHANES body measures (XPT)"
+  },
+  {
+    "path": "data/raw/nhanes/DR1IFF_J.xpt",
+    "sha256": "dc0d7a563f393bd368e23b524fbfd6f98a960f3932bfa8931ca35e6dbb0b6d4f",
+    "bytes": 75735520,
+    "approx_rows": "not_enumerated (large XPT; hash is authoritative)",
+    "git_status": "local-only (gitignored)",
+    "role": "Meal XGB / IFF day-1 foods (XPT)"
+  },
+  {
+    "path": "data/raw/nhanes/DR2IFF_J.xpt",
+    "sha256": "805af3e91647dc4e62aff5b3758cfb94802123f443ca6bc0e0cb2ead93e5f895",
+    "bytes": 62844480,
+    "approx_rows": "not_enumerated (large XPT; hash is authoritative)",
+    "git_status": "local-only (gitignored)",
+    "role": "Meal XGB / IFF day-2 foods (XPT)"
+  },
+  {
+    "path": "data/raw/nhanes/DR1IFF_J.csv",
+    "sha256": "1a2889ec78b4e2aff457b47e6c7572b929a34674317d9ec2d155cce7bbb6d42d",
+    "bytes": 109120195,
+    "approx_rows": 112683,
+    "git_status": "local-only (gitignored)",
+    "role": "IFF day-1 CSV export (local)"
+  },
+  {
+    "path": "data/raw/nhanes/DR2IFF_J.csv",
+    "sha256": "947442147bb22fb2c172624ae2e31df6cef172c6f1bf26078ae7cb98ef33e130",
+    "bytes": 90653415,
+    "approx_rows": 93500,
+    "git_status": "local-only (gitignored)",
+    "role": "IFF day-2 CSV export (local)"
+  },
+  {
+    "path": "data/raw/usda/food.csv",
+    "sha256": "87245f7c7ac6f4708ae73d5a296d060385569d46489e0f65b9165bf89fe67330",
+    "bytes": 6464120,
+    "approx_rows": 78027,
+    "git_status": "git-tracked",
+    "role": "USDA FoodData Central foods"
+  },
+  {
+    "path": "data/raw/usda/food_nutrient.csv",
+    "sha256": "f802f47fa769a680b75c7cd769820249bed1599445c888fa894c19e94d741f62",
+    "bytes": 9411198,
+    "approx_rows": 159285,
+    "git_status": "git-tracked",
+    "role": "USDA food-nutrient links"
+  },
+  {
+    "path": "data/raw/usda/nutrient.csv",
+    "sha256": "226ba937d1a73e8c87bd7fdcdd577524699bef4025c9232ee474b7d3083498ff",
+    "bytes": 21556,
+    "approx_rows": 477,
+    "git_status": "git-tracked",
+    "role": "USDA nutrient dictionary"
+  },
+  {
+    "path": "backend/data/food_database.csv",
+    "sha256": "66ca281554681da978b3a7d1c0eab3a4483de34c63d92dff565d7ac9590ea9d2",
+    "bytes": 80392,
+    "approx_rows": 390,
+    "git_status": "git-tracked",
+    "role": "Live Rwandan food DB (app; not NHANES train)"
+  }
+]
