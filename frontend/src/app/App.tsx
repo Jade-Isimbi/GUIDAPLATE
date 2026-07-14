@@ -41,6 +41,25 @@ function pathForPage(page: Page): string {
   return '/';
 }
 
+/** Auth screens follow the Settings/reset-password path pattern (not Page map). */
+function getAuthScreenFromPathname(pathname: string): 'login' | 'signup' | null {
+  if (pathname === '/signup') return 'signup';
+  if (pathname === '/login') return 'login';
+  return null;
+}
+
+function replacePath(path: string) {
+  if (window.location.pathname !== path) {
+    window.history.replaceState({}, '', path);
+  }
+}
+
+function pushPath(path: string) {
+  if (window.location.pathname !== path) {
+    window.history.pushState({}, '', path);
+  }
+}
+
 const navItems: Array<{ id: Page; label: string; icon: typeof LayoutDashboard }> = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'explorer', label: 'Food Explorer', icon: Utensils },
@@ -69,9 +88,11 @@ export default function App() {
   {/* MARKER-MAKE-KIT-INVOKED */}
   const [isDark, setIsDark] = useState(readThemePreference);
   const [page, setPage] = useState<Page>(() => getPageFromPathname(window.location.pathname));
-  const [auth, setAuth] = useState<AuthScreen>(() =>
-    getAuthToken() ? 'app' : 'login',
-  );
+  const [auth, setAuth] = useState<AuthScreen>(() => {
+    if (getAuthToken()) return 'app';
+    // Only /login and /signup pin auth screen; other paths (e.g. /meal-check) still show Login.
+    return getAuthScreenFromPathname(window.location.pathname) ?? 'login';
+  });
   const [userName, setUserName] = useState(() =>
     localStorage.getItem('guidaplate_user_name') || '',
   );
@@ -103,15 +124,31 @@ export default function App() {
     progressBg: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
   };
 
+  const goToLoginScreen = () => {
+    setAuth('login');
+    setShowSettings(false);
+    setPage('dashboard');
+    replacePath('/login');
+  };
+
+  const goToSignupScreen = () => {
+    setAuth('signup');
+    setShowSettings(false);
+    pushPath('/signup');
+  };
+
+  /** After login/signup, leave /login|/signup|/settings for the intended app path. */
+  const leaveAuthPathForApp = (currentPage: Page) => {
+    const path = window.location.pathname;
+    if (path === '/login' || path === '/signup' || path === '/settings') {
+      replacePath(pathForPage(currentPage));
+    }
+  };
+
   useEffect(() => {
     getAuthToken();
     return onUnauthorized(() => {
-      setAuth('login');
-      setShowSettings(false);
-      setPage('dashboard');
-      if (window.location.pathname !== '/') {
-        window.history.replaceState({}, '', '/');
-      }
+      goToLoginScreen();
     });
   }, []);
 
@@ -123,9 +160,7 @@ export default function App() {
     persistProfile(data.ckdStage, data.weightKg);
     setAuth('app');
     setShowSettings(false);
-    if (window.location.pathname === '/settings') {
-      window.history.replaceState({}, '', '/');
-    }
+    leaveAuthPathForApp(page);
   };
   const handleSignup = (data: { name: string; ckdStage: string; weightKg: number; dob: string; sex: string; email: string; phone: string }) => {
     setUserName(data.name);
@@ -135,6 +170,7 @@ export default function App() {
     persistProfile(data.ckdStage, data.weightKg);
     setAuth('app');
     setShowSettings(false);
+    leaveAuthPathForApp(page);
   };
 
   const handleProfileUpdated = (ckdStage: string, weightKg: number) => {
@@ -154,20 +190,31 @@ export default function App() {
 
   const openSettings = () => {
     setShowSettings(true);
-    window.history.pushState({}, '', '/settings');
+    pushPath('/settings');
   };
 
   const openMealPlanner = () => {
     setShowSettings(false);
     setPage('meal-planner');
-    window.history.pushState({}, '', '/meal-planner');
+    pushPath('/meal-planner');
   };
 
   useEffect(() => {
     const onPopState = () => {
-      setShowSettings(window.location.pathname === '/settings');
-      if (window.location.pathname !== '/settings') {
-        setPage(getPageFromPathname(window.location.pathname));
+      const path = window.location.pathname;
+      // Logged-out: only /login and /signup control auth UI; other paths still show Login.
+      if (!getAuthToken()) {
+        const authFromPath = getAuthScreenFromPathname(path);
+        setAuth(authFromPath ?? 'login');
+        setShowSettings(false);
+        if (path !== '/settings') {
+          setPage(getPageFromPathname(path));
+        }
+        return;
+      }
+      setShowSettings(path === '/settings');
+      if (path !== '/settings') {
+        setPage(getPageFromPathname(path));
       }
     };
     window.addEventListener('popstate', onPopState);
@@ -177,7 +224,7 @@ export default function App() {
   const resetSuccessMessage = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('reset') === 'success') {
-      window.history.replaceState({}, '', '/');
+      replacePath('/login');
       return 'Password reset successfully. Please log in.';
     }
     return undefined;
@@ -220,13 +267,23 @@ export default function App() {
         isDark={isDark}
         theme={theme}
         onLogin={handleLogin}
-        onGoToSignup={() => setAuth('signup')}
+        onGoToSignup={goToSignupScreen}
         initialMessage={resetSuccessMessage}
       />
     );
   }
   if (auth === 'signup') {
-    return <SignupPage isDark={isDark} theme={theme} onSignup={handleSignup} onGoToLogin={() => setAuth('login')} />;
+    return (
+      <SignupPage
+        isDark={isDark}
+        theme={theme}
+        onSignup={handleSignup}
+        onGoToLogin={() => {
+          setAuth('login');
+          pushPath('/login');
+        }}
+      />
+    );
   }
 
   if (showSettings) {
@@ -330,12 +387,7 @@ export default function App() {
                   onClick={() => {
                     setMobileNavOpen(false);
                     clearAuthSession(false);
-                    setAuth('login');
-                    setShowSettings(false);
-                    setPage('dashboard');
-                    if (window.location.pathname !== '/') {
-                      window.history.replaceState({}, '', '/');
-                    }
+                    goToLoginScreen();
                   }}
                   className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm"
                   style={{ color: theme.textSecondary }}
@@ -428,12 +480,7 @@ export default function App() {
             <button
               onClick={() => {
                 clearAuthSession(false);
-                setAuth('login');
-                setShowSettings(false);
-                setPage('dashboard');
-                if (window.location.pathname !== '/') {
-                  window.history.replaceState({}, '', '/');
-                }
+                goToLoginScreen();
               }}
               className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 hover:opacity-70"
               title="Log out"
