@@ -573,7 +573,10 @@ export default function App() {
         type="button"
         onClick={openSettings}
         title="Settings"
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105"
+        className={`fixed right-6 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105 ${
+          // Meal Planner composer Send sits bottom-right; lift Settings so they don't collide.
+          page === 'meal-planner' ? 'bottom-28' : 'bottom-6'
+        }`}
         style={{ background: 'linear-gradient(135deg, #2E86AB 0%, #1A5F7A 100%)' }}
         aria-label="Settings"
       >
