@@ -553,7 +553,7 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
                   );
                 })}
               </div>
-              <div className="h-[200px] lg:h-[220px]">
+              <div className="h-[200px] lg:h-[220px] w-full min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData} margin={{ top: 5, right: 12, bottom: 5, left: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -576,10 +576,12 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
                     />
                     <Tooltip formatter={(value: number, name: string) => [`${value}%`, name]} />
                     <ReferenceLine y={100} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} />
-                    <Line type="monotone" dataKey="Potassium" stroke={NUTRIENT_COLORS.Potassium} strokeWidth={2} dot={{ r: 3 }} connectNulls={true} strokeDasharray="4 2" />
-                    <Line type="monotone" dataKey="Phosphorus" stroke={NUTRIENT_COLORS.Phosphorus} strokeWidth={2} dot={{ r: 3 }} connectNulls={true} strokeDasharray="4 2" />
-                    <Line type="monotone" dataKey="Protein" stroke={NUTRIENT_COLORS.Protein} strokeWidth={2} dot={{ r: 3 }} connectNulls={true} strokeDasharray="4 2" />
-                    <Line type="monotone" dataKey="Sodium" stroke={NUTRIENT_COLORS.Sodium} strokeWidth={2} dot={{ r: 3 }} connectNulls={true} strokeDasharray="4 2" />
+                    {/* isAnimationActive=false: Recharts' draw-in uses stroke-dasharray and can leave
+                        paths invisible if path length is measured as 0 on first paint. */}
+                    <Line type="monotone" dataKey="Potassium" stroke={NUTRIENT_COLORS.Potassium} strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
+                    <Line type="monotone" dataKey="Phosphorus" stroke={NUTRIENT_COLORS.Phosphorus} strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
+                    <Line type="monotone" dataKey="Protein" stroke={NUTRIENT_COLORS.Protein} strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
+                    <Line type="monotone" dataKey="Sodium" stroke={NUTRIENT_COLORS.Sodium} strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
                     <Legend wrapperStyle={{ fontSize: 10 }} iconType="circle" iconSize={7} />
                   </LineChart>
                 </ResponsiveContainer>
