@@ -806,6 +806,35 @@ function dailyNutrientBadge(percentUsed: number | undefined): {
   return { label: '✔ Within limit', color: '#27AE60', Icon: CheckCircle2 };
 }
 
+/** SHAP bar fill from limit stress / verdict — not from relative SHAP share. */
+function shapBarColor(
+  nutrient: string,
+  dailyBudget: DailyBudgetData | null,
+  mealBreakdown: Record<string, BreakdownEntry> | undefined,
+  riskLevel: RiskLevel,
+): string {
+  const key = nutrient.toLowerCase();
+  const dailyKey = key === 'protein' ? 'protein_per_kg' : key;
+
+  const limitPct =
+    dailyBudget?.nutrients[dailyKey]?.percent_used ??
+    (() => {
+      const label = nutrient.charAt(0).toUpperCase() + nutrient.slice(1);
+      const entry = mealBreakdown?.[label] ?? mealBreakdown?.[nutrient];
+      return entry?.pct;
+    })();
+
+  if (typeof limitPct === 'number') {
+    if (limitPct > 100) return '#E74C3C';
+    if (limitPct >= 80) return '#F59E0B';
+    return '#94a3b8';
+  }
+
+  if (riskLevel === 'LOW') return '#94a3b8';
+  if (riskLevel === 'MODERATE') return '#F39C12';
+  return '#E74C3C';
+}
+
 function isDailyBudgetExceeded(dailyBudget: DailyBudgetData | null): boolean {
   return !!dailyBudget &&
     ['potassium', 'phosphorus', 'protein_per_kg', 'sodium'].some((k) => {
@@ -2814,10 +2843,12 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                                 className="h-1.5 rounded-full transition-all"
                                 style={{
                                   width: `${pct}%`,
-                                  backgroundColor:
-                                    pct > 50 ? '#ef4444' :
-                                    pct > 25 ? '#f59e0b' :
-                                               '#22c55e',
+                                  backgroundColor: shapBarColor(
+                                    nutrient,
+                                    dailyBudget,
+                                    result.breakdown,
+                                    result.level,
+                                  ),
                                 }}
                               />
                             </div>
