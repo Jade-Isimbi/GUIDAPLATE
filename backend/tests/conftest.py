@@ -3,7 +3,7 @@ Pytest fixtures for GuidaPlate backend tests.
 
 Isolates DATABASE_PATH to a temp SQLite file so tests never touch
 guidaplate.db. Provides a seeded Session and a lightweight TestClient
-(risk + recommendations only — no RAG/LSTM lifespan).
+(no RAG/LSTM lifespan).
 """
 
 from __future__ import annotations
@@ -48,11 +48,17 @@ def client(db_session):
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
 
+    from backend.api.auth import router as auth_router
+    from backend.api.daily_budget import router as daily_budget_router
+    from backend.api.patient_data import router as patient_data_router
     from backend.api.recommendations import router as recommendations_router
     from backend.api.risk_prediction import router as risk_prediction_router
     from backend.database.db import get_db
 
     app = FastAPI(title="GuidaPlate Test API")
+    app.include_router(auth_router, prefix="/api")
+    app.include_router(patient_data_router, prefix="/api")
+    app.include_router(daily_budget_router, prefix="/api")
     app.include_router(risk_prediction_router, prefix="/api")
     app.include_router(recommendations_router, prefix="/api")
 
@@ -66,3 +72,22 @@ def client(db_session):
 
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture()
+def auth_headers(client) -> dict[str, str]:
+    """Register a G3a / 70kg test user and return Authorization headers."""
+    response = client.post(
+        "/api/auth/register",
+        json={
+            "name": "Journey Tester",
+            "email": "journey.tester@example.com",
+            "password": "test-password-ok",
+            "ckd_stage": "G3a",
+            "weight_kg": 70.0,
+            "sex": "F",
+        },
+    )
+    assert response.status_code == 200, response.text
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
