@@ -14,7 +14,6 @@ import { authFetch, getAuthToken } from '../../utils/auth';
 import { displayBudgetStatus, formatStageDisplay, getRiskDisplay, isFoodInStageRange } from '../../utils/riskDisplay';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const FOOD_DB_COUNT = 386;
 
 function mapApiFood(row: Record<string, unknown>): Food {
   return {

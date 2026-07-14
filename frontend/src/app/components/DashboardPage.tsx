@@ -1,4 +1,5 @@
 import { Activity, Database, FlaskConical, Shield, ChevronRight, BookOpen, Utensils, Heart, Globe, Award, ArrowRight, Brain, TrendingUp, Eye, ListChecks } from 'lucide-react';
+import { FOODS } from '../../data/foodDatabase';
 
 interface DashboardPageProps {
   isDark: boolean;
@@ -6,8 +7,10 @@ interface DashboardPageProps {
   onNavigate: (page: string) => void;
 }
 
+const FOOD_COUNT = FOODS.length;
+
 const metrics = [
-  { label: 'Foods in Database', value: '386', sub: 'in our database', color: '#2E86AB', icon: Database },
+  { label: 'Foods in Database', value: String(FOOD_COUNT), sub: 'in our database', color: '#2E86AB', icon: Database },
   { label: 'Nutrients Tracked', value: '4', sub: 'key biomarkers', color: '#27AE60', icon: FlaskConical },
   { label: 'Kidney Disease Stages', value: '4 stages', sub: 'Stage 2–4 supported', color: '#F39C12', icon: Shield },
   { label: 'Meal Checks', value: '1,862', sub: 'patients in training data', color: '#E74C3C', icon: Activity },
@@ -17,7 +20,7 @@ const steps = [
   {
     n: '01',
     title: 'Explore Foods',
-    desc: 'Browse our database of 386 foods — including Rwanda-validated staples and regional ingredients — with complete nutrient profiles and kidney-health suitability ratings.',
+    desc: `Browse our database of ${FOOD_COUNT} foods — including Rwanda-validated staples and regional ingredients — with complete nutrient profiles and kidney-health suitability ratings.`,
     icon: Utensils,
     color: '#2E86AB',
   },
@@ -344,7 +347,7 @@ export function DashboardPage({ isDark, theme, onNavigate }: DashboardPageProps)
         {/* Quick nav */}
         <div className="lg:col-span-2 flex flex-col gap-4">
           {[
-            { label: 'Food Explorer', desc: 'Search and filter 386 foods', page: 'explorer', icon: Utensils, color: '#27AE60' },
+            { label: 'Food Explorer', desc: `Search and filter ${FOOD_COUNT} foods`, page: 'explorer', icon: Utensils, color: '#27AE60' },
             { label: 'Meal Check', desc: 'Log a meal and get instant kidney-safe feedback', page: 'assessment', icon: Shield, color: '#E74C3C' },
           ].map((nav) => {
             const Icon = nav.icon;
