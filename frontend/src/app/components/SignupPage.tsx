@@ -420,6 +420,7 @@ export function SignupPage({ isDark, theme, onSignup, onGoToLogin }: SignupPageP
                 <input
                   type="checkbox"
                   className="sr-only"
+                  data-testid="signup-consent"
                   checked={agreed}
                   onChange={(e) => setAgreed(e.target.checked)}
                 />

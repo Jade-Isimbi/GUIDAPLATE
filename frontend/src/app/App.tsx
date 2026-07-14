@@ -579,6 +579,7 @@ export default function App() {
         }`}
         style={{ background: 'linear-gradient(135deg, #2E86AB 0%, #1A5F7A 100%)' }}
         aria-label="Settings"
+        data-testid="settings-fab"
       >
         <Settings size={20} className="text-white" />
       </button>

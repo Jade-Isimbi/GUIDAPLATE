@@ -30,8 +30,8 @@ test.describe('UC8 Plan Weekly Meals @groq', () => {
     const input = page.getByPlaceholder('Message GuidaPlate AI...');
     await input.fill(prompt);
 
-    // Real click on Send — proves Settings FAB no longer intercepts this control.
-    await page.getByLabel('Send message').click();
+    // Real click on Send via stable testid (distinct from settings-fab).
+    await page.getByTestId('meal-planner-send').click();
 
     await expect(
       page.getByText(/Looking up your guidelines|Checking safe foods|almost there/i).first(),

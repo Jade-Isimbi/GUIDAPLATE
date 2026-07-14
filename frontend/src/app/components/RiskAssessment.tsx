@@ -2041,6 +2041,8 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                 {MEAL_TYPES.map((occasion) => (
                   <button
                     key={occasion}
+                    type="button"
+                    data-testid={`occasion-${occasion.toLowerCase()}`}
                     onClick={() => selectMealType(occasion)}
                     className={`w-full py-2 text-sm rounded-lg border transition-colors inline-flex items-center justify-center gap-0.5 ${
                       mealOccasion === occasion
@@ -2198,6 +2200,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
               >
                 <Search size={14} style={{ color: theme.textSecondary, flexShrink: 0 }} />
                 <input
+                  data-testid="meal-food-search"
                   className="flex-1 bg-transparent outline-none min-w-0"
                   style={{ color: theme.text, fontSize: '0.875rem' }}
                   placeholder={isListening ? "Listening..." : "Search foods to add…"}
@@ -2317,12 +2320,17 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
 
               {showDrop && q.length >= 2 && visibleFoods.length > 0 && !voiceSpeechResult && !selectedFood && (
                 <div
+                  data-testid="meal-food-dropdown"
                   className="absolute top-full mt-1.5 left-0 right-0 z-30 rounded-xl overflow-hidden shadow-xl"
                   style={{ background: isDark ? '#111827' : '#fff', border: `1px solid ${theme.cardBorder}`, maxHeight: '300px', overflowY: 'auto' }}
                 >
                   {visibleFoods.map((f, i) => (
                     <button
                       key={f.id}
+                      type="button"
+                      data-testid="meal-food-option"
+                      data-food-id={f.id}
+                      data-food-name={f.english}
                       className="w-full text-left px-4 py-2.5 flex items-center justify-between gap-3 transition-colors"
                       style={{ borderBottom: i < visibleFoods.length - 1 ? `1px solid ${theme.cardBorder}` : 'none' }}
                       onMouseDown={() => selectFood(f)}
@@ -2384,6 +2392,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                     </div>
                     <button
                       type="button"
+                      data-testid="meal-food-add"
                       onClick={addSelectedFood}
                       className="px-3 py-1.5 rounded-lg text-white text-xs font-medium transition-opacity hover:opacity-90 shrink-0"
                       style={{ background: '#0d9488' }}
@@ -2790,7 +2799,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                     const hasShapExplanation = shapExplanation.length > 0;
                     if (!hasShapBars && !hasShapExplanation) return null;
                     return (
-                    <div className="mb-2">
+                    <div className="mb-2" data-testid="shap-section">
                       <p className="text-xs text-muted-foreground mb-1">
                         What drove this result
                       </p>
@@ -2829,7 +2838,10 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                 </div>
 
                 {/* Card 2 — Better alternatives */}
-                <div className="rounded-lg border p-3 flex flex-col bg-white dark:bg-card">
+                <div
+                  className="rounded-lg border p-3 flex flex-col bg-white dark:bg-card"
+                  data-testid="alternatives-section"
+                >
                   <div style={{ color: theme.text, fontWeight: 600, fontSize: '0.9rem', marginBottom: 8 }}>Better alternatives</div>
                   {result.substitutions.length > 0 ? (
                     <ul className="space-y-4">

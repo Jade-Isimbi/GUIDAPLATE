@@ -1147,6 +1147,7 @@ export function MealPlanner({ isDark, theme }: MealPlannerProps) {
                 color: input.trim() ? '#fff' : theme.textSecondary,
               }}
               aria-label="Send message"
+              data-testid="meal-planner-send"
             >
               <SendHorizontal size={18} />
             </button>
