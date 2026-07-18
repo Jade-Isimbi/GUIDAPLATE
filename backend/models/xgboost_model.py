@@ -13,7 +13,7 @@ import numpy as np
 
 from backend.config import (
     CKD_STAGE_ENCODING,
-    XGBOOST_MEAL_MODEL_PATH,
+    XGBOOST_MEAL_NOSCORE_MODEL_PATH,
     XGBOOST_MODEL_PATH,
 )
 from backend.clinical_constants import (
@@ -37,6 +37,25 @@ FEATURE_ORDER = [
     "protein_sodium_ratio",
     "clinical_score",
 ]
+
+# Default live meal model — no clinical_score; occasion + meal caps instead.
+FEATURE_ORDER_MEAL_NOSCORE = [
+    "potassium",
+    "phosphorus",
+    "protein_per_kg",
+    "sodium",
+    "ckd_stage_encoded",
+    "stage_numeric",
+    "k_p_product",
+    "protein_sodium_ratio",
+    "occasion_encoded",
+    "meal_cap_potassium",
+    "meal_cap_phosphorus",
+    "meal_cap_protein_per_kg",
+    "meal_cap_sodium",
+]
+
+OCCASION_ENCODE = {"Breakfast": 0, "Lunch": 1, "Dinner": 2, "Snack": 3}
 
 STAGE_NUMERIC = {"G2": 2, "G3a": 3, "G3b": 3, "G4": 4}
 
@@ -166,12 +185,17 @@ class XGBoostRiskPredictor:
     def __init__(
         self,
         model_path: Path | None = None,
-        score_mode: Literal["day", "meal"] = "day",
+        score_mode: Literal["day", "meal", "meal_noscore"] = "day",
     ) -> None:
         # Default args preserve historical day behavior for get_predictor().
         path = Path(model_path) if model_path is not None else Path(XGBOOST_MODEL_PATH)
-        self.score_mode: Literal["day", "meal"] = score_mode
+        self.score_mode: Literal["day", "meal", "meal_noscore"] = score_mode
         self.model_path = path
+        self.feature_order = (
+            FEATURE_ORDER_MEAL_NOSCORE
+            if score_mode == "meal_noscore"
+            else FEATURE_ORDER
+        )
         try:
             if not path.exists():
                 raise FileNotFoundError(
@@ -197,6 +221,37 @@ class XGBoostRiskPredictor:
         if ckd_stage not in STAGE_NUMERIC:
             raise KeyError(f"Unknown CKD stage for v3 features: {ckd_stage!r}")
 
+        ckd_stage_encoded = float(CKD_STAGE_ENCODING[ckd_stage])
+        stage_numeric = float(STAGE_NUMERIC[ckd_stage])
+        k_p_product = (potassium * phosphorus) / 1e6
+        protein_sodium_ratio = protein_per_kg / (sodium / 1000 + 1e-6)
+
+        if self.score_mode == "meal_noscore":
+            if occasion is None or occasion not in VALID_OCCASIONS:
+                raise ValueError(
+                    f"occasion is required for meal-scale scoring; got {occasion!r}"
+                )
+            caps = meal_limits_for_occasion(ckd_stage, occasion)
+            features_used = {
+                "potassium": float(potassium),
+                "phosphorus": float(phosphorus),
+                "protein_per_kg": float(protein_per_kg),
+                "sodium": float(sodium),
+                "ckd_stage_encoded": ckd_stage_encoded,
+                "stage_numeric": stage_numeric,
+                "k_p_product": float(k_p_product),
+                "protein_sodium_ratio": float(protein_sodium_ratio),
+                "occasion_encoded": float(OCCASION_ENCODE[occasion]),
+                "meal_cap_potassium": float(caps["potassium"]),
+                "meal_cap_phosphorus": float(caps["phosphorus"]),
+                "meal_cap_protein_per_kg": float(caps["protein_per_kg"]),
+                "meal_cap_sodium": float(caps["sodium"]),
+            }
+            return np.array(
+                [[features_used[name] for name in self.feature_order]],
+                dtype=float,
+            ), features_used
+
         if self.score_mode == "meal":
             if occasion is None or occasion not in VALID_OCCASIONS:
                 raise ValueError(
@@ -209,11 +264,6 @@ class XGBoostRiskPredictor:
             clinical_score = compute_clinical_score(
                 potassium, phosphorus, protein_per_kg, sodium, ckd_stage
             )
-
-        ckd_stage_encoded = float(CKD_STAGE_ENCODING[ckd_stage])
-        stage_numeric = float(STAGE_NUMERIC[ckd_stage])
-        k_p_product = (potassium * phosphorus) / 1e6
-        protein_sodium_ratio = protein_per_kg / (sodium / 1000 + 1e-6)
 
         features_used = {
             "potassium": float(potassium),
@@ -228,7 +278,7 @@ class XGBoostRiskPredictor:
         }
 
         return np.array(
-            [[features_used[name] for name in FEATURE_ORDER]],
+            [[features_used[name] for name in self.feature_order]],
             dtype=float,
         ), features_used
 
@@ -290,10 +340,10 @@ class XGBoostRiskPredictor:
             class_shap = shap_values[0]
 
         nutrient_indices = {
-            "potassium": FEATURE_ORDER.index("potassium"),
-            "phosphorus": FEATURE_ORDER.index("phosphorus"),
-            "protein": FEATURE_ORDER.index("protein_per_kg"),
-            "sodium": FEATURE_ORDER.index("sodium"),
+            "potassium": self.feature_order.index("potassium"),
+            "phosphorus": self.feature_order.index("phosphorus"),
+            "protein": self.feature_order.index("protein_per_kg"),
+            "sodium": self.feature_order.index("sodium"),
         }
 
         raw = {
@@ -325,11 +375,45 @@ def get_predictor() -> XGBoostRiskPredictor:
 
 
 def get_meal_predictor() -> XGBoostRiskPredictor:
-    """Meal-scale singleton — xgboost_v3_meal.pkl + meal clinical_score."""
+    """
+    Live meal-scale predictor — noscore model only (occasion + meal caps).
+
+    Legacy xgboost_v3_meal.pkl and day xgboost_v3.pkl are offline research
+    artifacts and are never loaded here. Model failure is handled by the
+    meal-scale rule fallback in /api/predict/risk.
+    """
     global _meal_predictor
     if _meal_predictor is None:
         _meal_predictor = XGBoostRiskPredictor(
-            model_path=XGBOOST_MEAL_MODEL_PATH,
-            score_mode="meal",
+            model_path=XGBOOST_MEAL_NOSCORE_MODEL_PATH,
+            score_mode="meal_noscore",
         )
     return _meal_predictor
+
+
+def get_live_risk_predictor() -> tuple[XGBoostRiskPredictor, Literal["meal"]]:
+    """Return the live meal predictor for /api/predict/risk and health checks."""
+    return get_meal_predictor(), "meal"
+
+
+def smoke_predict_live_risk_predictor() -> dict:
+    """
+    Run a fixed nutrient smoke prediction on the live-selected XGBoost model.
+    Live scoring is always meal-scale and requires an occasion.
+    """
+    predictor, scoring_scale = get_live_risk_predictor()
+    kwargs: dict = {
+        "potassium": 2800.0,
+        "phosphorus": 650.0,
+        "protein_per_kg": 0.55,
+        "sodium": 1800.0,
+        "ckd_stage": "G3b",
+    }
+    kwargs["occasion"] = "Lunch"
+    result = predictor.predict(**kwargs)
+    return {
+        "scoring_scale": scoring_scale,
+        "risk_label": result["risk_label"],
+        "score_mode": predictor.score_mode,
+        "uses_clinical_score_feature": "clinical_score" in result["features_used"],
+    }

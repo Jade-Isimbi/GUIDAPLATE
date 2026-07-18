@@ -1,0 +1,357 @@
+{
+  "status": "EXPERIMENT_ONLY_NOT_FOR_PRODUCTION",
+  "quality_band": "STRONG_NONCIRCULAR_FEATURE_SET",
+  "honest_limitation": "Labels are still derived by thresholding clinical_score. This experiment removes clinical_score from the FEATURES only. That eliminates the model 'cheating' by reading its own label formula, but does not make the target an independent clinical outcome.",
+  "protected_artifacts_unchanged": true,
+  "protected_sha256": {
+    "xgboost_v3.pkl": "0c31b13c74fd49b63e7d4ce750fdcf897c850410438b99e8f27d364d17b679f5",
+    "xgboost_v3_meal.pkl": "564c1cd5e4c735c41cbe03584cfb44812692e1ebe1e37baf06e3c58a6aa776db",
+    "xgboost_v3_decomposed_experiment.pkl": "19df7c874bc0817e8d2ca80fb9ea50223e2ca3a87aa33577da77d55f70b422a8",
+    "xgboost_v3_potassium_residualized_experiment.pkl": "165cd163ef9768a0f4328b24ed18ad3c473b3b7a808dfca8974b24a8cb73a685",
+    "xgboost_v3_colsample_05_experiment.pkl": "40ed2493150ee7ca42598619cc090e31f39ec63356151ba387597ddf55ca82e4",
+    "xgboost_v3_meal_colsample_05_experiment.pkl": "5f6a031f36acf375933830a41bc9d4823b2cd18581019412ca65236b64715052"
+  },
+  "production_meal_holdout": {
+    "accuracy": 0.9986065954482118,
+    "f1_macro": 0.9981543698077159,
+    "f1_weighted": 0.9986062045225198,
+    "auc_weighted": 0.9999951584655228,
+    "confusion": [
+      [
+        777,
+        1,
+        0
+      ],
+      [
+        2,
+        414,
+        0
+      ],
+      [
+        0,
+        0,
+        959
+      ]
+    ],
+    "per_class": {
+      "LOW": {
+        "precision": 0.9974326059050064,
+        "recall": 0.9987146529562982,
+        "f1": 0.9980732177263969,
+        "support": 778
+      },
+      "MODERATE": {
+        "precision": 0.9975903614457832,
+        "recall": 0.9951923076923077,
+        "f1": 0.9963898916967509,
+        "support": 416
+      },
+      "HIGH": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 959
+      }
+    }
+  },
+  "published_production_accuracy": 0.9986065954482118,
+  "published_ablation_accuracy": 0.77519739897817,
+  "arms": [
+    {
+      "name": "A_noscore_8feat_retuned",
+      "features": [
+        "potassium",
+        "phosphorus",
+        "protein_per_kg",
+        "sodium",
+        "ckd_stage_encoded",
+        "stage_numeric",
+        "k_p_product",
+        "protein_sodium_ratio"
+      ],
+      "n_features": 8,
+      "best_params": {
+        "subsample": 1.0,
+        "reg_lambda": 1.0,
+        "reg_alpha": 0,
+        "n_estimators": 300,
+        "min_child_weight": 1,
+        "max_depth": 7,
+        "learning_rate": 0.01,
+        "gamma": 0.3,
+        "colsample_bytree": 1.0
+      },
+      "best_cv_f1_macro": 0.7834330369735283,
+      "holdout": {
+        "accuracy": 0.7510450534138412,
+        "f1_macro": 0.7399011299644153,
+        "f1_weighted": 0.7712868192752984,
+        "auc_weighted": 0.9466641732432435,
+        "confusion": [
+          [
+            547,
+            225,
+            6
+          ],
+          [
+            24,
+            370,
+            22
+          ],
+          [
+            33,
+            226,
+            700
+          ]
+        ],
+        "per_class": {
+          "LOW": {
+            "precision": 0.9056291390728477,
+            "recall": 0.7030848329048843,
+            "f1": 0.7916063675832128,
+            "support": 778
+          },
+          "MODERATE": {
+            "precision": 0.45066991473812423,
+            "recall": 0.8894230769230769,
+            "f1": 0.5982215036378334,
+            "support": 416
+          },
+          "HIGH": {
+            "precision": 0.9615384615384616,
+            "recall": 0.7299270072992701,
+            "f1": 0.8298755186721992,
+            "support": 959
+          }
+        }
+      },
+      "normalized_gain": {
+        "potassium": 0.030794799072756774,
+        "phosphorus": 0.27002745399908346,
+        "protein_per_kg": 0.07273060416568158,
+        "sodium": 0.051178296732206655,
+        "ckd_stage_encoded": 0.08096122751488966,
+        "stage_numeric": 0.0,
+        "k_p_product": 0.4630248643829017,
+        "protein_sodium_ratio": 0.03128275413248021
+      },
+      "train_seconds": 14.397622108459473,
+      "accuracy_delta_vs_production": -0.24756154203437064,
+      "accuracy_delta_vs_ablation": -0.02415234556432877
+    },
+    {
+      "name": "B_noscore_plus_occasion",
+      "features": [
+        "potassium",
+        "phosphorus",
+        "protein_per_kg",
+        "sodium",
+        "ckd_stage_encoded",
+        "stage_numeric",
+        "k_p_product",
+        "protein_sodium_ratio",
+        "occasion_encoded"
+      ],
+      "n_features": 9,
+      "best_params": {
+        "subsample": 0.9,
+        "reg_lambda": 1.5,
+        "reg_alpha": 1.0,
+        "n_estimators": 300,
+        "min_child_weight": 5,
+        "max_depth": 4,
+        "learning_rate": 0.1,
+        "gamma": 0.3,
+        "colsample_bytree": 0.8
+      },
+      "best_cv_f1_macro": 0.9659107614826116,
+      "holdout": {
+        "accuracy": 0.9623780771017185,
+        "f1_macro": 0.9535567580696065,
+        "f1_weighted": 0.9632908974454915,
+        "auc_weighted": 0.9986236079805458,
+        "confusion": [
+          [
+            741,
+            37,
+            0
+          ],
+          [
+            7,
+            405,
+            4
+          ],
+          [
+            0,
+            33,
+            926
+          ]
+        ],
+        "per_class": {
+          "LOW": {
+            "precision": 0.9906417112299465,
+            "recall": 0.9524421593830334,
+            "f1": 0.9711664482306684,
+            "support": 778
+          },
+          "MODERATE": {
+            "precision": 0.8526315789473684,
+            "recall": 0.9735576923076923,
+            "f1": 0.9090909090909091,
+            "support": 416
+          },
+          "HIGH": {
+            "precision": 0.9956989247311828,
+            "recall": 0.9655891553701773,
+            "f1": 0.980412916887242,
+            "support": 959
+          }
+        }
+      },
+      "normalized_gain": {
+        "potassium": 0.03790389619828802,
+        "phosphorus": 0.2615253005595409,
+        "protein_per_kg": 0.08454647052177185,
+        "sodium": 0.050316779421782844,
+        "ckd_stage_encoded": 0.07763660741748771,
+        "stage_numeric": 0.0667606923344276,
+        "k_p_product": 0.2713376774149425,
+        "protein_sodium_ratio": 0.014216814442866293,
+        "occasion_encoded": 0.1357557616888923
+      },
+      "train_seconds": 11.459829330444336,
+      "accuracy_delta_vs_production": -0.03622851834649332,
+      "accuracy_delta_vs_ablation": 0.18718067812354855
+    },
+    {
+      "name": "C_noscore_occasion_plus_caps",
+      "features": [
+        "potassium",
+        "phosphorus",
+        "protein_per_kg",
+        "sodium",
+        "ckd_stage_encoded",
+        "stage_numeric",
+        "k_p_product",
+        "protein_sodium_ratio",
+        "occasion_encoded",
+        "meal_cap_potassium",
+        "meal_cap_phosphorus",
+        "meal_cap_protein_per_kg",
+        "meal_cap_sodium"
+      ],
+      "n_features": 13,
+      "best_params": {
+        "subsample": 0.7,
+        "reg_lambda": 2.0,
+        "reg_alpha": 0.1,
+        "n_estimators": 300,
+        "min_child_weight": 3,
+        "max_depth": 5,
+        "learning_rate": 0.1,
+        "gamma": 0.1,
+        "colsample_bytree": 0.8
+      },
+      "best_cv_f1_macro": 0.9675530568876891,
+      "holdout": {
+        "accuracy": 0.9688806316767301,
+        "f1_macro": 0.9608056073866952,
+        "f1_weighted": 0.9692698407577217,
+        "auc_weighted": 0.998777585225598,
+        "confusion": [
+          [
+            752,
+            26,
+            0
+          ],
+          [
+            11,
+            397,
+            8
+          ],
+          [
+            0,
+            22,
+            937
+          ]
+        ],
+        "per_class": {
+          "LOW": {
+            "precision": 0.9855832241153342,
+            "recall": 0.9665809768637532,
+            "f1": 0.9759896171317326,
+            "support": 778
+          },
+          "MODERATE": {
+            "precision": 0.8921348314606742,
+            "recall": 0.9543269230769231,
+            "f1": 0.9221835075493612,
+            "support": 416
+          },
+          "HIGH": {
+            "precision": 0.9915343915343915,
+            "recall": 0.9770594369134515,
+            "f1": 0.9842436974789915,
+            "support": 959
+          }
+        }
+      },
+      "normalized_gain": {
+        "potassium": 0.024917954545798413,
+        "phosphorus": 0.13988714209485514,
+        "protein_per_kg": 0.05671615032843625,
+        "sodium": 0.040059825618065315,
+        "ckd_stage_encoded": 0.012613673969871793,
+        "stage_numeric": 0.018813625917875908,
+        "k_p_product": 0.1667876827069343,
+        "protein_sodium_ratio": 0.013288251882764026,
+        "occasion_encoded": 0.06637167366977978,
+        "meal_cap_potassium": 0.09904862261387355,
+        "meal_cap_phosphorus": 0.1085092377361911,
+        "meal_cap_protein_per_kg": 0.21886329284467357,
+        "meal_cap_sodium": 0.03412286607088084
+      },
+      "train_seconds": 13.026835203170776,
+      "accuracy_delta_vs_production": -0.029725963771481734,
+      "accuracy_delta_vs_ablation": 0.19368323269856014
+    }
+  ],
+  "winner": {
+    "name": "C_noscore_occasion_plus_caps",
+    "accuracy": 0.9688806316767301,
+    "f1_macro": 0.9608056073866952,
+    "gap_to_production_pp": 2.9725963771481734,
+    "lift_vs_ablation_pp": 19.368323269856013,
+    "features": [
+      "potassium",
+      "phosphorus",
+      "protein_per_kg",
+      "sodium",
+      "ckd_stage_encoded",
+      "stage_numeric",
+      "k_p_product",
+      "protein_sodium_ratio",
+      "occasion_encoded",
+      "meal_cap_potassium",
+      "meal_cap_phosphorus",
+      "meal_cap_protein_per_kg",
+      "meal_cap_sodium"
+    ],
+    "normalized_gain": {
+      "potassium": 0.024917954545798413,
+      "phosphorus": 0.13988714209485514,
+      "protein_per_kg": 0.05671615032843625,
+      "sodium": 0.040059825618065315,
+      "ckd_stage_encoded": 0.012613673969871793,
+      "stage_numeric": 0.018813625917875908,
+      "k_p_product": 0.1667876827069343,
+      "protein_sodium_ratio": 0.013288251882764026,
+      "occasion_encoded": 0.06637167366977978,
+      "meal_cap_potassium": 0.09904862261387355,
+      "meal_cap_phosphorus": 0.1085092377361911,
+      "meal_cap_protein_per_kg": 0.21886329284467357,
+      "meal_cap_sodium": 0.03412286607088084
+    }
+  },
+  "artifact": "models/xgboost_v3_meal_noscore_occasion_experiment.pkl"
+}

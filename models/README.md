@@ -1,21 +1,19 @@
 # GuidaPlate — Production Models
 
-Production artifacts required by the live app. Do not remove.
+Only production and retained research artifacts live here.
 
-| File | Size | Role | Loaded by |
-|---|---|---|---|
-| `xgboost_v3.pkl` | 757 KB | Tier 1 day-scale risk classifier | backend/models/xgboost_model.py |
-| `xgboost_v3_meal.pkl` | 605 KB | Tier 1 meal-scale risk classifier (default ON via `GUIDAPLATE_MEAL_XGB`) | backend/models/xgboost_model.py |
-| `lstm_v3_final.keras` | 412 KB | Tier 2 sequence **risk** classifier (**trend** = post-hoc heuristic on hidden states) | backend/models/lstm_model.py |
-| `lstm_v3_scaler.pkl` | 1 KB | LSTM input scaler | backend/models/lstm_model.py |
-| `lstm_v3_label_encoder.pkl` | 1 KB | LSTM label encoder | backend/models/lstm_model.py |
-
-## Abandoned / not deployed (`archive/`)
-
-Trained and evaluated, but **not** loaded by any live API. Weekly Trend uses nutrient aggregates + LSTM only.
-
-| File | Role | Notes |
+| File | Role | Loaded by live API? |
 |---|---|---|
-| `archive/weekly_rf.pkl` + `weekly_rf_config.json` | Tier 3 weekly Random Forest | Offline check: `scripts/archive/verify_tier3.py` |
-| `archive/transition_matrix.json` | Meal-to-meal transition probs | Offline trend/HMM experiments only |
-| Other `archive/*` | v1/v2 XGB/LSTM, ablations, GRU | Superseded by v3 production set above |
+| `xgboost_v3_meal_noscore.pkl` | **Live** meal-scale classifier (13 features; no `clinical_score`) | Yes |
+| `xgboost_v3_meal_noscore_meta.pkl` | Metadata for the live meal model | Yes (support) |
+| `xgboost_v3_meal.pkl` | Legacy meal-scale research artifact (includes `clinical_score`) | No |
+| `xgboost_v3.pkl` | Day-scale research/evaluation artifact | No |
+| `lstm_v3_final.keras` | Sequence risk classifier | Yes |
+| `lstm_v3_scaler.pkl` | LSTM input scaler | Yes |
+| `lstm_v3_label_encoder.pkl` | LSTM label encoder | Yes |
+
+Live holdout (Model C): **96.89%** accuracy.  
+Legacy meal (with `clinical_score`): **99.86%**.
+
+If meal-model inference fails, the API uses the meal-scale rule fallback
+(0 exceedances → LOW, 1 → MODERATE, ≥2 → HIGH).

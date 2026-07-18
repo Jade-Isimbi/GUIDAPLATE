@@ -54,10 +54,7 @@ def test_thresholds_invalid_stage_404(client):
     assert r.status_code == 404
 
 
-def test_predict_risk_meal_scale_low(client, monkeypatch):
-    monkeypatch.setattr(
-        "backend.api.risk_prediction.GUIDAPLATE_MEAL_XGB", True
-    )
+def test_predict_risk_meal_scale_low(client):
     # Half of G3a Breakfast caps → clinical score 0.5 → expect LOW
     payload = {
         "potassium": 375.0,
@@ -83,10 +80,7 @@ def test_predict_risk_meal_scale_low(client, monkeypatch):
     assert body["ckd_stage"] == "G3a"
 
 
-def test_predict_risk_meal_scale_high(client, monkeypatch):
-    monkeypatch.setattr(
-        "backend.api.risk_prediction.GUIDAPLATE_MEAL_XGB", True
-    )
+def test_predict_risk_meal_scale_high(client):
     # Far above meal caps → HIGH
     payload = {
         "potassium": 5000.0,
@@ -106,52 +100,61 @@ def test_predict_risk_meal_scale_high(client, monkeypatch):
     assert len(body["exceeded_nutrients"]) == 4
 
 
-def test_predict_risk_day_scale_low(client, monkeypatch):
-    monkeypatch.setattr(
-        "backend.api.risk_prediction.GUIDAPLATE_MEAL_XGB", False
-    )
+def test_predict_risk_rule_fallback_low(client, monkeypatch):
+    def _fail():
+        raise RuntimeError("simulated model outage")
+
+    monkeypatch.setattr("backend.api.risk_prediction.get_meal_predictor", _fail)
     payload = {
-        "potassium": 1500.0,
-        "phosphorus": 400.0,
-        "protein_per_kg": 0.3,
-        "sodium": 1150.0,
+        "potassium": 375.0,
+        "phosphorus": 100.0,
+        "protein_per_kg": 0.09,
+        "sodium": 287.5,
         "ckd_stage": "G3a",
-        "occasion": "Lunch",
+        "occasion": "Breakfast",
     }
     r = client.post("/api/predict/risk", json=payload)
     assert r.status_code == 200, r.text
     body = r.json()
-    assert body["scoring_scale"] == "day"
-    assert body["meal_limits"] is None
-    assert body["occasion"] == "Lunch"
+    assert body["scoring_scale"] == "meal"
+    assert body["meal_limits"]["potassium"] == pytest.approx(750.0)
+    assert body["prediction_source"] == "rule_fallback"
+    assert body["meal_feature_set"] == "rule_fallback"
+    assert body["confidence"] == 0.0
     assert body["risk_label"] == "LOW"
     assert body["exceeded_nutrients"] == []
+    assert body["shap_contributions"] is None
 
 
-def test_predict_risk_day_scale_high(client, monkeypatch):
+def test_predict_risk_rule_fallback_high(client, monkeypatch):
+    class BrokenPredictor:
+        score_mode = "meal_noscore"
+
+        def predict(self, *args, **kwargs):
+            raise RuntimeError("simulated inference outage")
+
     monkeypatch.setattr(
-        "backend.api.risk_prediction.GUIDAPLATE_MEAL_XGB", False
+        "backend.api.risk_prediction.get_meal_predictor",
+        lambda: BrokenPredictor(),
     )
     payload = {
-        "potassium": 8000.0,
-        "phosphorus": 3000.0,
-        "protein_per_kg": 3.0,
-        "sodium": 6000.0,
+        "potassium": 1000.0,
+        "phosphorus": 300.0,
+        "protein_per_kg": 0.30,
+        "sodium": 900.0,
         "ckd_stage": "G3a",
-        "occasion": "Dinner",
+        "occasion": "Breakfast",
     }
     r = client.post("/api/predict/risk", json=payload)
     assert r.status_code == 200, r.text
     body = r.json()
-    assert body["scoring_scale"] == "day"
-    assert body["meal_limits"] is None
+    assert body["scoring_scale"] == "meal"
+    assert body["prediction_source"] == "rule_fallback"
+    assert len(body["exceeded_nutrients"]) >= 2
     assert body["risk_label"] == "HIGH"
 
 
-def test_predict_risk_invalid_ckd_stage_400(client, monkeypatch):
-    monkeypatch.setattr(
-        "backend.api.risk_prediction.GUIDAPLATE_MEAL_XGB", True
-    )
+def test_predict_risk_invalid_ckd_stage_400(client):
     payload = {
         "potassium": 100.0,
         "phosphorus": 100.0,
@@ -165,11 +168,8 @@ def test_predict_risk_invalid_ckd_stage_400(client, monkeypatch):
     assert "ckd_stage" in r.json()["detail"].lower() or "G2" in r.json()["detail"]
 
 
-def test_predict_risk_invalid_occasion_422(client, monkeypatch):
+def test_predict_risk_invalid_occasion_422(client):
     # occasion is a Pydantic Literal → request validation 422, not handler 400
-    monkeypatch.setattr(
-        "backend.api.risk_prediction.GUIDAPLATE_MEAL_XGB", True
-    )
     payload = {
         "potassium": 100.0,
         "phosphorus": 100.0,

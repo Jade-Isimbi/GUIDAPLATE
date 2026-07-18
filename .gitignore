@@ -1,67 +1,82 @@
-# Node modules
+# Dependencies
 node_modules/
 frontend/node_modules/
+
+# Build / local frontend artifacts
 frontend/dist/
+frontend/.vite/
+frontend/e2e/.auth/
+frontend/test-results/
+frontend/playwright-report/
 
-# Python cache
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
-
-# Environment
-.env
-.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
 venv/
+venv311/
+.venv/
 
-# OS files
+# Environment / local DB
+.env
+*.db
+guidaplate.db
+
+# OS / IDE
 .DS_Store
 Thumbs.db
-
-# IDE
 .vscode/
 .idea/
 
-# Jupyter checkpoints
+# Jupyter
 .ipynb_checkpoints/
 
-# Large data files
+# Capstone / personal writing (keep out of the software repo)
+*.docx
+*.canvas.tsx
+*DEFENSE*
+*defense_prep*
+Final_report*
+
+# Root test dumps
+/test-results/
+
+# Large raw NHANES extracts
 data/raw/nhanes/*.xpt
 data/raw/nhanes/*.XPT
 backend/data/nhanes/*.xpt
 backend/data/nhanes/*.XPT
+data/raw/nhanes/DR1IFF_J.csv
+data/raw/nhanes/DR2IFF_J.csv
 
-# Model binaries (block experiments; allow production artifacts below)
+# Model binaries: ignore experiments; keep production artifacts
 models/*.pkl
 models/*.h5
 models/*.keras
 models/*.npz
+models/archive/
 !models/xgboost_v3.pkl
 !models/xgboost_v3_meal.pkl
+!models/xgboost_v3_meal_noscore.pkl
+!models/xgboost_v3_meal_noscore_meta.pkl
 !models/lstm_v3_final.keras
 !models/lstm_v3_scaler.pkl
 !models/lstm_v3_label_encoder.pkl
 
-# Archive
+# Legacy top-level archive tree
 /archive/
-!notebooks/archive/
-!models/archive/
 
-# Keep outputs
+# Outputs: keep figures/stats/screenshots that are committed
 !outputs/
 !outputs/figures/
 !outputs/figures/*.png
 !outputs/stats/
-!outputs/stats/*.csv
+!outputs/stats/*
 !outputs/screenshots/
 !outputs/screenshots/*.png
-venv311/
-guidaplate.db
-data/raw/nhanes/DR1IFF_J.csv
-data/raw/nhanes/DR2IFF_J.csv
-data/raw/nhanes/DR1IFF_J.xpt
-data/raw/nhanes/DR2IFF_J.xpt
-data/raw/nhanes/DR1IFF_J.csv
-data/raw/nhanes/DR2IFF_J.csv
-data/raw/nhanes/DR1IFF_J.xpt
-data/raw/nhanes/DR2IFF_J.xpt
-.env
+!notebooks/archive/

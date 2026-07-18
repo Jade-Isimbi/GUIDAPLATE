@@ -84,19 +84,26 @@ The RAG meal planner grounds LLM responses in KDOQI/KDIGO guidelines rather than
 - RAG: KDOQI 2020 + KDIGO 2024 (5,874 chunks)
 - LLM: Llama-3.1-8B via Groq
 - Training data: NHANES 2017–2018 (1,862 CKD patients)
-- Food database: 386 foods (50 Rwandan, trilingual)
+- Food database: 390 foods (54 Rwandan-flagged, trilingual)
 
 ## Project Structure
 
 ```
 GUIDAPLATE/
-├── backend/           # FastAPI API, ML inference, RAG meal planner
-├── frontend/           # React + Vite UI
-├── models/            # Production artifacts (xgboost day/meal, LSTM)
-├── notebooks/         # Training & evaluation pipeline (v3)
-├── docs/testing/      # Testing evidence screenshots (10 strategies)
-├── scripts/           # Evidence generation & utilities
-└── scripts/archive/   # Abandoned checks (e.g. Tier 3 RF offline artifact script)
+├── backend/             # FastAPI API, ML inference, RAG meal planner
+├── frontend/            # React + Vite UI
+├── models/              # Production model artifacts only
+├── data/                # Processed datasets + food sources
+├── notebooks/           # Training & evaluation pipeline (v3)
+├── docs/
+│   ├── testing/         # Automated testing evidence
+│   └── XGBOOST_V3_MEAL.md
+├── outputs/
+│   ├── figures/         # Evaluation figures
+│   ├── stats/           # Metrics CSVs / experiment summaries
+│   └── screenshots/     # App UI screenshots
+├── scripts/             # Reproducible training / evidence utilities
+└── scripts/archive/     # Legacy / one-off experiment scripts
 ```
 
 ## Setup
@@ -188,10 +195,10 @@ Archived (superseded): `notebooks/archive/` (includes `11_weekly_tier3.ipynb`)
 
 ### Two-Tier ML System
 
-| Tier | Model | Input | Output | MOD Recall |
-|---|---|---|---|---|
-| Tier 1 | XGBoost v3 | Single meal nutrients | LOW/MODERATE/HIGH | 0.969 |
-| Tier 2 | LSTM v3 | Last 6 meals (hidden state) | Sequence risk (trained); trend direction (heuristic from hidden states) | 0.908 |
+| Tier | Model | Input | Output |
+|---|---|---|---|
+| Tier 1 (live) | XGBoost Model C (`xgboost_v3_meal_noscore.pkl`) | Meal nutrients + stage + occasion + meal caps | LOW/MODERATE/HIGH |
+| Tier 2 | LSTM v3 | Last 6 meals (5 features/step) | Sequence risk (trained); trend direction (heuristic) |
 
 ### LSTM Trend Detection
 

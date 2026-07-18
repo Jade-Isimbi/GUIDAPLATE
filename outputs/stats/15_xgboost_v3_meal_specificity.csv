@@ -1,0 +1,4 @@
+class,specificity,source_note
+LOW,0.9985454545454545,Derived from saved meal_model.confusion in outputs/stats/10_xgboost_v3_meal_deep_eval.json (same matrix as extras.holdout.confusion in 11_xgboost_v3_meal_test_report.json and Figure 5.2 / xgb_v3_meal_06_confusion.png source data). Not from a new model run. Label order LOW/MODERATE/HIGH.
+MODERATE,0.9994242947610823,Derived from saved meal_model.confusion in outputs/stats/10_xgboost_v3_meal_deep_eval.json (same matrix as extras.holdout.confusion in 11_xgboost_v3_meal_test_report.json and Figure 5.2 / xgb_v3_meal_06_confusion.png source data). Not from a new model run. Label order LOW/MODERATE/HIGH.
+HIGH,1.0,Derived from saved meal_model.confusion in outputs/stats/10_xgboost_v3_meal_deep_eval.json (same matrix as extras.holdout.confusion in 11_xgboost_v3_meal_test_report.json and Figure 5.2 / xgb_v3_meal_06_confusion.png source data). Not from a new model run. Label order LOW/MODERATE/HIGH.

@@ -1659,8 +1659,11 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
         if (!response.ok) throw new Error('API error');
 
         const apiResult = await response.json();
-        liveModel = true;
-        confidence = typeof apiResult.confidence === 'number' ? apiResult.confidence : null;
+        liveModel = apiResult.prediction_source === 'xgboost';
+        confidence =
+          liveModel && typeof apiResult.confidence === 'number'
+            ? apiResult.confidence
+            : null;
 
         const breakdownLimits =
           apiResult.scoring_scale === 'meal' && apiResult.meal_limits
@@ -1718,7 +1721,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
         } else {
           setOccasionAddMode(false);
         }
-        void saveRiskAssessment(level, apiResult.confidence, mealTotals, {
+        void saveRiskAssessment(level, liveModel ? apiResult.confidence : 0, mealTotals, {
           shap_contributions: apiResult.shap_contributions ?? null,
           shap_explanation: apiResult.shap_explanation ?? null,
           ckd_stage: stage,
@@ -2698,7 +2701,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                           <span style={{ color: cfg.color, fontSize: 'clamp(1.05rem,3vw,1.25rem)', fontWeight: 700 }}>{cfg.label}</span>
                           {usingLiveModel && (
                             <span className="px-2.5 py-1 rounded-full" style={{ background: 'rgba(46,134,171,0.12)', color: '#2E86AB', fontSize: '0.66rem', fontWeight: 600 }}>
-                              Risk classified with AI assist (KDOQI-weighted score)
+                              Risk classified with meal-scale XGBoost
                             </span>
                           )}
                         </div>

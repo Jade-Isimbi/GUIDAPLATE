@@ -1,0 +1,228 @@
+{
+  "status": "EXPERIMENT_ONLY_NOT_FOR_PRODUCTION",
+  "verdict": "PROMISING_MIDDLE_GROUND: accuracy stayed within 2 percentage points of production, clinical_score dominance fell by at least 10 points, and the four raw nutrients gained at least 10 points of total gain.",
+  "promising_middle_ground": true,
+  "promising_criteria": {
+    "accuracy_within_production_percentage_points": 2.0,
+    "minimum_clinical_score_share_drop_percentage_points": 10.0,
+    "minimum_raw_nutrient_share_increase_percentage_points": 10.0
+  },
+  "protected_artifacts_unchanged": true,
+  "protected_sha256": {
+    "xgboost_v3.pkl": "0c31b13c74fd49b63e7d4ce750fdcf897c850410438b99e8f27d364d17b679f5",
+    "xgboost_v3_meal.pkl": "564c1cd5e4c735c41cbe03584cfb44812692e1ebe1e37baf06e3c58a6aa776db",
+    "xgboost_v3_decomposed_experiment.pkl": "19df7c874bc0817e8d2ca80fb9ea50223e2ca3a87aa33577da77d55f70b422a8",
+    "xgboost_v3_potassium_residualized_experiment.pkl": "165cd163ef9768a0f4328b24ed18ad3c473b3b7a808dfca8974b24a8cb73a685"
+  },
+  "features": [
+    "potassium",
+    "phosphorus",
+    "protein_per_kg",
+    "sodium",
+    "ckd_stage_encoded",
+    "stage_numeric",
+    "k_p_product",
+    "protein_sodium_ratio",
+    "clinical_score"
+  ],
+  "n_features": 9,
+  "split": {
+    "test_size": 0.2,
+    "random_state": 42,
+    "stratify": true,
+    "n_train": 1180,
+    "n_test": 296
+  },
+  "class_weight": {
+    "2": 1.0,
+    "1": 4.0,
+    "0": 1.0
+  },
+  "production_hyperparams": {
+    "objective": "multi:softprob",
+    "num_class": 3,
+    "eval_metric": "mlogloss",
+    "learning_rate": 0.01,
+    "max_depth": 7,
+    "n_estimators": 300,
+    "subsample": 1.0,
+    "colsample_bytree": 1.0,
+    "gamma": 0.3,
+    "reg_alpha": 0,
+    "reg_lambda": 1.0,
+    "min_child_weight": 1,
+    "random_state": 42,
+    "verbosity": 0
+  },
+  "experiment_hyperparams": {
+    "objective": "multi:softprob",
+    "num_class": 3,
+    "eval_metric": "mlogloss",
+    "learning_rate": 0.01,
+    "max_depth": 7,
+    "n_estimators": 300,
+    "subsample": 1.0,
+    "colsample_bytree": 0.5,
+    "gamma": 0.3,
+    "reg_alpha": 0,
+    "reg_lambda": 1.0,
+    "min_child_weight": 1,
+    "random_state": 42,
+    "verbosity": 0
+  },
+  "changed_from_production": {
+    "colsample_bytree": {
+      "production": 1.0,
+      "experiment": 0.5
+    }
+  },
+  "production_day_holdout": {
+    "accuracy": 0.9898648648648649,
+    "f1_macro": 0.9852948433259314,
+    "f1_weighted": 0.9899308820293274,
+    "auc_weighted": 0.9975374609303179,
+    "confusion": [
+      [
+        51,
+        0,
+        0
+      ],
+      [
+        3,
+        95,
+        0
+      ],
+      [
+        0,
+        0,
+        147
+      ]
+    ],
+    "per_class": {
+      "LOW": {
+        "precision": 0.9444444444444444,
+        "recall": 1.0,
+        "f1": 0.9714285714285714,
+        "support": 51
+      },
+      "MODERATE": {
+        "precision": 1.0,
+        "recall": 0.9693877551020408,
+        "f1": 0.9844559585492227,
+        "support": 98
+      },
+      "HIGH": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 147
+      }
+    }
+  },
+  "experiment_day_holdout": {
+    "accuracy": 0.9898648648648649,
+    "f1_macro": 0.9851630570077172,
+    "f1_weighted": 0.9898880770239994,
+    "auc_weighted": 0.9978997086139945,
+    "confusion": [
+      [
+        50,
+        1,
+        0
+      ],
+      [
+        2,
+        96,
+        0
+      ],
+      [
+        0,
+        0,
+        147
+      ]
+    ],
+    "per_class": {
+      "LOW": {
+        "precision": 0.9615384615384616,
+        "recall": 0.9803921568627451,
+        "f1": 0.970873786407767,
+        "support": 51
+      },
+      "MODERATE": {
+        "precision": 0.9896907216494846,
+        "recall": 0.9795918367346939,
+        "f1": 0.9846153846153847,
+        "support": 98
+      },
+      "HIGH": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 147
+      }
+    }
+  },
+  "no_clinical_score_ablation_reference": {
+    "accuracy": 0.9324324324324325,
+    "source": "outputs/stats/10_xgboost_v3_day_ablation.json"
+  },
+  "accuracy_delta_experiment_minus_production": 0.0,
+  "accuracy_delta_experiment_minus_ablation": 0.057432432432432456,
+  "gain_importance_method": "normalized booster gain; equivalent to the default gain-based XGBClassifier.feature_importances_ method used for Figure 5.16",
+  "production_normalized_gain": {
+    "potassium": 0.0,
+    "phosphorus": 0.010067395466901587,
+    "protein_per_kg": 0.0,
+    "sodium": 0.003571470940478067,
+    "ckd_stage_encoded": 0.0,
+    "stage_numeric": 0.0,
+    "k_p_product": 0.0,
+    "protein_sodium_ratio": 0.0,
+    "clinical_score": 0.9863611335926203
+  },
+  "experiment_normalized_gain": {
+    "potassium": 0.021694877132178478,
+    "phosphorus": 0.08140206583316945,
+    "protein_per_kg": 0.035929561414162585,
+    "sodium": 0.014658571975886258,
+    "ckd_stage_encoded": 0.017761101665925646,
+    "stage_numeric": 0.020095892894055188,
+    "k_p_product": 0.0843403579420978,
+    "protein_sodium_ratio": 0.01029260880500176,
+    "clinical_score": 0.7138249623375228
+  },
+  "clinical_score_gain_share": {
+    "production": 0.9863611335926203,
+    "experiment": 0.7138249623375228,
+    "drop": 0.27253617125509755
+  },
+  "raw_nutrient_total_gain_share": {
+    "production": 0.013638866407379654,
+    "experiment": 0.15368507635539677,
+    "increase": 0.14004620994801711
+  },
+  "raw_nutrient_gain_comparison": {
+    "potassium": {
+      "production": 0.0,
+      "experiment": 0.021694877132178478,
+      "change": 0.021694877132178478
+    },
+    "phosphorus": {
+      "production": 0.010067395466901587,
+      "experiment": 0.08140206583316945,
+      "change": 0.07133467036626787
+    },
+    "protein_per_kg": {
+      "production": 0.0,
+      "experiment": 0.035929561414162585,
+      "change": 0.035929561414162585
+    },
+    "sodium": {
+      "production": 0.003571470940478067,
+      "experiment": 0.014658571975886258,
+      "change": 0.01108710103540819
+    }
+  },
+  "artifact": "models/xgboost_v3_colsample_05_experiment.pkl",
+  "figure": "outputs/figures/xgb_v3_colsample_05_gain_importance.png"
+}

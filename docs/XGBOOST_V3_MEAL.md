@@ -1,7 +1,8 @@
 # GuidaPlate — Meal-Level XGBoost v3
 
-**Artifact:** `models/xgboost_v3_meal.pkl`  
-**Status:** Live by default in production Meal Check (`GUIDAPLATE_MEAL_XGB=1`). Serves `models/xgboost_v3_meal.pkl` with meal-scale `clinical_score`. Set `GUIDAPLATE_MEAL_XGB=0` to roll back to day-scale `models/xgboost_v3.pkl`.  
+**Historical artifact (offline only):** `models/xgboost_v3_meal.pkl`  
+**Live meal model:** `models/xgboost_v3_meal_noscore.pkl` (occasion + meal caps; no `clinical_score` feature).  
+**Fallback:** Model failure uses the same-scale exceeded-count rule. Day and legacy meal pickles are research/evaluation only and are never live fallbacks.  
 **Protected day-model hash (must never change during meal work):**  
 `0c31b13c74fd49b63e7d4ce750fdcf897c850410438b99e8f27d364d17b679f5`
 
@@ -264,20 +265,20 @@ Strategies covered (aligned with project testing docs):
 ```
 Meal Check intake (meal totals + stage + occasion)
         │
-        ├─ default (GUIDAPLATE_MEAL_XGB=1): meal-scale clinical_score + xgboost_v3_meal.pkl  ← production
-        │         (occasion caps from OCCASION_RULES × KDOQI)
+        ├─ live: xgboost_v3_meal_noscore.pkl
+        │         (raw nutrients + occasion + meal caps; no clinical_score feature)
         │
-        └─ rollback (GUIDAPLATE_MEAL_XGB=0): day-scale clinical_score + xgboost_v3.pkl
+        └─ model failure: transparent meal-scale exceeded-count rule
 ```
 
-**Live in the API by default.** The meal path already:
+**Live in the API.** The current path:
 
-1. Computes `clinical_score` with **meal** caps at serve time (not daily).  
-2. Loads `xgboost_v3_meal.pkl` when `GUIDAPLATE_MEAL_XGB=1` (default).  
-3. Passes occasion into the predictor path.  
-4. Keeps SHAP / risk UI on the same response shape.
+1. Loads `xgboost_v3_meal_noscore.pkl`.  
+2. Builds raw nutrient, occasion, and meal-cap features.  
+3. Keeps SHAP / risk UI on the same response shape.  
+4. Falls back to the evaluated meal count-rule if model inference fails.
 
-Rollback: set `GUIDAPLATE_MEAL_XGB=0` to restore day-v3 as the Tier-1 Meal Check classifier.
+Legacy `xgboost_v3_meal.pkl` remains on disk for offline experiments only.
 
 ---
 
@@ -287,7 +288,7 @@ Rollback: set `GUIDAPLATE_MEAL_XGB=0` to restore day-v3 as the Tier-1 Meal Check
 2. **NHANES (US) data** — not Rwandan patient meals; local validation remains future work (same as day v3).  
 3. **G4 sparsity** — few severe-stage meal rows.  
 4. **Occasion coding** — relies on NHANES `030Z` mapping; some codes collapse into Snack.  
-5. **Rollback available** — `GUIDAPLATE_MEAL_XGB=0` reverts Meal Check to day-scale scoring (and the original day/meal scale tension).
+5. **Legacy meal pickle** — `xgboost_v3_meal.pkl` retains the circular `clinical_score` feature and is not loaded by the live API.
 
 ---
 

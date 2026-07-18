@@ -34,7 +34,7 @@ from backend.database.db import Base, Food, SessionLocal, engine, get_db
 from backend.database.seed_foods import backfill_preparation_method, seed_foods
 from backend.models.lstm_model import warmup_lstm
 from backend.models.recommender import get_recommender
-from backend.models.xgboost_model import get_predictor
+from backend.models.xgboost_model import get_live_risk_predictor, smoke_predict_live_risk_predictor
 from backend.rag.retriever import get_retriever
 
 
@@ -51,7 +51,12 @@ async def lifespan(app: FastAPI):
         db.close()
 
     get_recommender()
-    get_predictor()
+    # Warm the selected meal model. Failure is non-fatal because /predict/risk
+    # has a transparent same-scale rule fallback; readiness will report degraded.
+    try:
+        get_live_risk_predictor()
+    except Exception as exc:
+        print(f"WARNING: Meal XGBoost warmup failed; rule fallback remains available: {exc}")
     warmup_lstm()
     print("Initializing RAG retriever...")
     get_retriever()
@@ -104,19 +109,15 @@ def api_health(db: Session = Depends(get_db)) -> dict:
     model_status = {}
     overall = "healthy"
 
-    # Check XGBoost v3
+    # Check the selected meal XGBoost model. Day XGBoost is offline research only.
     try:
-        predictor = get_predictor()
-        result = predictor.predict(
-            potassium=2800,
-            phosphorus=650,
-            protein_per_kg=0.55,
-            sodium=1800,
-            ckd_stage="G3b",
-        )
+        smoke = smoke_predict_live_risk_predictor()
         model_status["xgboost_v3"] = {
             "status": "loaded",
-            "test_prediction": result["risk_label"],
+            "scoring_scale": smoke["scoring_scale"],
+            "score_mode": smoke["score_mode"],
+            "uses_clinical_score_feature": smoke["uses_clinical_score_feature"],
+            "test_prediction": smoke["risk_label"],
         }
     except Exception as e:
         model_status["xgboost_v3"] = {

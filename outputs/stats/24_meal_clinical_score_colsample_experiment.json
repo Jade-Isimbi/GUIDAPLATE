@@ -1,0 +1,237 @@
+{
+  "status": "EXPERIMENT_ONLY_NOT_FOR_PRODUCTION",
+  "verdict": "NEGATIVE_DOMINANCE: clinical_score still dominates; column subsampling did not materially reduce circularity.",
+  "promising_middle_ground": false,
+  "day_comparison": "SMALLER_EFFECT: meal-scale reduced clinical_score dominance less than day-scale. Day: accuracy delta +0.00 pp, clinical_score 98.64%\u219271.38% (-27.25 pp), raw nutrients 1.36%\u219215.37% (+14.00 pp). Meal: accuracy 99.86% (delta +0.00 pp), clinical_score 80.05%\u219272.73% (-7.32 pp), raw nutrients 10.35%\u219215.32% (+4.97 pp).",
+  "promising_criteria": {
+    "accuracy_within_production_percentage_points": 2.0,
+    "minimum_clinical_score_share_drop_percentage_points": 10.0,
+    "minimum_raw_nutrient_share_increase_percentage_points": 10.0
+  },
+  "protected_artifacts_unchanged": true,
+  "protected_sha256": {
+    "xgboost_v3.pkl": "0c31b13c74fd49b63e7d4ce750fdcf897c850410438b99e8f27d364d17b679f5",
+    "xgboost_v3_meal.pkl": "564c1cd5e4c735c41cbe03584cfb44812692e1ebe1e37baf06e3c58a6aa776db",
+    "xgboost_v3_decomposed_experiment.pkl": "19df7c874bc0817e8d2ca80fb9ea50223e2ca3a87aa33577da77d55f70b422a8",
+    "xgboost_v3_potassium_residualized_experiment.pkl": "165cd163ef9768a0f4328b24ed18ad3c473b3b7a808dfca8974b24a8cb73a685",
+    "xgboost_v3_colsample_05_experiment.pkl": "40ed2493150ee7ca42598619cc090e31f39ec63356151ba387597ddf55ca82e4"
+  },
+  "features": [
+    "potassium",
+    "phosphorus",
+    "protein_per_kg",
+    "sodium",
+    "ckd_stage_encoded",
+    "stage_numeric",
+    "k_p_product",
+    "protein_sodium_ratio",
+    "clinical_score"
+  ],
+  "n_features": 9,
+  "split": {
+    "test_size": 0.2,
+    "random_state": 42,
+    "stratify": true,
+    "n_train": 8612,
+    "n_test": 2153,
+    "label_source": "outputs/stats/05_risk_labels_v3_meal.csv"
+  },
+  "class_weight": {
+    "2": 1.0,
+    "1": 4.0,
+    "0": 1.0
+  },
+  "production_hyperparams": {
+    "objective": "multi:softprob",
+    "num_class": 3,
+    "eval_metric": "mlogloss",
+    "learning_rate": 0.01,
+    "max_depth": 4,
+    "n_estimators": 200,
+    "subsample": 0.7,
+    "colsample_bytree": 0.9,
+    "gamma": 0.2,
+    "reg_alpha": 0,
+    "reg_lambda": 2.0,
+    "min_child_weight": 5,
+    "random_state": 42,
+    "verbosity": 0
+  },
+  "experiment_hyperparams": {
+    "objective": "multi:softprob",
+    "num_class": 3,
+    "eval_metric": "mlogloss",
+    "learning_rate": 0.01,
+    "max_depth": 4,
+    "n_estimators": 200,
+    "subsample": 0.7,
+    "colsample_bytree": 0.5,
+    "gamma": 0.2,
+    "reg_alpha": 0,
+    "reg_lambda": 2.0,
+    "min_child_weight": 5,
+    "random_state": 42,
+    "verbosity": 0
+  },
+  "changed_from_production": {
+    "colsample_bytree": {
+      "production": 0.9,
+      "experiment": 0.5
+    }
+  },
+  "note_production_colsample": "Production meal already used colsample_bytree=0.9 (unlike day production which used 1.0). Experiment further reduces it to 0.5.",
+  "production_meal_holdout": {
+    "accuracy": 0.9986065954482118,
+    "f1_macro": 0.9981543698077159,
+    "f1_weighted": 0.9986062045225198,
+    "auc_weighted": 0.9999951584655228,
+    "confusion": [
+      [
+        777,
+        1,
+        0
+      ],
+      [
+        2,
+        414,
+        0
+      ],
+      [
+        0,
+        0,
+        959
+      ]
+    ],
+    "per_class": {
+      "LOW": {
+        "precision": 0.9974326059050064,
+        "recall": 0.9987146529562982,
+        "f1": 0.9980732177263969,
+        "support": 778
+      },
+      "MODERATE": {
+        "precision": 0.9975903614457832,
+        "recall": 0.9951923076923077,
+        "f1": 0.9963898916967509,
+        "support": 416
+      },
+      "HIGH": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 959
+      }
+    }
+  },
+  "experiment_meal_holdout": {
+    "accuracy": 0.9986065954482118,
+    "f1_macro": 0.998156432991203,
+    "f1_weighted": 0.9986069837854449,
+    "auc_weighted": 0.9999828434345015,
+    "confusion": [
+      [
+        776,
+        2,
+        0
+      ],
+      [
+        1,
+        415,
+        0
+      ],
+      [
+        0,
+        0,
+        959
+      ]
+    ],
+    "per_class": {
+      "LOW": {
+        "precision": 0.9987129987129987,
+        "recall": 0.9974293059125964,
+        "f1": 0.9980707395498393,
+        "support": 778
+      },
+      "MODERATE": {
+        "precision": 0.9952038369304557,
+        "recall": 0.9975961538461539,
+        "f1": 0.9963985594237695,
+        "support": 416
+      },
+      "HIGH": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 959
+      }
+    }
+  },
+  "no_clinical_score_ablation_reference": {
+    "accuracy": 0.77519739897817,
+    "source": "outputs/stats/10_xgboost_v3_meal_deep_eval.json"
+  },
+  "accuracy_delta_experiment_minus_production": 0.0,
+  "accuracy_delta_experiment_minus_ablation": 0.22340919647004187,
+  "gain_importance_method": "normalized booster gain; equivalent to the default gain-based XGBClassifier.feature_importances_ method used for Figure 5.16",
+  "production_normalized_gain": {
+    "potassium": 0.0037973803837153598,
+    "phosphorus": 0.07995541330877039,
+    "protein_per_kg": 0.012463385122388192,
+    "sodium": 0.007297175591756233,
+    "ckd_stage_encoded": 0.01437036198518413,
+    "stage_numeric": 0.0,
+    "k_p_product": 0.07764557537816395,
+    "protein_sodium_ratio": 0.003978771130884598,
+    "clinical_score": 0.8004919370991371
+  },
+  "experiment_normalized_gain": {
+    "potassium": 0.036458343684894916,
+    "phosphorus": 0.07735913853212792,
+    "protein_per_kg": 0.027247997978547173,
+    "sodium": 0.012132110526537506,
+    "ckd_stage_encoded": 0.012639294768246552,
+    "stage_numeric": 0.01335814989992027,
+    "k_p_product": 0.08645663185892455,
+    "protein_sodium_ratio": 0.0070444645355427086,
+    "clinical_score": 0.7273038682152584
+  },
+  "clinical_score_gain_share": {
+    "production": 0.8004919370991371,
+    "experiment": 0.7273038682152584,
+    "drop": 0.07318806888387874
+  },
+  "raw_nutrient_total_gain_share": {
+    "production": 0.10351335440663016,
+    "experiment": 0.15319759072210754,
+    "increase": 0.04968423631547737
+  },
+  "k_p_product_gain_share": {
+    "production": 0.07764557537816395,
+    "experiment": 0.08645663185892455,
+    "increase": 0.008811056480760596
+  },
+  "raw_nutrient_gain_comparison": {
+    "potassium": {
+      "production": 0.0037973803837153598,
+      "experiment": 0.036458343684894916,
+      "change": 0.032660963301179555
+    },
+    "phosphorus": {
+      "production": 0.07995541330877039,
+      "experiment": 0.07735913853212792,
+      "change": -0.002596274776642468
+    },
+    "protein_per_kg": {
+      "production": 0.012463385122388192,
+      "experiment": 0.027247997978547173,
+      "change": 0.014784612856158981
+    },
+    "sodium": {
+      "production": 0.007297175591756233,
+      "experiment": 0.012132110526537506,
+      "change": 0.004834934934781273
+    }
+  },
+  "artifact": "models/xgboost_v3_meal_colsample_05_experiment.pkl",
+  "figure": "outputs/figures/xgb_v3_meal_colsample_05_gain_importance.png"
+}

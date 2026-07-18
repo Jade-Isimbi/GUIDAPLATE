@@ -1,0 +1,317 @@
+{
+  "status": "EXPERIMENT_ONLY_NOT_FOR_PRODUCTION",
+  "production_artifacts_unchanged": true,
+  "production_sha256": {
+    "xgboost_v3.pkl": "0c31b13c74fd49b63e7d4ce750fdcf897c850410438b99e8f27d364d17b679f5",
+    "xgboost_v3_meal.pkl": "564c1cd5e4c735c41cbe03584cfb44812692e1ebe1e37baf06e3c58a6aa776db"
+  },
+  "identity_check": {
+    "max_abs_severity_sum_minus_clinical_score_recomputed": 0.0,
+    "max_abs_severity_sum_minus_clinical_score_csv": 4.440892098500626e-16,
+    "sample_rows": [
+      {
+        "SEQN": 93705.0,
+        "ckd_stage": "G2",
+        "clinical_score_recomputed": 0.5973179860541427,
+        "severity_sum": 0.5973179860541427,
+        "k_severity": 0.13989999999999997,
+        "p_severity": 0.18059999999999998,
+        "protein_severity": 0.11503537735849052,
+        "na_severity": 0.16178260869565217
+      },
+      {
+        "SEQN": 93711.0,
+        "ckd_stage": "G2",
+        "clinical_score_recomputed": 2.0730423510466984,
+        "severity_sum": 2.0730423510466984,
+        "k_severity": 0.43019999999999997,
+        "p_severity": 0.7866,
+        "protein_severity": 0.6363727858293075,
+        "na_severity": 0.21986956521739132
+      },
+      {
+        "SEQN": 93713.0,
+        "ckd_stage": "G2",
+        "clinical_score_recomputed": 1.048954539385848,
+        "severity_sum": 1.048954539385848,
+        "k_severity": 0.28375,
+        "p_severity": 0.34080000000000005,
+        "protein_severity": 0.3034045393858479,
+        "na_severity": 0.121
+      },
+      {
+        "SEQN": 93715.0,
+        "ckd_stage": "G2",
+        "clinical_score_recomputed": 0.531104226869035,
+        "severity_sum": 0.531104226869035,
+        "k_severity": 0.13215,
+        "p_severity": 0.17925,
+        "protein_severity": 0.14750857469512196,
+        "na_severity": 0.07219565217391304
+      },
+      {
+        "SEQN": 93716.0,
+        "ckd_stage": "G2",
+        "clinical_score_recomputed": 2.1674295114990767,
+        "severity_sum": 2.1674295114990767,
+        "k_severity": 0.46659999999999996,
+        "p_severity": 0.7677,
+        "protein_severity": 0.5359555984555985,
+        "na_severity": 0.39717391304347827
+      }
+    ],
+    "pass": true
+  },
+  "features_decomposed": [
+    "potassium",
+    "phosphorus",
+    "protein_per_kg",
+    "sodium",
+    "ckd_stage_encoded",
+    "stage_numeric",
+    "k_p_product",
+    "protein_sodium_ratio",
+    "k_severity",
+    "p_severity",
+    "protein_severity",
+    "na_severity"
+  ],
+  "n_features": 12,
+  "production_day_holdout": {
+    "accuracy": 0.9898648648648649,
+    "f1_macro": 0.9852948433259314,
+    "f1_weighted": 0.9899308820293274,
+    "auc_weighted": 0.9975374609303179,
+    "confusion": [
+      [
+        51,
+        0,
+        0
+      ],
+      [
+        3,
+        95,
+        0
+      ],
+      [
+        0,
+        0,
+        147
+      ]
+    ],
+    "reported_chapter5_accuracy": 0.9898648648648649,
+    "artifact": "xgboost_v3.pkl",
+    "protocol": "predict_only"
+  },
+  "experiment_day_holdout": {
+    "accuracy": 0.9391891891891891,
+    "f1_macro": 0.9269160997732427,
+    "f1_weighted": 0.939107832322118,
+    "auc_weighted": 0.9895704449515571,
+    "confusion": [
+      [
+        44,
+        7,
+        0
+      ],
+      [
+        3,
+        91,
+        4
+      ],
+      [
+        0,
+        4,
+        143
+      ]
+    ],
+    "artifact": "models/xgboost_v3_decomposed_experiment.pkl",
+    "protocol": "retrain_same_split_cloned_prod_hyperparams_mod_weight_4x"
+  },
+  "accuracy_delta_decomp_minus_prod": -0.05067567567567577,
+  "shap_decomposed_model": {
+    "HIGH": {
+      "overall_top5": [
+        [
+          "p_severity",
+          1.0194774866104126
+        ],
+        [
+          "protein_severity",
+          0.4335004389286041
+        ],
+        [
+          "k_p_product",
+          0.2532790005207062
+        ],
+        [
+          "sodium",
+          0.15564846992492676
+        ],
+        [
+          "protein_per_kg",
+          0.07035990059375763
+        ]
+      ],
+      "severity_ranked": [
+        [
+          "p_severity",
+          1.0194774866104126
+        ],
+        [
+          "protein_severity",
+          0.4335004389286041
+        ],
+        [
+          "k_severity",
+          0.06272097676992416
+        ],
+        [
+          "na_severity",
+          0.0
+        ]
+      ],
+      "severity_top2": [
+        [
+          "p_severity",
+          1.0194774866104126
+        ],
+        [
+          "protein_severity",
+          0.4335004389286041
+        ]
+      ],
+      "raw_nutrient_ranked": [
+        [
+          "sodium",
+          0.15564846992492676
+        ],
+        [
+          "protein_per_kg",
+          0.07035990059375763
+        ],
+        [
+          "phosphorus",
+          0.029095333069562912
+        ],
+        [
+          "potassium",
+          0.027304477989673615
+        ]
+      ]
+    },
+    "MODERATE": {
+      "overall_top5": [
+        [
+          "p_severity",
+          1.006534218788147
+        ],
+        [
+          "protein_severity",
+          0.379148006439209
+        ],
+        [
+          "k_p_product",
+          0.26063352823257446
+        ],
+        [
+          "sodium",
+          0.11095615476369858
+        ],
+        [
+          "protein_per_kg",
+          0.07092247158288956
+        ]
+      ],
+      "severity_ranked": [
+        [
+          "p_severity",
+          1.006534218788147
+        ],
+        [
+          "protein_severity",
+          0.379148006439209
+        ],
+        [
+          "k_severity",
+          0.04952800273895264
+        ],
+        [
+          "na_severity",
+          0.0
+        ]
+      ],
+      "severity_top2": [
+        [
+          "p_severity",
+          1.006534218788147
+        ],
+        [
+          "protein_severity",
+          0.379148006439209
+        ]
+      ],
+      "raw_nutrient_ranked": [
+        [
+          "sodium",
+          0.11095615476369858
+        ],
+        [
+          "protein_per_kg",
+          0.07092247158288956
+        ],
+        [
+          "potassium",
+          0.03737732395529747
+        ],
+        [
+          "phosphorus",
+          0.029700666666030884
+        ]
+      ]
+    }
+  },
+  "shap_production_raw_nutrients_reference": {
+    "HIGH": [
+      [
+        "phosphorus",
+        0.035977669060230255
+      ],
+      [
+        "sodium",
+        0.0013139928923919797
+      ],
+      [
+        "potassium",
+        0.0
+      ],
+      [
+        "protein_per_kg",
+        0.0
+      ]
+    ],
+    "MODERATE": [
+      [
+        "phosphorus",
+        0.007806312292814255
+      ],
+      [
+        "sodium",
+        0.0011017705546692014
+      ],
+      [
+        "potassium",
+        0.0
+      ],
+      [
+        "protein_per_kg",
+        0.0
+      ]
+    ]
+  },
+  "interpretation_notes": [
+    "k_severity / p_severity / protein_severity / na_severity sum to clinical_score.",
+    "Compare severity_ranked within the new model to see if potassium component rises.",
+    "Production reference: potassium raw SHAP was never top-2 among the four nutrients."
+  ]
+}

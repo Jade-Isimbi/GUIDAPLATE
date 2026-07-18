@@ -64,11 +64,8 @@ def _history(client, headers) -> list[dict]:
     return r.json()
 
 
-def test_chain_log_check_budget_reflects_food(client, auth_headers, monkeypatch):
+def test_chain_log_check_budget_reflects_food(client, auth_headers):
     """1. Log food → check meal → daily budget reflects logged nutrients."""
-    monkeypatch.setattr(
-        "backend.api.risk_prediction.GUIDAPLATE_MEAL_XGB", True
-    )
     _post_food_log(client, auth_headers, CABBAGE_LUNCH_LOG)
 
     risk = client.post(
@@ -118,16 +115,13 @@ def test_chain_logged_food_appears_in_history(client, auth_headers):
     assert entry["category"] == "Vegetable"
 
 
-def test_chain_recheck_does_not_duplicate_logs(client, auth_headers, monkeypatch):
+def test_chain_recheck_does_not_duplicate_logs(client, auth_headers):
     """
     3. Re-check (skipSave) does not create extra food logs.
 
     Frontend Re-check calls predict/risk again without POST /patient/food-log.
     Backend proof: one persist + two risk checks → history count stays 1.
     """
-    monkeypatch.setattr(
-        "backend.api.risk_prediction.GUIDAPLATE_MEAL_XGB", True
-    )
     _post_food_log(client, auth_headers, CABBAGE_LUNCH_LOG)
     assert len(_history(client, auth_headers)) == 1
 
@@ -148,13 +142,10 @@ def test_chain_recheck_does_not_duplicate_logs(client, auth_headers, monkeypatch
     assert len(_history(client, auth_headers)) == 1
 
 
-def test_chain_high_risk_substitutes_full_path(client, auth_headers, monkeypatch):
+def test_chain_high_risk_substitutes_full_path(client, auth_headers):
     """
     4. Log high-risk beef meal → check → exceeded nutrients + safe substitutes.
     """
-    monkeypatch.setattr(
-        "backend.api.risk_prediction.GUIDAPLATE_MEAL_XGB", True
-    )
     beef_log = {
         "food_name": "beef meat",
         "category": "Meat",
@@ -192,37 +183,23 @@ def test_chain_high_risk_substitutes_full_path(client, auth_headers, monkeypatch
     assert logs[0]["food_name"] == "beef meat"
 
 
-def test_chain_meal_vs_day_rollback_flag(client, auth_headers, monkeypatch):
+def test_chain_model_failure_uses_meal_rule_fallback(client, auth_headers, monkeypatch):
     """
-    5. Same input → different scoring_scale for GUIDAPLATE_MEAL_XGB on vs off.
+    5. Model failure remains meal-scale and returns the transparent rule fallback.
     """
     monkeypatch.setattr(
-        "backend.api.risk_prediction.GUIDAPLATE_MEAL_XGB", True
+        "backend.api.risk_prediction.get_meal_predictor",
+        lambda: (_ for _ in ()).throw(RuntimeError("simulated outage")),
     )
-    meal = client.post(
+    response = client.post(
         "/api/predict/risk",
         json=SAME_INPUT_FOR_SCALE_SWITCH,
         headers=auth_headers,
     )
-    assert meal.status_code == 200, meal.text
-    meal_body = meal.json()
-    assert meal_body["scoring_scale"] == "meal"
-    assert meal_body["meal_limits"] is not None
-    assert meal_body["meal_limits"]["potassium"] == pytest.approx(750.0)
-
-    monkeypatch.setattr(
-        "backend.api.risk_prediction.GUIDAPLATE_MEAL_XGB", False
-    )
-    day = client.post(
-        "/api/predict/risk",
-        json=SAME_INPUT_FOR_SCALE_SWITCH,
-        headers=auth_headers,
-    )
-    assert day.status_code == 200, day.text
-    day_body = day.json()
-    assert day_body["scoring_scale"] == "day"
-    assert day_body["meal_limits"] is None
-
-    # Same occasion/inputs, genuinely different mode
-    assert meal_body["scoring_scale"] != day_body["scoring_scale"]
-    assert meal_body["occasion"] == day_body["occasion"] == "Breakfast"
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["scoring_scale"] == "meal"
+    assert body["prediction_source"] == "rule_fallback"
+    assert body["meal_feature_set"] == "rule_fallback"
+    assert body["meal_limits"]["potassium"] == pytest.approx(750.0)
+    assert body["occasion"] == "Breakfast"

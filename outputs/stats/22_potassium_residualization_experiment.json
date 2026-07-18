@@ -1,0 +1,252 @@
+{
+  "status": "EXPERIMENT_ONLY_NOT_FOR_PRODUCTION",
+  "protected_artifacts_unchanged": true,
+  "protected_sha256": {
+    "xgboost_v3.pkl": "0c31b13c74fd49b63e7d4ce750fdcf897c850410438b99e8f27d364d17b679f5",
+    "xgboost_v3_meal.pkl": "564c1cd5e4c735c41cbe03584cfb44812692e1ebe1e37baf06e3c58a6aa776db",
+    "xgboost_v3_decomposed_experiment.pkl": "19df7c874bc0817e8d2ca80fb9ea50223e2ca3a87aa33577da77d55f70b422a8"
+  },
+  "features": [
+    "potassium",
+    "phosphorus",
+    "protein_per_kg",
+    "sodium",
+    "ckd_stage_encoded",
+    "stage_numeric",
+    "k_p_product",
+    "protein_sodium_ratio",
+    "potassium_unique",
+    "p_severity",
+    "protein_severity",
+    "na_severity"
+  ],
+  "n_features": 12,
+  "residualizer": {
+    "fit_scope": "training_split_only",
+    "target": "potassium",
+    "predictors": [
+      "p_severity",
+      "protein_severity",
+      "na_severity"
+    ],
+    "intercept": 1085.2641690877824,
+    "coefficients": {
+      "p_severity": 2032.421969090593,
+      "protein_severity": 237.7890621764147,
+      "na_severity": 1401.375294717722
+    }
+  },
+  "correlation_train": {
+    "potassium_unique": {
+      "potassium_unique": 1.0,
+      "p_severity": 4.626471558732691e-17,
+      "protein_severity": 2.0711732622456007e-17,
+      "na_severity": 4.2196179242619336e-18
+    },
+    "p_severity": {
+      "potassium_unique": 4.626471558732691e-17,
+      "p_severity": 1.0,
+      "protein_severity": 0.7516175060656591,
+      "na_severity": 0.7372582435885723
+    },
+    "protein_severity": {
+      "potassium_unique": 2.0711732622456007e-17,
+      "p_severity": 0.7516175060656591,
+      "protein_severity": 1.0,
+      "na_severity": 0.571822979859462
+    },
+    "na_severity": {
+      "potassium_unique": 4.2196179242619336e-18,
+      "p_severity": 0.7372582435885723,
+      "protein_severity": 0.571822979859462,
+      "na_severity": 1.0
+    }
+  },
+  "correlation_holdout": {
+    "potassium_unique": {
+      "potassium_unique": 1.0,
+      "p_severity": 0.05118042571635427,
+      "protein_severity": 0.05090137092303057,
+      "na_severity": -0.06489472922945289
+    },
+    "p_severity": {
+      "potassium_unique": 0.05118042571635427,
+      "p_severity": 1.0,
+      "protein_severity": 0.769442815371377,
+      "na_severity": 0.7738842722050905
+    },
+    "protein_severity": {
+      "potassium_unique": 0.05090137092303057,
+      "p_severity": 0.769442815371377,
+      "protein_severity": 1.0,
+      "na_severity": 0.6263193688213585
+    },
+    "na_severity": {
+      "potassium_unique": -0.06489472922945289,
+      "p_severity": 0.7738842722050905,
+      "protein_severity": 0.6263193688213585,
+      "na_severity": 1.0
+    }
+  },
+  "production_day_holdout": {
+    "accuracy": 0.9898648648648649,
+    "f1_macro": 0.9852948433259314,
+    "f1_weighted": 0.9899308820293274,
+    "auc_weighted": 0.9975374609303179,
+    "confusion": [
+      [
+        51,
+        0,
+        0
+      ],
+      [
+        3,
+        95,
+        0
+      ],
+      [
+        0,
+        0,
+        147
+      ]
+    ]
+  },
+  "decomposition_day_holdout": {
+    "accuracy": 0.9391891891891891,
+    "f1_macro": 0.9269160997732427,
+    "f1_weighted": 0.939107832322118,
+    "auc_weighted": 0.9895704449515571,
+    "confusion": [
+      [
+        44,
+        7,
+        0
+      ],
+      [
+        3,
+        91,
+        4
+      ],
+      [
+        0,
+        4,
+        143
+      ]
+    ],
+    "artifact": "models/xgboost_v3_decomposed_experiment.pkl",
+    "protocol": "retrain_same_split_cloned_prod_hyperparams_mod_weight_4x"
+  },
+  "residualized_day_holdout": {
+    "accuracy": 0.9459459459459459,
+    "f1_macro": 0.9325170068027212,
+    "f1_weighted": 0.9457970215113073,
+    "auc_weighted": 0.9891651338679143,
+    "confusion": [
+      [
+        44,
+        7,
+        0
+      ],
+      [
+        3,
+        92,
+        3
+      ],
+      [
+        0,
+        3,
+        144
+      ]
+    ]
+  },
+  "accuracy_delta_vs_production": -0.04391891891891897,
+  "accuracy_delta_vs_decomposition": 0.006756756756756799,
+  "shap": {
+    "HIGH": {
+      "target_terms_ranked": [
+        [
+          "p_severity",
+          1.0285167694091797
+        ],
+        [
+          "protein_severity",
+          0.4436940848827362
+        ],
+        [
+          "potassium_unique",
+          0.008528096601366997
+        ],
+        [
+          "na_severity",
+          0.0
+        ]
+      ],
+      "overall_top5": [
+        [
+          "p_severity",
+          1.0285167694091797
+        ],
+        [
+          "protein_severity",
+          0.4436940848827362
+        ],
+        [
+          "k_p_product",
+          0.25275638699531555
+        ],
+        [
+          "sodium",
+          0.16453337669372559
+        ],
+        [
+          "potassium",
+          0.07387592643499374
+        ]
+      ]
+    },
+    "MODERATE": {
+      "target_terms_ranked": [
+        [
+          "p_severity",
+          1.0284684896469116
+        ],
+        [
+          "protein_severity",
+          0.3848615884780884
+        ],
+        [
+          "potassium_unique",
+          0.008215839974582195
+        ],
+        [
+          "na_severity",
+          0.0
+        ]
+      ],
+      "overall_top5": [
+        [
+          "p_severity",
+          1.0284684896469116
+        ],
+        [
+          "protein_severity",
+          0.3848615884780884
+        ],
+        [
+          "k_p_product",
+          0.24802586436271667
+        ],
+        [
+          "sodium",
+          0.11351358890533447
+        ],
+        [
+          "protein_per_kg",
+          0.05772731825709343
+        ]
+      ]
+    }
+  },
+  "decomposition_high_k_severity_reference": 0.06272097676992416,
+  "artifact": "models/xgboost_v3_potassium_residualized_experiment.pkl"
+}

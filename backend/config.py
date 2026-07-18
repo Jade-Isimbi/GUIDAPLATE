@@ -45,14 +45,12 @@ LSTM_LABEL_ENCODER_PATH: Path = MODELS_DIR / "lstm_v3_label_encoder.pkl"
 # Leakage resolved — deployed: 2026-06-23
 XGBOOST_MODEL_PATH: Path = MODELS_DIR / "xgboost_v3.pkl"
 
-# Meal-scale XGBoost v3 — parallel artifact (never replaces XGBOOST_MODEL_PATH)
-XGBOOST_MEAL_MODEL_PATH: Path = MODELS_DIR / "xgboost_v3_meal.pkl"
+# Live meal model: no clinical_score feature (occasion + meal caps).
+XGBOOST_MEAL_NOSCORE_MODEL_PATH: Path = MODELS_DIR / "xgboost_v3_meal_noscore.pkl"
 
-# Meal Check promotion switch (default ON). Set GUIDAPLATE_MEAL_XGB=0 to rollback
-# /api/predict/risk to day-scale xgboost_v3.pkl scoring.
-GUIDAPLATE_MEAL_XGB: bool = os.getenv(
-    "GUIDAPLATE_MEAL_XGB", "1"
-).strip().lower() in {"1", "true", "yes", "on"}
+# Offline research/evaluation only — never loaded by live /api/predict/risk.
+# Day-scale: XGBOOST_MODEL_PATH above. Legacy circular meal: below.
+XGBOOST_MEAL_MODEL_PATH: Path = MODELS_DIR / "xgboost_v3_meal.pkl"
 
 # Reproducible splits / synthetic generation
 RANDOM_SEED: int = 42

@@ -13,14 +13,12 @@ from backend.clinical_constants import (
     KDOQI_DAILY_LIMITS,
     NEAR_LIMIT_RATIO,
 )
-from backend.config import GUIDAPLATE_MEAL_XGB
 from backend.database.db import get_db
 from backend.models.recommender import get_recommender
 from backend.models.xgboost_model import (
     VALID_OCCASIONS,
     compute_exceeded_nutrients_meal,
     get_meal_predictor,
-    get_predictor,
     meal_limits_for_occasion,
 )
 
@@ -69,9 +67,14 @@ class RiskPredictionResponse(BaseModel):
     shap_contributions: dict | None = None
     shap_explanation: str | None = None
     shap_dominant_nutrient: str | None = None
-    scoring_scale: Literal["meal", "day"]
+    scoring_scale: Literal["meal"]
     meal_limits: dict | None = None
     occasion: str
+    meal_feature_set: Literal[
+        "noscore_occasion_caps",
+        "rule_fallback",
+    ]
+    prediction_source: Literal["xgboost", "rule_fallback"]
 
 
 def compute_exceeded_nutrients(
@@ -127,6 +130,55 @@ def nutrient_limit_ratios(
     for name, (value, limit) in pairs.items():
         ratios[name] = (value / limit) if limit > 0 else 0.0
     return ratios
+
+
+def meal_rule_fallback(
+    potassium: float,
+    phosphorus: float,
+    protein_per_kg: float,
+    sodium: float,
+    ckd_stage: str,
+    occasion: str,
+) -> tuple[dict, list[str], list[str], dict[str, float]]:
+    """
+    Transparent same-scale safety fallback when meal-model inference is unavailable.
+
+    Baseline rule used in evaluation: no exceeded nutrients = LOW, one = MODERATE,
+    two or more = HIGH. Probabilities are one-hot schema placeholders, not model
+    calibration. Confidence is 0 because the rule has no learned probability;
+    prediction_source makes that explicit to clients.
+    """
+    exceeded, near_limit = compute_exceeded_nutrients_meal(
+        potassium,
+        phosphorus,
+        protein_per_kg,
+        sodium,
+        ckd_stage,
+        occasion,
+    )
+    if len(exceeded) >= 2:
+        label = "HIGH"
+    elif len(exceeded) == 1:
+        label = "MODERATE"
+    else:
+        label = "LOW"
+
+    limits = meal_limits_for_occasion(ckd_stage, occasion)
+    probabilities = {name: float(name == label) for name in ("LOW", "MODERATE", "HIGH")}
+    prediction = {
+        "risk_label": label,
+        "confidence": 0.0,
+        "probabilities": probabilities,
+        "features_used": {
+            "potassium": float(potassium),
+            "phosphorus": float(phosphorus),
+            "protein_per_kg": float(protein_per_kg),
+            "sodium": float(sodium),
+            "occasion": occasion,
+            "rule": "exceeded_count: 0=LOW, 1=MODERATE, >=2=HIGH",
+        },
+    }
+    return prediction, exceeded, near_limit, limits
 
 
 def _headline_by_ratio(candidates: list[str], ratios: dict[str, float]) -> str:
@@ -259,11 +311,10 @@ def predict_risk(
             ),
         )
 
-    use_meal = GUIDAPLATE_MEAL_XGB
-    scoring_scale: Literal["meal", "day"] = "meal" if use_meal else "day"
-
     try:
-        if use_meal:
+        predictor = None
+        prediction_source: Literal["xgboost", "rule_fallback"] = "xgboost"
+        try:
             predictor = get_meal_predictor()
             prediction = predictor.predict(
                 request.potassium,
@@ -282,29 +333,23 @@ def predict_risk(
                 request.occasion,
             )
             meal_limits = meal_limits_for_occasion(request.ckd_stage, request.occasion)
-            shap_occasion = request.occasion
-            ratio_limits = meal_limits
-        else:
-            # Rollback: day path — occasion accepted but not used for scoring
-            predictor = get_predictor()
-            prediction = predictor.predict(
-                request.potassium,
-                request.phosphorus,
-                request.protein_per_kg,
-                request.sodium,
-                request.ckd_stage,
+            meal_feature_set = "noscore_occasion_caps"
+        except Exception as model_exc:
+            print(
+                "Meal XGBoost inference unavailable; using same-scale rule fallback: "
+                f"{model_exc}"
             )
-            exceeded_nutrients, near_limit_nutrients = compute_exceeded_nutrients(
-                request.potassium,
-                request.phosphorus,
-                request.protein_per_kg,
-                request.sodium,
-                request.ckd_stage,
-            )
-            meal_limits = None
-            shap_occasion = None
-            ratio_limits = KDOQI_DAILY_LIMITS.get(
-                request.ckd_stage, KDOQI_DAILY_LIMITS["G3b"]
+            prediction_source = "rule_fallback"
+            meal_feature_set = "rule_fallback"
+            prediction, exceeded_nutrients, near_limit_nutrients, meal_limits = (
+                meal_rule_fallback(
+                    request.potassium,
+                    request.phosphorus,
+                    request.protein_per_kg,
+                    request.sodium,
+                    request.ckd_stage,
+                    request.occasion,
+                )
             )
 
         ratios = nutrient_limit_ratios(
@@ -312,7 +357,7 @@ def predict_risk(
             request.phosphorus,
             request.protein_per_kg,
             request.sodium,
-            ratio_limits,
+            meal_limits,
         )
 
         risk_label = prediction["risk_label"]
@@ -322,24 +367,21 @@ def predict_risk(
         )
 
         shap_contributions = None
-        shap_explanation = None
         shap_dominant_nutrient = None
-        try:
-            shap_kwargs = dict(
-                potassium=request.potassium,
-                phosphorus=request.phosphorus,
-                protein_per_kg=request.protein_per_kg,
-                sodium=request.sodium,
-                ckd_stage=request.ckd_stage,
-            )
-            if use_meal:
-                shap_data = predictor.explain(**shap_kwargs, occasion=shap_occasion)
-            else:
-                shap_data = predictor.explain(**shap_kwargs)
-            shap_contributions = shap_data["contributions"]
-            shap_dominant_nutrient = shap_data["dominant_nutrient"]
-        except Exception as e:
-            print(f"SHAP computation failed: {e}")
+        if predictor is not None:
+            try:
+                shap_data = predictor.explain(
+                    potassium=request.potassium,
+                    phosphorus=request.phosphorus,
+                    protein_per_kg=request.protein_per_kg,
+                    sodium=request.sodium,
+                    ckd_stage=request.ckd_stage,
+                    occasion=request.occasion,
+                )
+                shap_contributions = shap_data["contributions"]
+                shap_dominant_nutrient = shap_data["dominant_nutrient"]
+            except Exception as e:
+                print(f"SHAP computation failed: {e}")
 
         shap_explanation = generate_shap_explanation(
             shap_contributions or {},
@@ -347,7 +389,7 @@ def predict_risk(
             near_limit_nutrients,
             risk_label,
             request.ckd_stage,
-            scoring_scale=scoring_scale,
+            scoring_scale="meal",
             shap_dominant_nutrient=shap_dominant_nutrient,
             nutrient_ratios=ratios,
         )
@@ -379,9 +421,11 @@ def predict_risk(
             shap_contributions=shap_contributions,
             shap_explanation=shap_explanation,
             shap_dominant_nutrient=shap_dominant_nutrient,
-            scoring_scale=scoring_scale,
+            scoring_scale="meal",
             meal_limits=meal_limits,
             occasion=request.occasion,
+            meal_feature_set=meal_feature_set,
+            prediction_source=prediction_source,
         )
     except HTTPException:
         raise

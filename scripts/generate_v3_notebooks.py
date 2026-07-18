@@ -490,16 +490,20 @@ plt.show()
 print(f'Saved: {FIG_DIR / "xgb_v3_06_confusion.png"}')
 
 # DIAGRAM 7 — ROC curves
+# Fix: y_prob columns are ordered LOW=0, MODERATE=1, HIGH=2 (RISK_ENCODE),
+# while y_test_bin columns follow `classes` display order (HIGH, LOW, MODERATE).
+# Index probabilities by RISK_ENCODE[cls], not by loop index i.
 classes = ['HIGH', 'LOW', 'MODERATE']
 y_test_bin = label_binarize(y_test, classes=[RISK_ENCODE[c] for c in classes])
 fig, ax = plt.subplots(figsize=(8, 6))
 colors_roc = ['#ef4444', '#22c55e', '#f59e0b']
 for i, (cls, color) in enumerate(zip(classes, colors_roc)):
-    fpr, tpr, _ = roc_curve(y_test_bin[:, i], y_prob_v3[:, i])
+    fpr, tpr, _ = roc_curve(y_test_bin[:, i], y_prob_v3[:, RISK_ENCODE[cls]])
     ax.plot(fpr, tpr, color=color, lw=2, label=f'{cls} (AUC = {auc(fpr, tpr):.3f})')
 ax.plot([0,1],[0,1],'k--', lw=1, alpha=0.5)
 ax.set_xlabel('FPR'); ax.set_ylabel('TPR')
-ax.set_title('XGBoost v3 ROC Curves by Class')
+_weighted_auc = roc_auc_score(y_test, y_prob_v3, multi_class='ovr', average='weighted')
+ax.set_title(f'XGBoost v3 ROC Curves by Class (weighted AUC = {_weighted_auc:.3f})')
 ax.legend(loc='lower right'); ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(FIG_DIR / 'xgb_v3_07_roc.png', dpi=150, bbox_inches='tight')
@@ -574,34 +578,34 @@ print(f'Saved: {FIG_DIR / "xgb_v3_09_f1_comparison.png"}')
 """),
     code("""
 # DIAGRAM 10 & 11 — SHAP beeswarm HIGH and MODERATE
-explainer = shap.TreeExplainer(best_model)
-shap_values = explainer.shap_values(X_test_df)
-if isinstance(shap_values, list):
-    shap_list = shap_values
-else:
-    arr = np.asarray(shap_values)
-    shap_list = [arr[:, :, i] for i in range(arr.shape[2])] if arr.ndim == 3 else [arr]
+# Bug fix: shap.summary_plot(..., plot_type='beeswarm') with shap 0.51 +
+# matplotlib 3.11 draws empty axes (0 PathCollections). Use native XGBoost
+# pred_contribs + shap.plots.beeswarm(Explanation) instead — same as meal figures.
+_dmat = xgb.DMatrix(X_test_df, feature_names=list(FEATURES_V3))
+_contribs = np.asarray(best_model.get_booster().predict(_dmat, pred_contribs=True))
+# shape (n, n_classes, n_features+1); bias column last
+assert _contribs.ndim == 3 and _contribs.shape[2] == len(FEATURES_V3) + 1, _contribs.shape
 
-high_idx = RISK_ENCODE['HIGH']
-mod_idx = RISK_ENCODE['MODERATE']
-
-plt.figure(figsize=(10, 7))
-shap.summary_plot(shap_list[high_idx], X_test_df, feature_names=FEATURES_V3,
-                  plot_type='beeswarm', show=False, max_display=15)
-plt.title('SHAP Beeswarm — HIGH Class (v3 raw features)', fontsize=13)
-plt.tight_layout()
-plt.savefig(FIG_DIR / 'xgb_v3_10_shap_high.png', dpi=150, bbox_inches='tight')
-plt.show()
-print(f'Saved: {FIG_DIR / "xgb_v3_10_shap_high.png"}')
-
-plt.figure(figsize=(10, 7))
-shap.summary_plot(shap_list[mod_idx], X_test_df, feature_names=FEATURES_V3,
-                  plot_type='beeswarm', show=False, max_display=15)
-plt.title('SHAP Beeswarm — MODERATE Class (v3 raw features)', fontsize=13)
-plt.tight_layout()
-plt.savefig(FIG_DIR / 'xgb_v3_11_shap_moderate.png', dpi=150, bbox_inches='tight')
-plt.show()
-print(f'Saved: {FIG_DIR / "xgb_v3_11_shap_moderate.png"}')
+for _cls_name, _out_name in (
+    ('HIGH', 'xgb_v3_10_shap_high.png'),
+    ('MODERATE', 'xgb_v3_11_shap_moderate.png'),
+):
+    _idx = RISK_ENCODE[_cls_name]
+    _values = _contribs[:, _idx, : len(FEATURES_V3)]
+    assert float(np.abs(_values).mean()) > 0, f'empty SHAP values for {_cls_name}'
+    _explanation = shap.Explanation(
+        values=_values,
+        base_values=_contribs[:, _idx, len(FEATURES_V3)],
+        data=X_test_df.to_numpy(),
+        feature_names=list(FEATURES_V3),
+    )
+    plt.figure(figsize=(10, 7))
+    shap.plots.beeswarm(_explanation, show=False, max_display=15)
+    plt.title(f'SHAP Beeswarm — {_cls_name} Class (v3 raw features)', fontsize=13)
+    plt.tight_layout()
+    plt.savefig(FIG_DIR / _out_name, dpi=150, bbox_inches='tight')
+    plt.show()
+    print(f'Saved: {FIG_DIR / _out_name} (mean|shap|={float(np.abs(_values).mean()):.4f})')
 """),
     md("## Section 6 — McNemar Test"),
     code("""
