@@ -2774,12 +2774,6 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                 );
               })()}
 
-              {getAuthToken() && (
-                <div className="mt-2">
-                  {renderWhatToEatNextPanel()}
-                </div>
-              )}
-
               {/* Chart + nutrient cards — side by side on large screens */}
               <div className="grid gap-3 mt-2 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-start">
                 <div className="rounded-lg border p-2.5 lg:p-3 bg-white dark:bg-card">
@@ -3021,6 +3015,9 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                     </p>
                   )}
                 </div>
+
+                {/* Card 3 — What to eat next (beside Better alternatives) */}
+                {getAuthToken() && renderWhatToEatNextPanel()}
               </div>
 
               <div className="flex justify-end">
