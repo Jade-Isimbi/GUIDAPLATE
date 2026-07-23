@@ -83,6 +83,24 @@ function getUnitInfo(foodName: string, category: string): { unit: string; grams:
   return UNIT_MAP[category] || UNIT_MAP.Other;
 }
 
+/** Portion quantity step for piece/cup steppers (¼ unit). */
+const QTY_STEP = 0.25;
+const QTY_MIN = 0.25;
+const QTY_MAX = 10;
+
+function roundQty(n: number): number {
+  return Math.round(n / QTY_STEP) * QTY_STEP;
+}
+
+function clampQty(n: number): number {
+  return Math.max(QTY_MIN, Math.min(QTY_MAX, roundQty(n)));
+}
+
+function formatQtyLabel(qty: number): string {
+  if (Number.isInteger(qty)) return String(qty);
+  return String(Number(qty.toFixed(2)));
+}
+
 function noSubstitutesMessage(nutrient: string): string {
   return `No category-matched lower-${nutrient} substitutes found for this meal.`;
 }
@@ -300,7 +318,6 @@ interface WhatToEatNextResponse {
   meals_remaining_today: number;
   meal_budget: WhatToEatNextNutrients;
   remaining_today: WhatToEatNextNutrients;
-  trend: string | null;
   trajectory_risk: string | null;
   safety_margin_applied: boolean;
   safety_margin: number;
@@ -905,7 +922,7 @@ interface ResultState {
 
 interface OccasionAssessment {
   result: ResultState;
-  lstmPattern: { risk_label: string; confidence: number; trend: string } | null;
+  lstmPattern: { risk_label: string; confidence: number } | null;
   usingLiveModel: boolean;
   modelConfidence: number | null;
 }
@@ -1087,7 +1104,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
   const [apiStatus,       setApiStatus]       = useState<'unknown' | 'connected' | 'unavailable'>('unknown');
   const [usingLiveModel,  setUsingLiveModel]  = useState<boolean>(initialAssessment?.usingLiveModel ?? false);
   const [modelConfidence, setModelConfidence] = useState<number | null>(initialAssessment?.modelConfidence ?? null);
-  const [lstmPattern, setLstmPattern] = useState<{ risk_label: string; confidence: number; trend: string } | null>(
+  const [lstmPattern, setLstmPattern] = useState<{ risk_label: string; confidence: number } | null>(
     initialAssessment?.lstmPattern ?? null,
   );
   const [dailyBudget,     setDailyBudget]     = useState<DailyBudgetData | null>(null);
@@ -1128,12 +1145,20 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
 
     authFetch(url)
       .then(async (r) => {
-        if (r.status === 401 || !r.ok) return null;
+        if (r.status === 401) return null;
+        if (!r.ok) {
+          console.warn('what-to-eat-next failed:', r.status);
+          return null;
+        }
         return r.json() as Promise<WhatToEatNextResponse>;
       })
       .then((data) => {
         if (cancelled) return;
-        if (data && Array.isArray(data.meal_options)) {
+        if (data && Array.isArray(data.meal_options) && data.meal_options.length > 0) {
+          setNextMeal(data);
+          setNextMealError(false);
+        } else if (data && Array.isArray(data.meal_options)) {
+          // Valid response with empty options (e.g. budget exhausted) — still show reason
           setNextMeal(data);
           setNextMealError(false);
         } else {
@@ -1272,11 +1297,17 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
       setLstmPattern(assessment.lstmPattern);
       setUsingLiveModel(assessment.usingLiveModel);
       setModelConfidence(assessment.modelConfidence);
+      // Fallback swaps are for the last Cautious/Avoid meal only — clear when
+      // switching to a Safe meal so Better alternatives stays accurate.
+      if (assessment.result.level === 'LOW' || assessment.result.substitutions.length > 0) {
+        setAlternativesFallback(null);
+      }
     } else {
       setResult(null);
       setLstmPattern(null);
       setUsingLiveModel(false);
       setModelConfidence(null);
+      setAlternativesFallback(null);
     }
   };
 
@@ -1545,7 +1576,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
       const entry = entries.find((e) => e.food.id === id);
       if (!entry) return prev;
       const unitInfo = getUnitInfo(entry.food.english, entry.food.category || 'Other');
-      next[id] = Math.max(0.5, Math.min(10, Math.round(((entry.grams + delta) / unitInfo.grams) * 2) / 2));
+      next[id] = clampQty((entry.grams + delta) / unitInfo.grams);
       return next;
     });
     setResult(null);
@@ -1560,7 +1591,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
         const entry = entries.find((e) => e.food.id === id);
         if (!entry) return prev;
         const unitInfo = getUnitInfo(entry.food.english, entry.food.category || 'Other');
-        next[id] = Math.max(0.5, Math.min(10, Math.round((n / unitInfo.grams) * 2) / 2));
+        next[id] = clampQty(n / unitInfo.grams);
         return next;
       });
     }
@@ -1637,7 +1668,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
 
     let liveModel = false;
     let confidence: number | null = null;
-    let lstm: { risk_label: string; confidence: number; trend: string } | null = null;
+    let lstm: { risk_label: string; confidence: number } | null = null;
 
     if (apiStatus === 'connected') {
       try {
@@ -1744,7 +1775,6 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                 lstm = {
                   risk_label: String(patternJson.risk_label),
                   confidence: Number(patternJson.confidence),
-                  trend: String(patternJson.trend ?? ''),
                 };
               }
             }
@@ -1933,7 +1963,8 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
         <p className="text-xs text-muted-foreground py-2">Finding your next meal…</p>
       ) : nextMealError || !nextMeal || nextMeal.meal_options.length === 0 ? (
         <p className="text-xs text-muted-foreground py-2 leading-relaxed">
-          Suggestions unavailable right now — check your profile CKD stage, or try again after logging a meal.
+          {nextMeal?.reason
+            || 'Next-meal suggestions unavailable right now. Confirm your profile CKD stage, then re-check a meal or refresh.'}
         </p>
       ) : (
         <>
@@ -1946,7 +1977,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                 fontWeight: 500,
               }}
             >
-              Recent meals look {nextMeal.trend ?? 'escalating'} — we tightened this suggestion as a
+              Recent meal-sequence risk is high — we tightened this suggestion as a
               safety margin.
             </p>
           )}
@@ -2389,7 +2420,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
               {selectedFood && (() => {
                 const unitInfo = getUnitInfo(selectedFood.english, selectedFood.category || 'Other');
                 const computedGrams = Math.round(foodQty * unitInfo.grams);
-                const unitLabel = `${foodQty} ${unitInfo.unit}${foodQty !== 1 && !unitInfo.unit.endsWith('s') ? 's' : ''}`;
+                const unitLabel = `${formatQtyLabel(foodQty)} ${unitInfo.unit}${foodQty !== 1 && !unitInfo.unit.endsWith('s') ? 's' : ''}`;
                 return (
                   <div
                     className="flex items-center gap-2 mt-2 px-3 py-2.5 rounded-xl"
@@ -2401,7 +2432,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         type="button"
-                        onClick={() => setFoodQty((q) => Math.max(0.5, q - 0.5))}
+                        onClick={() => setFoodQty((q) => clampQty(q - QTY_STEP))}
                         className="w-6 h-6 rounded-full text-sm font-bold flex items-center justify-center hover:opacity-70"
                         style={{ border: `1px solid ${theme.cardBorder}`, color: theme.textSecondary }}
                       >
@@ -2412,7 +2443,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                       </span>
                       <button
                         type="button"
-                        onClick={() => setFoodQty((q) => q + 0.5)}
+                        onClick={() => setFoodQty((q) => clampQty(q + QTY_STEP))}
                         className="w-6 h-6 rounded-full text-sm font-bold flex items-center justify-center hover:opacity-70"
                         style={{ border: `1px solid ${theme.cardBorder}`, color: theme.textSecondary }}
                       >
@@ -2486,19 +2517,19 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                       {(() => {
                         const unitInfo = getUnitInfo(food.english, food.category || 'Other');
                         const qtyFromGrams = unitInfo.grams > 0 ? grams / unitInfo.grams : 1;
-                        const fallbackQty = Math.max(0.5, Math.min(10, Math.round(qtyFromGrams * 2) / 2));
+                        const fallbackQty = clampQty(qtyFromGrams);
                         const qty = entryQuantities[food.id] ?? fallbackQty;
                         const computedGrams = Math.round(qty * unitInfo.grams);
 
                         const dec = () => {
-                          const nextQty = Math.max(0.5, Math.round((qty - 0.5) * 2) / 2);
+                          const nextQty = clampQty(qty - QTY_STEP);
                           setEntryQuantities((prev) => ({ ...prev, [food.id]: nextQty }));
                           setEntries((prev) => prev.map((e) => e.food.id === food.id ? { ...e, grams: Math.round(nextQty * unitInfo.grams) } : e));
                           setResult(null);
                         };
 
                         const inc = () => {
-                          const nextQty = Math.min(10, Math.round((qty + 0.5) * 2) / 2);
+                          const nextQty = clampQty(qty + QTY_STEP);
                           setEntryQuantities((prev) => ({ ...prev, [food.id]: nextQty }));
                           setEntries((prev) => prev.map((e) => e.food.id === food.id ? { ...e, grams: Math.round(nextQty * unitInfo.grams) } : e));
                           setResult(null);
@@ -2523,7 +2554,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                               </button>
                               <div className="flex flex-col items-center min-w-[90px]">
                                 <span className="text-sm font-medium text-center">
-                                  {qty} {unitLabel}
+                                  {formatQtyLabel(qty)} {unitLabel}
                                 </span>
                                 <span className="text-xs text-gray-400">
                                   (~{computedGrams}g)
@@ -2687,10 +2718,12 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                     return typeof n?.percent_used === 'number' && n.percent_used > 100;
                   });
 
-                const overrideToCaution = result.level === 'LOW' && dailyExceeded;
-                const cfg = overrideToCaution ? RISK_CFG.MODERATE : RISK_CFG[result.level];
+                // Keep the meal-level Model C / rule verdict — do not recolour a Safe meal
+                // as Cautious just because later meals pushed the daily budget over.
+                const cfg = RISK_CFG[result.level];
                 const Icon = cfg.icon;
                 return (
+                  <>
                   <div className="p-3 rounded-2xl" style={{ background: cfg.bg, border: `2px solid ${cfg.border}` }}>
                     <div className="flex items-start sm:items-center gap-2">
                       <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: `${cfg.color}20` }}>
@@ -2706,9 +2739,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                           )}
                         </div>
                         <p style={{ color: theme.textSecondary, fontSize: '0.78rem' }}>
-                          {overrideToCaution
-                            ? "This meal is safe, but your daily nutrient limit has been reached. Be careful with your next meal."
-                            : cfg.desc}
+                          {cfg.desc}
                         </p>
                         <p style={{ color: theme.textTertiary, fontSize: '0.7rem', marginTop: 1 }}>
                           {result.assessedFoods.length} food{result.assessedFoods.length !== 1 ? 's' : ''} · {result.assessedFoods.reduce((a, e) => a + e.grams, 0)} g total
@@ -2731,8 +2762,23 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                       </div>
                     </div>
                   </div>
+                  {dailyExceeded && (
+                    <p
+                      className="mt-2 text-xs leading-relaxed px-2.5 py-2 rounded-lg"
+                      style={{ background: 'rgba(245,158,11,0.12)', color: '#B45309', fontWeight: 500 }}
+                    >
+                      Your daily nutrient budget is already over for today — be careful with any remaining meals. This does not change this meal&apos;s own risk label.
+                    </p>
+                  )}
+                  </>
                 );
               })()}
+
+              {getAuthToken() && (
+                <div className="mt-2">
+                  {renderWhatToEatNextPanel()}
+                </div>
+              )}
 
               {/* Chart + nutrient cards — side by side on large screens */}
               <div className="grid gap-3 mt-2 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-start">
@@ -2920,9 +2966,7 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                     </ul>
                   ) : result.level === 'LOW' ? (
                     <p className="text-sm text-center" style={{ color: theme.textSecondary }}>
-                      {!usingLiveModel
-                        ? 'Connect to live model for personalized swaps.'
-                        : 'Your meal looks safe — no swaps needed.'}
+                      Your meal looks safe — no swaps needed.
                     </p>
                   ) : alternativesFallback ? (
                     <>
@@ -2972,14 +3016,11 @@ export function RiskAssessment({ isDark, theme, initialBodyWeight, initialStage 
                   ) : (
                     <p className="text-sm text-center" style={{ color: theme.textSecondary }}>
                       {!usingLiveModel
-                        ? 'Connect to live model for personalized swaps.'
+                        ? 'Personalized swaps need a live model connection. Check your connection and re-check this meal.'
                         : noSubstitutesMessage(primaryConcernNutrient(result))}
                     </p>
                   )}
                 </div>
-
-                {/* Card 3 — What to eat next */}
-                {getAuthToken() && renderWhatToEatNextPanel()}
               </div>
 
               <div className="flex justify-end">

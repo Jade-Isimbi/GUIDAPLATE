@@ -137,8 +137,7 @@ def api_health(db: Session = Depends(get_db)) -> dict:
         ])
         model_status["lstm_v3"] = {
             "status": "loaded",
-            "test_trend": r["trend"],
-            "trend_method": r.get("trend_method"),
+            "test_risk_label": r["risk_label"],
         }
     except Exception as e:
         model_status["lstm_v3"] = {

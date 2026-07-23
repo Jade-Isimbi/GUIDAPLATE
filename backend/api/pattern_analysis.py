@@ -34,63 +34,33 @@ class PatternAnalysisResponse(BaseModel):
     confidence: float
     probabilities: dict
     sequence_length: int
-    trend: str
     clinical_note: str
 
 
-def build_clinical_note(risk_label: str, trend: str) -> str:
-    """Generate guidance from LSTM risk level and meal-sequence trend.
-
-    Trend phrases describe the heuristic direction label, not a separately
-    trained prediction.
-    """
+def build_clinical_note(risk_label: str) -> str:
+    """Generate guidance from the trained LSTM sequence-risk label only."""
     notes = {
-        ("HIGH", "escalating"): (
-            "Nutrient burden is increasing across recent meals with high overall "
-            "dietary risk. Immediate intervention recommended."
+        "HIGH": (
+            "High dietary risk detected across the recent meal sequence. "
+            "Dietary adjustment and closer monitoring are recommended."
         ),
-        ("HIGH", "stable"): (
-            "Consistently high nutrient intake detected across the meal sequence. "
-            "Dietary adjustment recommended."
+        "MODERATE": (
+            "Moderate dietary risk detected across the recent meal sequence. "
+            "Continue monitoring nutrient intake."
         ),
-        ("MODERATE", "escalating"): (
-            "Nutrient intake is trending upward across meals with moderate risk. "
-            "Closer monitoring advised."
-        ),
-        ("MODERATE", "stable"): (
-            "Moderate dietary risk detected with relatively stable intake across "
-            "meals. Continue monitoring."
-        ),
-        ("LOW", "escalating"): (
-            "Overall risk is low but nutrient intake is increasing across meals. "
-            "Watch for continued escalation."
-        ),
-        ("LOW", "stable"): (
-            "Meal sequence shows stable, low-risk dietary patterns for the "
-            "analyzed period."
-        ),
-        ("HIGH", "improving"): (
-            "Overall dietary risk remains high, but nutrient intake is trending "
-            "downward across recent meals. Keep up the improving pattern."
-        ),
-        ("MODERATE", "improving"): (
-            "Moderate dietary risk with nutrient intake trending downward across "
-            "meals. Your recent choices are moving in the right direction."
-        ),
-        ("LOW", "improving"): (
-            "Low dietary risk with nutrient intake trending downward across meals. "
-            "Excellent progress — keep it up."
+        "LOW": (
+            "Low dietary risk across the analyzed meal sequence for this period."
         ),
     }
     return notes.get(
-        (risk_label, trend),
-        "Pattern analysis complete. Review nutrient trends with your care team.",
+        risk_label,
+        "Pattern analysis complete. Review nutrient intake with your care team.",
     )
 
 
 @router.post("/predict/pattern", response_model=PatternAnalysisResponse)
 def predict_pattern(request: MealSequenceRequest) -> PatternAnalysisResponse:
-    """Run the trained LSTM risk classifier on a meal sequence; attach a heuristic trend label from hidden-state dynamics."""
+    """Run the trained LSTM sequence-risk classifier on a meal sequence."""
     sequence_len = len(request.meal_sequence)
     if sequence_len < 1 or sequence_len > MAX_SEQUENCE_STEPS:
         raise HTTPException(
@@ -134,15 +104,13 @@ def predict_pattern(request: MealSequenceRequest) -> PatternAnalysisResponse:
     try:
         result = get_analyzer().analyze(normalized)
         risk_label = result["risk_label"]
-        trend = result["trend"]
 
         return PatternAnalysisResponse(
             risk_label=risk_label,
             confidence=result["confidence"],
             probabilities=result["probabilities"],
             sequence_length=result["sequence_length"],
-            trend=trend,
-            clinical_note=build_clinical_note(risk_label, trend),
+            clinical_note=build_clinical_note(risk_label),
         )
     except HTTPException:
         raise

@@ -150,7 +150,6 @@ def update_patient_profile(
 class PatientLstmPatternResponse(BaseModel):
     risk_label: str | None = None
     confidence: float | None = None
-    trend: str | None = None
     meals_analyzed: int = 0
     available: bool = False
 
@@ -187,7 +186,6 @@ def get_patient_lstm_pattern(
     return PatientLstmPatternResponse(
         risk_label=result["risk_label"],
         confidence=result["confidence"],
-        trend=result["trend"],
         meals_analyzed=int(result.get("sequence_length") or 0),
         available=True,
     )

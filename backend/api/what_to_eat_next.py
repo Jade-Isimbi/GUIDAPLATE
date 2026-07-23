@@ -31,7 +31,7 @@ from backend.utils.meal_aggregation import fetch_food_logs_for_date
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["What to Eat Next"])
 
-ESCALATING_SAFETY_MARGIN = 0.85
+HIGH_SEQUENCE_SAFETY_MARGIN = 0.85
 
 
 @dataclass
@@ -40,7 +40,6 @@ class NextMealBudget:
     meals_remaining_today: int
     remaining_today: dict[str, float]
     meal_budget: dict[str, float]
-    trend: str | None
     trajectory_risk: str | None
     safety_margin_applied: bool
     safety_margin: float
@@ -71,7 +70,6 @@ class WhatToEatNextResponse(BaseModel):
     meals_remaining_today: int
     meal_budget: NutrientAmounts
     remaining_today: NutrientAmounts
-    trend: str | None
     trajectory_risk: str | None
     safety_margin_applied: bool
     safety_margin: float
@@ -179,7 +177,6 @@ def compute_next_meal_budget(
         }
         per_meal = {k: min(per_meal[k], snack_ceil[k]) for k in per_meal}
 
-    trend: str | None = None
     trajectory_risk: str | None = None
     safety_margin = 1.0
     safety_margin_applied = False
@@ -187,10 +184,11 @@ def compute_next_meal_budget(
     if meal_sequence:
         try:
             lstm = get_analyzer().analyze(meal_sequence)
-            trend = lstm.get("trend")
             trajectory_risk = lstm.get("risk_label")
-            if trend == "escalating":
-                safety_margin = ESCALATING_SAFETY_MARGIN
+            # Tighten remaining budget when trained sequence risk is HIGH
+            # (not a separate heuristic trend label).
+            if trajectory_risk == "HIGH":
+                safety_margin = HIGH_SEQUENCE_SAFETY_MARGIN
                 safety_margin_applied = True
                 per_meal = {k: v * safety_margin for k, v in per_meal.items()}
         except Exception as exc:
@@ -205,7 +203,6 @@ def compute_next_meal_budget(
         meals_remaining_today=meals_remaining_today,
         remaining_today=rem,
         meal_budget=per_meal,
-        trend=trend,
         trajectory_risk=trajectory_risk,
         safety_margin_applied=safety_margin_applied,
         safety_margin=safety_margin,
@@ -244,7 +241,7 @@ def _build_reason(budget: NextMealBudget) -> str:
         return BUDGET_EXHAUSTED_REASON
     base = f"Fits your remaining budget for {budget.occasion}"
     if budget.safety_margin_applied:
-        return f"{base} (tightened: recent intake looks up)"
+        return f"{base} (tightened: recent sequence risk is HIGH)"
     return base
 
 
@@ -359,7 +356,6 @@ def get_what_to_eat_next(
         meals_remaining_today=budget.meals_remaining_today,
         meal_budget=NutrientAmounts(**budget.meal_budget),
         remaining_today=NutrientAmounts(**budget.remaining_today),
-        trend=budget.trend,
         trajectory_risk=budget.trajectory_risk,
         safety_margin_applied=budget.safety_margin_applied,
         safety_margin=budget.safety_margin,

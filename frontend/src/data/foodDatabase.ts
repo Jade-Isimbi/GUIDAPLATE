@@ -521,15 +521,17 @@ export function pluralizeUnit(quantity: number, unit: string): string {
 }
 
 export function formatPortionLabel(quantity: number, unit: string): string {
-  const rounded = Number.isInteger(quantity) ? String(quantity) : quantity.toFixed(1).replace(/\.0$/, '');
+  const rounded = Number.isInteger(quantity)
+    ? String(quantity)
+    : String(Number(quantity.toFixed(2)));
   return `${rounded} ${pluralizeUnit(quantity, unit)}`;
 }
 
 export function gramsToPortionLabel(foodName: string, category: string, grams: number): string {
   if (grams <= 0) return '0g';
   const { unit, grams_per_unit } = getUnitInfo(foodName, category);
-  const quantity = Math.round((grams / grams_per_unit) * 2) / 2;
-  if (quantity >= 0.5) {
+  const quantity = Math.round((grams / grams_per_unit) * 4) / 4;
+  if (quantity >= 0.25) {
     return formatPortionLabel(quantity, unit);
   }
   return `${Math.round(grams)}g`;

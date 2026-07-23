@@ -63,7 +63,6 @@ interface BackendDay {
 interface LstmPattern {
   risk_label: string;
   confidence: number;
-  trend: string;
   meals_analyzed: number;
 }
 
@@ -323,27 +322,6 @@ function InsightBlock({ rec }: { rec: Recommendation }) {
   );
 }
 
-const trendConfig = {
-  escalating: {
-    label: 'Risk is increasing',
-    icon: '↑',
-    color: 'text-red-600',
-    bg: 'bg-red-50',
-  },
-  stable: {
-    label: 'Risk is steady',
-    icon: '→',
-    color: 'text-amber-500',
-    bg: 'bg-amber-50',
-  },
-  improving: {
-    label: 'Risk is improving',
-    icon: '↓',
-    color: 'text-green-600',
-    bg: 'bg-green-50',
-  },
-} as const;
-
 export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
   const [days, setDays] = useState<DayData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -351,8 +329,6 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
   const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
   const [lstmRisk, setLstmRisk] = useState<Risk>('Low');
   const [confidence, setConfidence] = useState(0);
-  const [, setPatternStable] = useState(true);
-  const [lstmTrend, setLstmTrend] = useState<string>('stable');
   const [lstmMealsAnalyzed, setLstmMealsAnalyzed] = useState(0);
 
   useEffect(() => {
@@ -394,8 +370,6 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
 
         setLstmRisk(mapRisk(trendData.lstm_pattern?.risk_label));
         setConfidence(Math.round((trendData.lstm_pattern?.confidence ?? 0) * 100));
-        setPatternStable(trendData.lstm_pattern?.trend !== 'escalating');
-        setLstmTrend(trendData.lstm_pattern?.trend ?? 'stable');
         setLstmMealsAnalyzed(trendData.lstm_pattern?.meals_analyzed ?? 0);
         setLoading(false);
       })
@@ -429,11 +403,6 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
     lstmRisk === 'High' ? 'HIGH' : lstmRisk === 'Moderate' ? 'MODERATE' : 'LOW';
   const statusRisk = getRiskDisplay(statusRiskKey);
 
-  const trendKey = (lstmTrend in trendConfig ? lstmTrend : 'stable') as keyof typeof trendConfig;
-  const trendCfg =
-    lstmRisk === 'High' && lstmTrend === 'stable'
-      ? { ...trendConfig.stable, label: 'Consistently high risk', color: 'text-red-600', bg: 'bg-red-50' }
-      : trendConfig[trendKey];
   const lstmRiskStyle = RISK_STYLES[lstmRisk];
 
   const selectedDayExceeded =
@@ -462,7 +431,7 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold text-foreground">Your Dietary Pattern</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            AI estimates your recent meal-sequence risk, and whether that pattern looks increasing, steady, or improving
+            AI estimates your recent meal-sequence risk from logged meals
           </p>
           <p className="text-sm text-muted-foreground">
             {weekRange} · {formatStageDisplay(profile?.ckd_stage || 'G3b')} · {profile?.name || 'Patient'}
@@ -486,11 +455,6 @@ export function WeeklyTrend({ theme, onNavigate }: WeeklyTrendProps) {
             >
               <span className={`w-1.5 h-1.5 rounded-full ${lstmRiskStyle.dot}`} />
               {lstmRisk} risk · {confidence}% confidence
-            </span>
-            <span
-              className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${trendCfg.bg} ${trendCfg.color}`}
-            >
-              {trendCfg.icon} {trendCfg.label}
             </span>
           </div>
           <p className="text-xs text-muted-foreground mt-2">

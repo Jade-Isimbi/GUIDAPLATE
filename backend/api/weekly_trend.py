@@ -53,7 +53,6 @@ class WeeklyDaySummary(BaseModel):
 class LstmPatternSummary(BaseModel):
     risk_label: str
     confidence: float
-    trend: str
     meals_analyzed: int
 
 
@@ -216,7 +215,6 @@ def get_weekly_trend(
             lstm_pattern = LstmPatternSummary(
                 risk_label=lstm_result["risk_label"],
                 confidence=lstm_result["confidence"],
-                trend=lstm_result["trend"],
                 meals_analyzed=len(meal_sequence),
             )
         except Exception as e:

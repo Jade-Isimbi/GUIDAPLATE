@@ -9,7 +9,7 @@ from pathlib import Path
 
 import joblib
 import numpy as np
-from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.models import load_model
 
 from backend.config import (
     LSTM_LABEL_ENCODER_PATH,
@@ -63,17 +63,12 @@ class LSTMPatternAnalyzer:
             # Warm up the graph so layer I/O tensors are defined (Keras 3).
             _dummy = np.zeros((1, SEQUENCE_STEPS, FEATURES_PER_STEP), dtype=float)
             self.model(_dummy, training=False)
-
-            # Layer index 1 = first LSTM (return_sequences=True) → (batch, 6, 64)
-            self.hidden_state_model = Model(
-                inputs=self.model.inputs,
-                outputs=self.model.layers[1].output,
-            )
         except FileNotFoundError as exc:
             print(f"ERROR: {exc}")
             raise
 
     def analyze(self, meal_sequence: list[list[float]]) -> dict:
+        """Run the trained LSTM sequence-risk classifier (LOW / MODERATE / HIGH)."""
         sequence_length = len(meal_sequence)
 
         # Build raw (6, 5) — occasion only on filled slots; empty slots stay all-zero
@@ -104,77 +99,12 @@ class LSTMPatternAnalyzer:
             self.LABEL_MAP[i]: float(proba[i]) for i in range(len(proba))
         }
 
-        trend = self._detect_trend_from_hidden_states(
-            model_input,
-            n_real_meals=sequence_length,
-        )
-
         return {
             "risk_label": risk_label,
             "confidence": confidence,
             "probabilities": probabilities,
             "sequence_length": sequence_length,
-            "trend": trend,
-            "trend_method": "lstm_hidden_states",
-            "trend_layer": "lstm_layer_1_64d",
         }
-
-    def _detect_trend_from_hidden_states(
-        self,
-        X_scaled: np.ndarray,
-        n_real_meals: int,
-    ) -> str:
-        """
-        Heuristic trend detection from LSTM hidden-state (and nutrient) dynamics—
-        not a trained output head. Returns escalating / stable / improving.
-
-        X_scaled: shape (1, 6, 5)
-        n_real_meals: number of real meals in the sequence (not padded)
-        """
-        hidden = self.hidden_state_model.predict(X_scaled, verbose=0)
-
-        magnitudes = np.linalg.norm(hidden[0], axis=1)
-
-        real_magnitudes = magnitudes[:n_real_meals]
-
-        if len(real_magnitudes) < 2:
-            return "stable"
-
-        nutrients = np.asarray(
-            [float(np.sum(X_scaled[0, i, :4])) for i in range(len(real_magnitudes))],
-            dtype=float,
-        )
-        nut_slope = float(np.polyfit(np.arange(len(nutrients)), nutrients, 1)[0])
-        nut_norm = nut_slope / max(float(np.mean(np.abs(nutrients))), 1.0)
-
-        x = np.arange(len(real_magnitudes))
-        slope = float(np.polyfit(x, real_magnitudes, 1)[0])
-
-        mean_mag = float(np.mean(real_magnitudes))
-        if mean_mag <= 0:
-            return "stable"
-
-        normalized_slope = slope / mean_mag
-
-        THRESHOLD = 0.05
-
-        # Flat nutrient trajectory in LSTM scaled space → stable pattern
-        if abs(nut_norm) < THRESHOLD:
-            return "stable"
-
-        # Layer-1 hidden norms carry recurrent position bias on this
-        # architecture; nutrient trajectory in the same scaled input space
-        # resolves direction when hidden and nutrients agree or nutrients
-        # show a clear trend.
-        if nut_norm > THRESHOLD:
-            if normalized_slope > -THRESHOLD:
-                return "escalating"
-        if nut_norm < -THRESHOLD:
-            if normalized_slope < THRESHOLD:
-                return "improving"
-            return "improving"
-
-        return "stable"
 
 
 def get_analyzer() -> LSTMPatternAnalyzer:
